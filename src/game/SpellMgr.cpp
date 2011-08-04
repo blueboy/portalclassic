@@ -2280,7 +2280,8 @@ SpellEntry const* SpellMgr::SelectAuraRankForLevel(SpellEntry const* spellInfo, 
             break;
 
         // if found appropriate level
-        if (level + 10 >= spellInfo->spellLevel)
+        // partial Playerbot mod: fix for core bug (commit 073cdd0e...)
+        if (level + 10 >= nextSpellInfo->spellLevel)
             return nextSpellInfo;
 
         // one rank less then
