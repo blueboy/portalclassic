@@ -5426,7 +5426,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
 
                     m_bot->ModifyMoney(-int32(cost));
                     // learn explicitly or cast explicitly
-                    if(!CastSpell(spellId))
+                    if (trainer_spell->IsCastable())
+                        m_bot->CastSpell(m_bot, trainer_spell->spell, true);
+                    else
                         m_bot->learnSpell(spellId, false);
                     ++totalSpellLearnt;
                     totalCost += cost;
