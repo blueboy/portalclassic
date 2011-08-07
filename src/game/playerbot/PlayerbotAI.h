@@ -299,7 +299,7 @@ public:
     bool Buff(uint32 spellId, Unit * target, void (*beforeCast)(Player *) = NULL);
     bool SelfBuff(uint32 spellId);
 
-    void UseItem(Item *item, uint32 targetFlag, ObjectGuid targetGUID);
+    void UseItem(Item *item, uint16 targetFlag, ObjectGuid targetGUID);
     void UseItem(Item *item, uint8 targetInventorySlot);
     void UseItem(Item *item, Unit *target);
     void UseItem(Item *item);

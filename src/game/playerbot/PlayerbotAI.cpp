@@ -1052,12 +1052,8 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
             uint32 spellId;
             p >> spellId;
-            uint32 castFlags;
+            uint16 castFlags;
             p >> castFlags;
-            uint32 msTime;
-            p >> msTime;
-            uint8 numHit;
-            p >> numHit;
 
             if (m_CurrentlyCastingSpellId == spellId)
             {
@@ -2970,7 +2966,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
     {
         if (m_lootCurrent)
         {
-            WorldPacket* const packet = new WorldPacket(CMSG_CAST_SPELL, 4 + 2 + 8);
+            WorldPacket* const packet = new WorldPacket(CMSG_CAST_SPELL, 4+2+8);
             *packet << spellId;
             *packet << target_type;
             *packet << m_lootCurrent.WriteAsPacked();
@@ -3901,17 +3897,15 @@ void PlayerbotAI::UseItem(Item *item, Unit *target)
 }
 
 // generic item use method
-void PlayerbotAI::UseItem(Item *item, uint32 targetFlag, ObjectGuid targetGUID)
+void PlayerbotAI::UseItem(Item *item, uint16 targetFlag, ObjectGuid targetGUID)
 {
     if (!item)
         return;
 
     uint8 bagIndex = item->GetBagSlot();
     uint8 slot = item->GetSlot();
-    uint8 cast_count = 1;
+    uint8 spell_count = 0;
     ObjectGuid item_guid = item->GetObjectGuid();
-    uint32 glyphIndex = 0;
-    uint8 unk_flags = 0;
 
     if(uint32 questid = item->GetProto()->StartQuest)
     {
@@ -3942,15 +3936,16 @@ void PlayerbotAI::UseItem(Item *item, uint32 targetFlag, ObjectGuid targetGUID)
         }
     }
 
-    WorldPacket* const packet = new WorldPacket(CMSG_USE_ITEM, 7);
+    WorldPacket* const packet = new WorldPacket(CMSG_USE_ITEM, 12);
     *packet << bagIndex;
     *packet << slot;
-    *packet << cast_count;
+    *packet << spell_count;
+    *packet << targetFlag;
 
     if (targetFlag & (TARGET_FLAG_UNIT | TARGET_FLAG_ITEM | TARGET_FLAG_OBJECT))
         *packet << targetGUID.WriteAsPacked();
 
-    (*packet).resize(7);
+    (*packet).resize(12);
 
     m_bot->GetSession()->QueuePacket(packet);
 
@@ -4632,7 +4627,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         }
     }
     // Handle spell cast command
-    else if (text.size() >= 4 && text.substr(0, 4) == "cast")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "c|" || text.substr(0, 2) == "c ")) || (text.size() >= 4 && text.substr(0, 4) == "cast"))
     {
         std::string part = "";
 
@@ -4669,7 +4664,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     }
     // Handle selling items
     // sell [Item Link][Item Link] .. -- Sells bot(s) items from inventory
-    else if (text.size() > 5 && text.substr(0, 5) == "sell ")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "s|" || text.substr(0, 2) == "s ")) || (text.size() > 5 && text.substr(0, 5) == "sell "))
     {
         enum NPCFlags VENDOR_MASK = (enum NPCFlags) (UNIT_NPC_FLAG_VENDOR);
 
@@ -4710,7 +4705,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     // auction                                        -- Lists bot(s) active auctions.
     // auction add [Item Link][Item Link] ..          -- Create bot(s) active auction.
     // auction remove [Auction Link][Auction Link] .. -- Cancel bot(s) active auction. ([Auction Link] from auction)
-    else if (text.size() >= 7 && text.substr(0, 7) == "auction")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "a|" || text.substr(0, 2) == "a ")) || (text.size() >= 7 && text.substr(0, 7) == "auction"))
     {
         std::string part = "";
         std::string subcommand = "";
@@ -4756,7 +4751,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     // bank                                        -- Lists bot(s) bank balance.
     // bank deposit [Item Link][Item Link] ..      -- Deposit item(s) in bank.
     // bank withdraw [Item Link][Item Link] ..     -- Withdraw item(s) from bank. ([Item Link] from bank)
-    else if (text.size() >= 4 && text.substr(0, 4) == "bank")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "b|" || text.substr(0, 2) == "b ")) || (text.size() >= 4 && text.substr(0, 4) == "bank"))
     {
         std::string part = "";
         std::string subcommand = "";
@@ -4799,7 +4794,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
     }
     // Handle use of items
-    else if (text.size() >= 3 && text.substr(0, 3) == "use")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "u|" || text.substr(0, 2) == "u ")) || (text.size() >= 3 && text.substr(0, 3) == "use"))
     {
         std::string part = "";
 
@@ -4808,11 +4803,20 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         std::list<Item*> itemList;
         extractItemIds(part, itemIds);
         findItemsInInv(itemIds, itemList);
+
+        // set target
+        Unit* unit = ObjectAccessor::GetUnit(*m_bot, fromPlayer.GetSelectionGuid());
+
         for (std::list<Item*>::iterator it = itemList.begin(); it != itemList.end(); ++it)
-            UseItem(*it);
+        {
+            if(unit)
+                UseItem(*it,unit);
+            else
+                UseItem(*it);
+        }
     }
     // Handle equipement of items, for bot
-    else if (text.size() >= 5 && text.substr(0, 5) == "equip")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "e|" || text.substr(0, 2) == "e ")) || (text.size() > 5 && text.substr(0, 5) == "equip"))
     {
         std::string part = "";
 
@@ -4826,7 +4830,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             EquipItem(**it);
     }
     // Handle find GO objects project: 20:50 02/12/10 rev.4 item in world and wait until ordered to follow
-    else if (text.size() >= 4 && text.substr(0, 4) == "find")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "f|" || text.substr(0, 2) == "f ")) || (text.size() >= 4 && text.substr(0, 4) == "find"))
     {
         std::string part = "";
 
@@ -4851,7 +4855,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         m_lootCurrent = ObjectGuid();
     }
     // Handle get GO objects project: 20:50 02/12/10 rev.4 compact edition, handles multiple linked gameobject & improves visuals
-    else if (text.size() >= 3 && text.substr(0, 3) == "get")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "g|" || text.substr(0, 2) == "g ")) || (text.size() >= 3 && text.substr(0, 3) == "get"))
     {
         std::string part = "";
 
@@ -4911,7 +4915,17 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             else
                 subcommand = part;
 
-            if (subcommand == "combat")
+            if (subcommand == "all")
+            {
+                SetCollectFlag(COLLECT_FLAG_COMBAT);
+                SetCollectFlag(COLLECT_FLAG_LOOT);
+                SetCollectFlag(COLLECT_FLAG_QUEST);
+                SetCollectFlag(COLLECT_FLAG_PROFESSION);
+                SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
+                if (m_bot->HasSkill(SKILL_SKINNING))
+                    SetCollectFlag(COLLECT_FLAG_SKIN);
+            }
+            else if (subcommand == "combat")
                 SetCollectFlag(COLLECT_FLAG_COMBAT);
             else if (subcommand == "loot")
                 SetCollectFlag(COLLECT_FLAG_LOOT);
@@ -4938,7 +4952,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                 if (m_bot->HasSkill(SKILL_SKINNING))
                     collout += ", skin";
                 // TODO: perhaps change the command syntax, this way may be lacking in ease of use
-                TellMaster("Collect <what>?: none, combat, loot, quest, profession, objects" + collout);
+                TellMaster("Collect <what>?: all, none, combat, loot, quest, profession, objects" + collout);
                 break;
             }
             if (part == subcommand)
@@ -5031,7 +5045,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             SendWhisper("I have no quests!", fromPlayer);
     }
     // Handle drop quest
-    else if (text.size() >= 4 && text.substr(0, 4) == "drop")
+    else if ((text.size() > 2 && (text.substr(0, 2) == "d|" || text.substr(0, 2) == "d ")) || (text.size() >= 4 && text.substr(0, 4) == "drop"))
     {
         ObjectGuid oldSelectionGUID = ObjectGuid();
         if (fromPlayer.GetSelectionGuid() != m_bot->GetObjectGuid())
@@ -5047,7 +5061,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             fromPlayer.SetSelectionGuid(oldSelectionGUID);
     }
     // Handle all pet related commands here
-    else if (text.size() > 4 && text.substr(0, 4) == "pet ")
+    else if ((text.size() > 2 && text.substr(0, 2) == "p ") || (text.size() > 4 && text.substr(0, 4) == "pet "))
     {
         Pet * pet = m_bot->GetPet();
         if (!pet)
@@ -5655,6 +5669,38 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         ChatHandler ch(&fromPlayer);
         ch.SendSysMessage(out.str().c_str());
     }
+    // Handle (h)elp (bot command syntax)
+    else if (text == "h" || text == "help")
+    {
+        std::ostringstream msg;
+        msg << "command syntax:\r"
+            << "    follow, stay, orders, spells,\r"
+            << "    |cffffffff(|rc|cffffffff)|rast |cffffffff< |cffFFCC00spellname |cffffffff| |cffFFCC00spellid |cffffffff| |cffFFCC00[spelllink] |cffffffff >|r,\r"
+            << "    |cffffffff(|rp|cffffffff)|ret |cffffffff< |cff339900spells\r"
+            << "            |cff339900cast |cffffffff< |cffFFCC00spellname |cffffffff| |cffFFCC00spellid |cffffffff| |cffFFCC00[spelllink] |cffffffff>\r"
+            << "            |cff339900toggle |cffffffff< |cffFFCC00spellname |cffffffff| |cffFFCC00spellid |cffffffff| |cffFFCC00[spelllink] |cffffffff>\r"
+            << "            |cff339900state\r"
+            << "            |cff339900react |cffffffff< |cffFFCC00(|cff339900a|cffFFCC00)ggressive |cffffffff| |cffFFCC00(|cff339900d|cffFFCC00)efensive |cffffffff| |cffFFCC00(|cff339900p|cffFFCC00)assive |cffffffff>\r"
+            << "         >|r,\r"
+            << "    |cffffffff(|re|cffffffff)|rquip |cffFFCC00[itemlink]|r, |cffffffff(|ru|cffffffff)|rse |cffFFCC00[itemlink]|r,\r"
+            << "    quests, report, |cffffffff(|rd|cffffffff)|rrop |cffFFCC00[questlink]|r,\r"
+            << "    skill |cffffffff< \r"
+            << "          |cff339900train\r"
+            << "          |cff339900learn |cffFFCC00[spelllink]\r"
+            << "          |cff339900unlearn |cffFFCC00[spelllink]\r"
+            << "          |cffffffff>|r,\r"
+            << "    stats,\r"
+            << "    |cffffffff(|rr|cffffffff)|repair |cffffffff< |cff339900all |cffffffff| |cffFFCC00[itemlink]|cffffffff>|r,\r"
+            << "    collect |cff339900all, none, |cffffffff(toggle)|cff339900 loot, quest, profession, objects, |cffffffff(has)|cff339900skin|r,\r"
+            << "    survey,\r"
+            << "    |cffffffff(|rg|cffffffff)|ret  |cffffffff< |cff339900select corpse |cffffffff| |cffFFCC00[golink] |cffffffff>|r,\r"
+            << "    |cffffffff(|rf|cffffffff)|rind |cffffffff< |cff339900select corpse |cffffffff| |cffFFCC00[golink] |cffffffff>|r,\r"
+            << "    |cffffffff(|ra|cffffffff)|ruction |cffffffff< |cff339900add |cffFFCC00[itemlink] |cffffffff| |cff339900remove |cffFFCC00[auctionlink] |cffffffff>|r,\r"
+            << "    |cffffffff(|rb|cffffffff)|rank |cffffffff< |cff339900deposit |cffFFCC00[itemlink] |cffffffff| |cff339900withdraw |cffFFCC00[itemlink] |cffffffff>|r,\r"
+            << "    |cffffffff(|rs|cffffffff)|rell |cffFFCC00[itemlink]|r";
+            SendWhisper(msg.str(), fromPlayer);
+            m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+    }
     else
     {
         // if this looks like an item link, reward item it completed quest and talking to NPC
@@ -5705,30 +5751,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         else
         {
             std::ostringstream msg;
-            msg << "What?\r"
-                << "     follow, stay, orders, spells,\r"
-                << "     cast |cffffffff< |cffFFCC00spellname |cffffffff| |cffFFCC00spellid |cffffffff| |cffFFCC00[spelllink] |cffffffff >|r,\r"
-                << "     pet |cffffffff< |cff339900spells\r"
-                << "             |cff339900cast |cffffffff< |cffFFCC00spellname |cffffffff| |cffFFCC00spellid |cffffffff| |cffFFCC00[spelllink] |cffffffff>\r"
-                << "             |cff339900toggle |cffffffff< |cffFFCC00spellname |cffffffff| |cffFFCC00spellid |cffffffff| |cffFFCC00[spelllink] |cffffffff>\r"
-                << "             |cff339900state\r"
-                << "             |cff339900react |cffffffff< |cffFFCC00(|cff339900a|cffFFCC00)ggressive |cffffffff| |cffFFCC00(|cff339900d|cffFFCC00)efensive |cffffffff| |cffFFCC00(|cff339900p|cffFFCC00)assive |cffffffff>\r"
-                << "          >|r,\r"
-                << "     equip |cffFFCC00[itemlink]|r, use |cffFFCC00[itemlink]|r,\r"
-                << "     quests, report, drop |cffFFCC00[questlink]|r,\r"
-                << "     skill |cffffffff< \r"
-                << "           |cff339900train\r"
-                << "           |cff339900learn |cffFFCC00[spelllink]\r"
-                << "           |cff339900unlearn |cffFFCC00[spelllink]\r"
-                << "           |cffffffff>|r,\r"
-                << "     stats,\r"
-                << "     repair |cffffffff< |cff339900all |cffffffff| |cffFFCC00[itemlink]|cffffffff>|r,\r"
-                << "     collect, survey,\r"
-                << "     get  |cffffffff< |cff339900select corpse |cffffffff| |cffFFCC00[golink] |cffffffff>|r,\r"
-                << "     find |cffffffff< |cff339900select corpse |cffffffff| |cffFFCC00[golink] |cffffffff>|r,\r"
-                << "     auction |cffffffff< |cff339900add |cffFFCC00[itemlink] |cffffffff| |cff339900remove |cffFFCC00[auctionlink] |cffffffff>|r,\r"
-                << "     bank |cffffffff< |cff339900deposit |cffFFCC00[itemlink] |cffffffff| |cff339900withdraw |cffFFCC00[itemlink] |cffffffff>|r,\r"
-                << "     sell |cffFFCC00[itemlink]|r";
+            msg << "|cff339900What?, for more info:|r  /t botname |cffffffff(|rh|cffffffff)|relp\r";
             SendWhisper(msg.str(), fromPlayer);
             m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
         }

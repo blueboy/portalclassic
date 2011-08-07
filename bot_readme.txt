@@ -55,6 +55,18 @@ Commands:
 /t BOTNAME skill unlearn <PROFESSION LINK> (unlearn selected primary profession skill & all associated spells)
 
 Shortcuts:
+a = auction
+b = bank
+c = cast
+d = drop
+e = equip
+f = find
+g = get
+h = help
+p = pet
+r = repair
+s = sell
+u = use
 
 Gameobject interaction with bots:
 =================================
