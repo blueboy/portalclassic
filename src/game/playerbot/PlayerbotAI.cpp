@@ -4319,7 +4319,7 @@ bool PlayerbotAI::ListAuctions()
     std::ostringstream report;
 
     QueryResult *result = CharacterDatabase.PQuery(
-    "SELECT id,itemguid,item_template,time,buyguid,lastbid FROM auction WHERE itemowner = '%u'",m_bot->GetObjectGuid());
+    "SELECT id,itemguid,item_template,time,buyguid,lastbid FROM auction WHERE itemowner = '%u'",m_bot->GetObjectGuid().GetCounter());
     if(result)
     {
         report << "My active auctions are: \n";

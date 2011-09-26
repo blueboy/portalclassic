@@ -983,7 +983,7 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
     }
     delete resultchar;
 
-    QueryResult *resultlvl = CharacterDatabase.PQuery("SELECT level,name FROM characters WHERE guid = '%lu'", guid);
+    QueryResult *resultlvl = CharacterDatabase.PQuery("SELECT level,name FROM characters WHERE guid = '%u'", guid.GetCounter());
     if (resultlvl)
     {
         Field *fields = resultlvl->Fetch();
@@ -1008,7 +1008,7 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
             SetSentErrorMessage(true);
             return false;
         }
-        CharacterDatabase.DirectPExecute("UPDATE characters SET online = 1 WHERE guid = '%lu'", guid);
+        CharacterDatabase.DirectPExecute("UPDATE characters SET online = 1 WHERE guid = '%u'", guid.GetCounter());
         mgr->LoginPlayerBot(guid);
         PSendSysMessage("Bot added successfully.");
     }
@@ -1020,7 +1020,7 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
             SetSentErrorMessage(true);
             return false;
         }
-        CharacterDatabase.DirectPExecute("UPDATE characters SET online = 0 WHERE guid = '%lu'", guid);
+        CharacterDatabase.DirectPExecute("UPDATE characters SET online = 0 WHERE guid = '%u'", guid.GetCounter());
         mgr->LogoutPlayerBot(guid);
         PSendSysMessage("Bot removed successfully.");
     }
