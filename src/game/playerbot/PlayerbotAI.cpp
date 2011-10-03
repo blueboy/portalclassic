@@ -2781,20 +2781,35 @@ void PlayerbotAI::MovementReset()
 
     if (m_movementOrder == MOVEMENT_FOLLOW)
     {
-        if (!m_followTarget) return;
-
-        // target player is teleporting...
-        if (m_followTarget->GetTypeId() == TYPEID_PLAYER && ((Player *) m_followTarget)->IsBeingTeleported())
+        if (!m_followTarget)
             return;
 
-        // check if bot needs to teleport to reach target...
-        if (!m_bot->isInCombat())
+        WorldObject* distTarget = m_followTarget;   // target to distance check
+
+        // don't follow while in combat
+        if (m_bot->isInCombat())
+            return;
+
+        Player* pTarget;                            // target is player
+        if (m_followTarget->GetTypeId() == TYPEID_PLAYER)
+            pTarget = ((Player*) m_followTarget);
+
+        if (pTarget)
         {
-            if (m_followTarget->GetTypeId() == TYPEID_PLAYER && ((Player *) m_followTarget)->GetCorpse())
-            {
-                if (!FollowCheckTeleport(*((Player *) m_followTarget)->GetCorpse())) return;
-            }
-            else if (!FollowCheckTeleport(*m_followTarget)) return;
+            // check player for follow situations
+            if (pTarget->IsBeingTeleported() || pTarget->IsTaxiFlying())
+                return;
+
+            // use player's corpse as distance check target
+            if (pTarget->GetCorpse())
+                distTarget = pTarget->GetCorpse();
+        }
+
+        // is bot too far from the follow target
+        if (!m_bot->IsWithinDistInMap(distTarget, 50))
+        {
+            DoTeleport(*m_followTarget);
+            return;
         }
 
         if (m_bot->isAlive())
@@ -2968,7 +2983,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
                 return;
             // teleport ghost from graveyard to corpse
             // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - Teleport %s to corpse...", m_bot->GetName() );
-            FollowCheckTeleport(*corpse);
+            DoTeleport(*corpse);
             // check if we are allowed to resurrect now
             if ((corpse->GetGhostTime() + m_bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP)) > time(NULL))
             {
@@ -4525,20 +4540,15 @@ bool PlayerbotAI::TradeCopper(uint32 copper)
     return false;
 }
 
-bool PlayerbotAI::FollowCheckTeleport(WorldObject &obj)
+bool PlayerbotAI::DoTeleport(WorldObject &obj)
 {
-    // if bot has strayed too far from the master, teleport bot
-
-    if (!m_bot->IsWithinDistInMap(&obj, 50, true) && GetMaster()->isAlive() && !GetMaster()->IsTaxiFlying())
+    m_ignoreAIUpdatesUntilTime = time(0) + 6;
+    PlayerbotChatHandler ch(GetMaster());
+    if (!ch.teleport(*m_bot))
     {
-        m_ignoreAIUpdatesUntilTime = time(0) + 6;
-        PlayerbotChatHandler ch(GetMaster());
-        if (!ch.teleport(*m_bot))
-        {
-            ch.sysmessage(".. could not be teleported ..");
-            // DEBUG_LOG ("[PlayerbotAI]: FollowCheckTeleport - %s failed to teleport", m_bot->GetName() );
-            return false;
-        }
+        ch.sysmessage(".. could not be teleported ..");
+        // DEBUG_LOG ("[PlayerbotAI]: DoTeleport - %s failed to teleport", m_bot->GetName() );
+        return false;
     }
     return true;
 }
