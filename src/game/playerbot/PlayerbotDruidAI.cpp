@@ -68,6 +68,11 @@ PlayerbotDruidAI::PlayerbotDruidAI(Player* const master, Player* const bot, Play
 
 PlayerbotDruidAI::~PlayerbotDruidAI() {}
 
+bool PlayerbotDruidAI::DoFirstCombatManeuver(Unit *pTarget)
+{
+    return false;
+}
+
 bool PlayerbotDruidAI::HealTarget(Unit *target)
 {
     PlayerbotAI* ai = GetAI();
@@ -103,6 +108,20 @@ bool PlayerbotDruidAI::HealTarget(Unit *target)
     return false;
 } // end HealTarget
 
+bool PlayerbotDruidAI::IsFeral()
+{
+    if (MOONKIN_FORM > 0)
+        return true;
+    else if (DIRE_BEAR_FORM > 0)
+        return true;
+    else if (BEAR_FORM > 0)
+        return true;
+    else if (CAT_FORM > 0)
+        return true;
+    else
+        return false;
+}
+
 void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
 {
     PlayerbotAI* ai = GetAI();
@@ -118,24 +137,17 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
 
     uint32 masterHP = GetMaster()->GetHealth() * 100 / GetMaster()->GetMaxHealth();
 
-    ai->SetInFront(pTarget);
     Player *m_bot = GetPlayerBot();
     Unit* pVictim = pTarget->getVictim();
 
-    if (pVictim && ai->GetHealthPercent() >= 40 && GetMaster()->GetHealth() >= GetMaster()->GetMaxHealth() * 0.4)
-    {
-        if (pVictim == m_bot)
-            SpellSequence = DruidTank;
-    }
-    else if (pTarget->GetHealth() > pTarget->GetMaxHealth() * 0.8 && pVictim)
-    {
-        if (pVictim != m_bot)
-            SpellSequence = DruidSpell;
-    }
-    else if (ai->GetHealthPercent() <= 40 || GetMaster()->GetHealth() <= GetMaster()->GetMaxHealth() * 0.4)
+    if (ai->GetCombatOrder() == PlayerbotAI::ORDERS_HEAL) // && ai->GetMovementOrder() == PlayerbotAI::MOVEMENT_STAY)
         SpellSequence = DruidHeal;
-    else
+    else if (IsFeral() && ai->GetCombatOrder() == PlayerbotAI::ORDERS_ASSIST) // && ai->GetMovementOrder() == PlayerbotAI::MOVEMENT_STAY)
         SpellSequence = DruidCombat;
+    else if (IsFeral() && ai->GetCombatOrder() == PlayerbotAI::ORDERS_TANK)
+        SpellSequence = DruidTank;
+    else
+        SpellSequence = DruidSpell;
 
     switch (SpellSequence)
     {
@@ -144,7 +156,7 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
 
             if (!m_bot->HasInArc(M_PI_F, pTarget))
             {
-                m_bot->SetInFront(pTarget);
+                m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
                 if (pVictim)
                     pVictim->Attack(pTarget, true);
             }
@@ -430,7 +442,7 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
             //ai->TellMaster("DruidCombat");
             if (!m_bot->HasInArc(M_PI_F, pTarget))
             {
-                m_bot->SetInFront(pTarget);
+                m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
                 if (pVictim)
                     pVictim->Attack(pTarget, true);
             }
@@ -454,6 +466,12 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
             }
             if (CAT_FORM > 0 && !m_bot->HasAura(CAT_FORM, EFFECT_INDEX_0))
                 ai->CastSpell (CAT_FORM);
+/*
+            if (COWER > 0 && m_bot->GetComboPoints() == 1 && ai->GetEnergyAmount() >= 20)
+            {
+                ai->CastSpell(COWER);
+                //ai->TellMaster("Cower");
+            }*/
             if (MAIM > 0 && m_bot->GetComboPoints() >= 1 && pTarget->IsNonMeleeSpellCasted(true))
             {
                 ai->CastSpell(MAIM, *pTarget);
@@ -577,14 +595,18 @@ void PlayerbotDruidAI::DoNonCombatActions()
     if (master->GetGroup())
     {
         // Buff master with group buff
-        if (master->isAlive() && GIFT_OF_THE_WILD && ai->HasSpellReagents(GIFT_OF_THE_WILD) && ai->Buff(GIFT_OF_THE_WILD, master))
-            return;
+        if (!master->IsInDuel(master))
+            if (master->isAlive() && GIFT_OF_THE_WILD && ai->HasSpellReagents(GIFT_OF_THE_WILD) && ai->Buff(GIFT_OF_THE_WILD, master))
+                return;
 
         Group::MemberSlotList const& groupSlot = GetMaster()->GetGroup()->GetMemberSlots();
         for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
         {
             Player *tPlayer = sObjectMgr.GetPlayer(itr->guid);
             if (!tPlayer || tPlayer == m_bot)
+                continue;
+
+            if (tPlayer->IsInDuelWith(master))
                 continue;
 
             // Resurrect member if needed
@@ -613,6 +635,9 @@ void PlayerbotDruidAI::DoNonCombatActions()
     }
     else
     {
+        if (master->IsInDuel(master))
+            return;
+
         if (master->isAlive())
         {
             if (BuffPlayer(master))

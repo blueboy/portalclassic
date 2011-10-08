@@ -35,7 +35,7 @@ PlayerbotMgr::~PlayerbotMgr()
     LogoutAllBots();
 }
 
-void PlayerbotMgr::UpdateAI(const uint32 p_time) {}
+void PlayerbotMgr::UpdateAI(const uint32 /*p_time*/) {}
 
 void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 {
@@ -371,31 +371,47 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
         } /* EMOTE ends here */
 
         case CMSG_GAMEOBJ_USE: // not sure if we still need this one
-//        case CMSG_GAMEOBJ_REPORT_USE:
         {
+            DEBUG_LOG("PlayerbotMgr: CMSG_GAMEOBJ_USE");
+
             WorldPacket p(packet);
             p.rpos(0);     // reset reader
             ObjectGuid objGUID;
             p >> objGUID;
 
-            GameObject *obj = m_master->GetMap()->GetGameObject(objGUID);
-            if (!obj)
-                return;
-
             for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
             {
                 Player* const bot = it->second;
 
-                if (obj->GetGoType() == GAMEOBJECT_TYPE_QUESTGIVER)
-                    bot->GetPlayerbotAI()->TurnInQuests(obj);
+                GameObject *obj = m_master->GetMap()->GetGameObject(objGUID);
+                if (!obj)
+                    return;
+
                 // add other go types here, i.e.:
                 // GAMEOBJECT_TYPE_CHEST - loot quest items of chest
+                if (obj->GetGoType() == GAMEOBJECT_TYPE_QUESTGIVER)
+                {
+                    bot->GetPlayerbotAI()->TurnInQuests(obj);
+
+                    // auto accept every available quest this NPC has
+                    bot->PrepareQuestMenu(objGUID);
+                    QuestMenu& questMenu = bot->PlayerTalkClass->GetQuestMenu();
+                    for (uint32 iI = 0; iI < questMenu.MenuItemCount(); ++iI)
+                    {
+                        QuestMenuItem const& qItem = questMenu.GetItem(iI);
+                        uint32 questID = qItem.m_qId;
+                        if (!bot->GetPlayerbotAI()->AddQuest(questID, obj))
+                            DEBUG_LOG("Couldn't take quest");
+                    }
+                }
             }
         }
         break;
 
         case CMSG_QUESTGIVER_HELLO:
         {
+            DEBUG_LOG("PlayerbotMgr: CMSG_QUESTGIVER_HELLO");
+
             WorldPacket p(packet);
             p.rpos(0);    // reset reader
             ObjectGuid npcGUID;
@@ -422,10 +438,10 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
             p.rpos(0);    // reset reader
             ObjectGuid guid;
             uint32 quest;
-            // uint32 unk1;
-            p >> guid >> quest; // >> unk1;
+            uint32 unk1;
+            p >> guid >> quest >> unk1;
 
-            // DEBUG_LOG ("[PlayerbotMgr]: HandleMasterIncomingPacket - Received CMSG_QUESTGIVER_ACCEPT_QUEST npc = %s, quest = %u, unk1 = %u", guid.GetString().c_str(), quest, unk1);
+            DEBUG_LOG ("[PlayerbotMgr]: HandleMasterIncomingPacket - Received CMSG_QUESTGIVER_ACCEPT_QUEST npc = %s, quest = %u, unk1 = %u", guid.GetString().c_str(), quest, unk1);
 
             Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
             if (qInfo)
@@ -455,9 +471,17 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 
                         // build needed items if quest contains any
                         for (int i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; i++)
-                            if (qInfo->ReqItemCount[i]>0)
+                            if (qInfo->ReqItemCount[i] > 0)
                             {
                                 bot->GetPlayerbotAI()->SetQuestNeedItems();
+                                break;
+                            }
+
+                        // build needed creatures if quest contains any
+                        for (int i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
+                            if (qInfo->ReqCreatureOrGOCount[i] > 0)
+                            {
+                                bot->GetPlayerbotAI()->SetQuestNeedCreatures();
                                 break;
                             }
                     }
@@ -517,7 +541,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
             for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
             {
 
-                uint32 choice = urand(0, 3);    //returns 0,1,2 or 3
+                uint32 choice;
 
                 Player* const bot = it->second;
                 if (!bot)
@@ -527,8 +551,9 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                 if (!group)
                     return;
 
-                group->CountRollVote(bot, Guid, NumberOfPlayers, RollVote(choice));
+                (bot->GetPlayerbotAI()->CanStore()) ? choice = urand(0, 3) : choice = 0;  // pass = 0, need = 1, greed = 2, disenchant = 3
 
+                group->CountRollVote(bot, Guid, NumberOfPlayers, RollVote(choice));
             }
             return;
         }
@@ -631,12 +656,12 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
             ObjectGuid npcGUID;
             p >> npcGUID;
 
-            Object* const pNpc = (WorldObject*) m_master->GetObjectByTypeMask(npcGUID, TYPEMASK_CREATURE_OR_GAMEOBJECT);
+            Object* const pNpc = (WorldObject *) m_master->GetObjectByTypeMask(npcGUID, TYPEMASK_CREATURE_OR_GAMEOBJECT);
             if (!pNpc)
                 return;
 
             // for all master's bots
-            for(PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+            for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
             {
                 Player* const bot = it->second;
                 if (!bot->IsInMap(static_cast<WorldObject *>(pNpc)))
@@ -650,8 +675,8 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
             return;
         }
 
-
-/*               case CMSG_NAME_QUERY:
+            /*
+               case CMSG_NAME_QUERY:
                case MSG_MOVE_START_FORWARD:
                case MSG_MOVE_STOP:
                case MSG_MOVE_SET_FACING:
@@ -663,7 +688,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                case CMSG_STANDSTATECHANGE:
                case CMSG_QUERY_TIME:
                case CMSG_CREATURE_QUERY:
-               // case CMSG_GAMEOBJECT_QUERY:
+               case CMSG_GAMEOBJECT_QUERY:
                case MSG_MOVE_JUMP:
                case MSG_MOVE_FALL_LAND:
                 return;
@@ -671,17 +696,18 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                default:
                {
                 const char* oc = LookupOpcodeName(packet.GetOpcode());
-                ChatHandler ch(m_master);
-                ch.SendSysMessage(oc);
+                // ChatHandler ch(m_master);
+                // ch.SendSysMessage(oc);
 
                 std::ostringstream out;
                 out << "masterin: " << oc;
                 sLog.outError(out.str().c_str());
-               }      */
+               }
+             */
     }
 }
 
-void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
+void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& /*packet*/)
 {
     /*
        switch (packet.GetOpcode())
@@ -929,6 +955,7 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
 
     char *cmd = strtok ((char *) args, " ");
     char *charname = strtok (NULL, " ");
+
     if (!cmd || !charname)
     {
         PSendSysMessage("|cffff0000usage: add PLAYERNAME  or  remove PLAYERNAME");
@@ -980,8 +1007,8 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
                 delete resultchar;
                 return false;
             }
+        delete resultchar;
     }
-    delete resultchar;
 
     QueryResult *resultlvl = CharacterDatabase.PQuery("SELECT level,name FROM characters WHERE guid = '%u'", guid.GetCounter());
     if (resultlvl)
@@ -997,8 +1024,9 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
                 delete resultlvl;
                 return false;
             }
+        delete resultlvl;
     }
-    delete resultlvl;
+
     // end of gmconfig patch
     if (cmdStr == "add" || cmdStr == "login")
     {

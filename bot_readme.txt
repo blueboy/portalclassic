@@ -13,68 +13,77 @@ Commands:
 =========
 
 /s .bot add BOTNAME (add character to world)
-/s .bot remove BOTNAME
-/s .bot co|combatorder BOTNAME COMBATORDER [TARGET]
+/s .bot remove BOTNAME (remove character from world)
+/s .bot co|combatorder BOTNAME COMBATORDER [TARGET] (TANK | ASSIST | PROTECT | HEAL)
 /invite BOTNAME (bot will auto accept invite)
+/uninvite BOTNAME (bot will auto accept uninvite)
 /t BOTNAME attack (bot will attack selected target, similar to the way a pet can attack)
 /t BOTNAME follow (orders bot to follow player; will also revive bot if dead or teleport bot if far away)
-/t BOTNAME stay
-/t BOTNAME assist (you'll need to be attacking something and the bot only does melee atm)
+/t BOTNAME stay (orders bot to not follow player and stand still)
 /t BOTNAME spells (replies with all spells known to bot)
-/t BOTNAME cast <SPELLID | (part of) SPELLNAME | SPELLLINK>
-/t BOTNAME use <ITEM LINK>
-/t BOTNAME equip <ITEM LINK>
+/t BOTNAME cast <SPELLID | (part of) SPELLNAME | [SPELLLINK]>
+/t BOTNAME use [ITEM LINK] (use a specified item i.e quest item, food or drink etc..)
+/t BOTNAME equip [ITEM LINK] (equip a specified item i.e. weapon, armour, bag etc..)
 /t BOTNAME reset (will reset states, orders and loot list)
-/t BOTNAME report (bot reports all items needed to finish quests)
+/t BOTNAME report (bot reports all items, creatures or gameobjects needed to finish quests)
 /t BOTNAME stats (bot shows available money, free inventory space and estimated item repair costs)
 /t BOTNAME survey (bot shows all available gameobjects, within a local perimeter around the bot)
-/t BOTNAME find <GAMEOBJECT LINK> (bot will travel to the gameobject location and then wait)
-/t BOTNAME get <GAMEOBJECT LINK> (bot will fetch the selected gameobject and then return to the player)
-/t BOTNAME quests (List bot's current quests)
-/t BOTNAME drop <QUESTLINK> (Drop a quest)
+/t BOTNAME find [GAMEOBJECT LINK] (bot will travel to the gameobject location and then wait)
+/t BOTNAME get [GAMEOBJECT LINK] (bot will fetch the selected gameobject and then return to the player)
+/t BOTNAME quest (Shows bot's current quests)
+/t BOTNAME quest <(a)dd> [QUESTLINK] (Adds a quest)
+/t BOTNAME quest <(d)rop> [QUESTLINK] (Drop a quest)
+/t BOTNAME quest <(e)nd> (Turns in a completed quest)
+/t BOTNAME quest <(l)ist> (Shows new quests offered by questgiver)
 /t BOTNAME orders (Shows bot's combat orders)
 /t BOTNAME pet spells (Shows spells known to bot's pet. Autocast spells will be shown in green)
-/t BOTNAME pet cast <SPELLID | (part of) SPELLNAME | SPELLLINK>
-/t BOTNAME pet toggle <SPELLID | (part of) SPELLNAME | SPELLLINK> (Toggle autocast for a given spell)
+/t BOTNAME pet cast <SPELLID | (part of) SPELLNAME | [SPELLLINK]>
+/t BOTNAME pet toggle <SPELLID | (part of) SPELLNAME | [SPELLLINK]> (Toggle autocast for a given spell)
 /t BOTNAME pet state (Shows current react mode of bot's pet)
 /t BOTNAME pet react <(a)ggressive | (d)efensive | (p)assive> (Set bot's pet reaction mode)
 /t BOTNAME collect (shows collect subcommand options and current collect status)
 /t BOTNAME collect <subcommand(s)> (subcommands can be alone or together [none combat loot objects profession quest])
-/t BOTNAME auction (list active bot auctions with <AUCTION LINK>)
-/t BOTNAME auction add <ITEM LINK> (creates bot auction)
-/t BOTNAME auction remove <AUCTION LINK> (cancels bot auction)
-/t BOTNAME bank (lists all items in bot bank)
-/t BOTNAME bank deposit (put bot item in bot bank account)
-/t BOTNAME bank withdraw (take bot item from bot bank account)
-/t BOTNAME sell <ITEM LINK> (sell bot item to vendor)
-/t BOTNAME repair all (repairs all damaged bot items)
-/t BOTNAME repair <ITEM LINK> (repairs specific bot item)
-/t BOTNAME skill (lists all <PROFESSION LINK> bot Primary profession skills)
-/t BOTNAME skill train (lists <TRAINING LINK> available class, weapon & profession (Primary or Secondary) skills & spells, from selected trainer)
-/t BOTANME skill learn <TRAINING LINK> (learn selected skill or spell, from selected trainer)
-/t BOTNAME skill unlearn <PROFESSION LINK> (unlearn selected primary profession skill & all associated spells)
+/t BOTNAME sell [ITEM LINK] (bot will add item to it's m_itemIds, for later sale)
+/t BOTNAME auction (bot will display all it's active owned auctions. Auction info will include an [AUCTION LINK] )
+/t BOTNAME auction add [ITEM LINK] (bot will add item to it's m_itemIds, for later auction)
+/t BOTNAME auction remove [AUCTION LINK] (bot will add auctionid to it's m_auctions, for later auction cancellation)
+/t BOTNAME repair [ITEM LINK] (bot will seek out armourer and repair selected items specified by [ITEM LINK] )
+/t BOTNAME repair all (bot(s) will seek out armourer and repair all damaged items equipped, or in bags )
+/t BOTNAME bank  (Lists bot(s) bank balance)
+/t BOTNAME bank deposit [Item Link][Item Link] .. (Deposit item(s) in bank)
+/t BOTNAME bank withdraw [Item Link][Item Link] ..  (Withdraw item(s) from bank. ([Item Link] from bank))
+/t BOTNAME skill (lists all [PROFESSION LINK] bot Primary profession skills)
+/t BOTNAME skill train (lists [TRAINING LINK] available class, weapon & profession (Primary or Secondary) skills & spells, from selected trainer)
+/t BOTANME skill learn [TRAINING LINK] (learn selected skill or spell, from selected trainer)
+/t BOTNAME skill unlearn [PROFESSION LINK] (unlearn selected primary profession skill & all associated spells)
 
 Shortcuts:
-a = auction
-b = bank
 c = cast
-d = drop
 e = equip
 f = find
 g = get
-h = help
-p = pet
-r = repair
 s = sell
-u = use
 
 Gameobject interaction with bots:
 =================================
 
-  The bot(s) can now interact with gameobjects. This is particularly useful, in order to complete 'gather' type
-  quests (e.g Milly's harvest in Northshire). The bot(s) can also now, harvest 'ore deposits' and 'herbs'
+  The bot(s) can interact with gameobjects. This is particularly useful, in order to complete 'gather' type
+  quests (e.g Milly's harvest in Northshire). The bot(s) can also harvest 'ore deposits' and 'herbs'
 
-  Three new commands have been introduced 'survey, 'find' & 'get', to facilitate this new feature.
+  Four commands have been introduced 'collect', 'survey, 'find' & 'get', to facilitate this feature.
+
+  The 'collect' command provides a way to have a bot automatically get loot or objects in the world.
+  The command by itself gives you a display of what settings the bots have. Defaults are stored in
+  the playerbot.conf. The subcommands do the actual work:
+    combat - bot will loot after combat for the options that are set
+    loot - bot will grab all loot available from corpse
+    quest - bot will grab all quest items on corpse
+    profession - bot will grab any profession related item that the bot has from corpse
+    skin - if you have skinning, and corpse has been looted, bot will skin corpse. Most of
+        the time you may want this option and the loot option enabled, but if you are grabbing
+        the stuff as you are going around, the bot will skin afterwards.
+    objects - bot will collect things that are specified by the survey and get <shift-click> commands
+    none - removes any collect options that have been set
 
   The 'survey' command provides the means for bot(s) to detect gameobjects in the world. It can be used to detect
   available gameobjects local to a single bot, or more effectively (wider area) those for a party of bots.
@@ -82,7 +91,7 @@ Gameobject interaction with bots:
   Suggestion: setup the 'survey' command as an assigned macro button, on the client (e.g /p survey). You can
   then quickly refresh the gameobject list.
 
-  Gameobject list <GAMEOBJECT LINK> (Currently bots can only interact with ore, herb and needed quest items)
+  Gameobject list [GAMEOBJECT LINK] (Currently bots can only interact with ore, herb and needed quest items)
   ---------------
 
   [Copper Vein][Silverleaf][Earthroot][Milly's Harvest][Battered Chest][Food Crate]
@@ -90,7 +99,7 @@ Gameobject interaction with bots:
   Then, use the 'find' or 'get' commands to interect with the gameobject.
 
   Using the gameobject list information, it is possible to locate and/or fetch each of the gameobjects. To select
-  a <GAMEOBJECT LINK>, hold down the shift key and click on the relevant link with your mouse.
+  a [GAMEOBJECT LINK], hold down the shift key and click on the relevant link with your mouse.
 
 Creature interaction with bots:
 ===============================
@@ -178,11 +187,11 @@ Also all commands can be broadcast to the party. For example:
 /p spells
 
 To use or equip items for your bot say:
-/w BOTNAME use <ITEMLINK1> <ITEMLINK2>
-/w BOTNAME equip <ITEMLINK1> <ITEMLINK2>
+/w BOTNAME use [ITEMLINK1][ITEMLINK2]
+/w BOTNAME equip [ITEMLINK1][ITEMLINK2]
 - OR -
-/w BOTNAME u <ITEMLINK1> <ITEMLINK2>
-/w BOTNAME e <ITEMLINK1> <ITEMLINK2>
+/w BOTNAME u [ITEMLINK1][ITEMLINK2]
+/w BOTNAME e [ITEMLINK1] [ITEMLINK2]
 
 If you inspect your bot, your bot will tell you what items you have in your inventory that you can equip. To create a link in the chat window, hold the shift key and press the left mouse button when clicking the link.
 
@@ -194,16 +203,16 @@ I added the following in SharedDefines.h.
 
 enum SpellCategory
 {
-       SPELL_CATEGORY_FOOD             = 11,
-       SPELL_CATEGORY_DRINK            = 59
+	SPELL_CATEGORY_FOOD             = 11,
+	SPELL_CATEGORY_DRINK            = 59
 };
 
 I also had to add the following to Player.h:
 
 enum PlayerStateType
 {
-       PLAYER_STATE_NONE              = 0,
-       PLAYER_STATE_SIT               = 1
+	PLAYER_STATE_NONE              = 0,
+	PLAYER_STATE_SIT               = 1
 };
 
 
@@ -220,9 +229,3 @@ Also see src/mangosd/mangosd.conf.dist for configuration variables!
     PlayerbotAI.FollowDistanceMax
         Min. and max. follow distance for bots
         Default: 0.5 / 1.0
-
-
-Some Problems:
-==============
-
-The bots don't always face in the right direction. Sometimes when a bot makes the kill, the corpse is not lootable. The mage bot sometimes get stuck when he begins to cast a spell (but this is corrected the next time he enters combat).
