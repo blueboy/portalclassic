@@ -5212,7 +5212,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                 TradeItem(**it);
         }
     }
+
     // Handle general commands
+
     else if (text == "reset")
     {
         SetState(BOTSTATE_NORMAL);
@@ -5396,7 +5398,6 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     else if (text.size() > 3 && text.substr(0, 3) == "use")
     {
         std::string part = "";
-
         part = text.substr(text.find("|"));
         std::list<uint32> itemIds;
         std::list<Item*> itemList;
@@ -5481,11 +5482,11 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                     SetState(BOTSTATE_LOOTING);
                 }
                 else
-                    TellMaster("Target is not lootable by me.");
+                    SendWhisper("Target is not lootable by me.", fromPlayer);
             }
             else
             {
-                TellMaster("No target is selected.");
+                SendWhisper("No target is selected.", fromPlayer);
                 m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
             }
         }
@@ -5548,7 +5549,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                 if (m_bot->HasSkill(SKILL_SKINNING))
                     collout += ", skin";
                 // TODO: perhaps change the command syntax, this way may be lacking in ease of use
-                TellMaster("Collect <what>?: all, none, combat, loot, quest, profession, objects" + collout);
+                SendWhisper("Collect <what>?: all, none, combat, loot, quest, profession, objects" + collout, fromPlayer);
                 break;
             }
             if (part == subcommand)
@@ -5597,9 +5598,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         }
 
         if (collset.length() > 1)
-            TellMaster("I'm collecting " + collset.substr(2));
+            SendWhisper("I'm collecting " + collset.substr(2), fromPlayer);
         else
-            TellMaster("I'm collecting nothing.");
+            SendWhisper("I'm collecting nothing.", fromPlayer);
     }
     // Handle bot quests
     else if (text.size() >= 5 && text.substr(0, 5) == "quest")
