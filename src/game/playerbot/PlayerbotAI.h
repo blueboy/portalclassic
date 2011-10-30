@@ -409,6 +409,7 @@ public:
     void BankBalance();
 
 private:
+    bool ExtractCommand(const std::string sLookingFor, std::string &text, bool bUseShort = false);
     // outsource commands for code clarity
     void _HandleCommandReset(std::string &text, Player &fromPlayer);
     void _HandleCommandReport(std::string &text, Player &fromPlayer);
@@ -432,6 +433,7 @@ private:
     void _HandleCommandSurvey(std::string &text, Player &fromPlayer);
     void _HandleCommandSkill(std::string &text, Player &fromPlayer);
     void _HandleCommandStats(std::string &text, Player &fromPlayer);
+    void _HandleCommandHelp(std::string &text, Player &fromPlayer);
 
     // ****** Closed Actions ********************************
     // These actions may only be called at special times.
