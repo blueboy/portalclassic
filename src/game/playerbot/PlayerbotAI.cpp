@@ -5223,77 +5223,71 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     else if (ExtractCommand("help", input))
         _HandleCommandHelp(input, fromPlayer);
 
-    else if (text == "reset")
+    else if (ExtractCommand("reset", input))
         _HandleCommandReset(input, fromPlayer);
-    else if (text == "report")
+    else if (ExtractCommand("report", input))
         _HandleCommandReport(input, fromPlayer);
-    else if (text == "orders")
+    else if (ExtractCommand("orders", input))
         _HandleCommandOrders(input, fromPlayer);
-    else if (text == "follow" || text == "come")
+    else if (ExtractCommand("follow", input) || ExtractCommand("come", input))
         _HandleCommandFollow(input, fromPlayer);
-    else if (text == "stay" || text == "stop")
+    else if (ExtractCommand("stay", input) || ExtractCommand("stop", input))
         _HandleCommandStay(input, fromPlayer);
-    else if (text == "attack")
+    else if (ExtractCommand("attack", input))
         _HandleCommandAttack(input, fromPlayer);
 
-    else if ((text.size() > 2 && text.substr(0, 2) == "c ") || (text.size() > 5 && text.substr(0, 5) == "cast "))
+    else if (ExtractCommand("cast", input, true)) // true -> "cast" OR "c"
         _HandleCommandCast(input, fromPlayer);
 
-    else if (text.size() > 5 && text.substr(0, 5) == "sell ")
+    else if (ExtractCommand("sell", input))
         _HandleCommandSell(input, fromPlayer);
 
-    else if (text.size() >= 6 && text.substr(0, 6) == "repair")
+    else if (ExtractCommand("repair", input))
         _HandleCommandRepair(input, fromPlayer);
 
-    else if (text.size() >= 7 && text.substr(0, 7) == "auction")
+    else if (ExtractCommand("auction", input))
         _HandleCommandAuction(input, fromPlayer);
 
-    else if (text.size() >= 4 && text.substr(0, 4) == "bank")
+    else if (ExtractCommand("bank", input))
         _HandleCommandBank(input, fromPlayer);
 
-    else if ((text.size() > 2 && text.substr(0, 2) == "u ") || (text.size() > 4 && text.substr(0, 4) == "use "))
+    else if (ExtractCommand("use", input, true)) // true -> "use" OR "u"
         _HandleCommandUse(input, fromPlayer);
 
-    else if ((text.size() > 2 && text.substr(0, 2) == "e ") || (text.size() > 6 && text.substr(0, 6) == "equip "))
+    else if (ExtractCommand("equip", input, true)) // true -> "equip" OR "e"
         _HandleCommandEquip(input, fromPlayer);
 
     // find project: 20:50 02/12/10 rev.4 item in world and wait until ordered to follow
-    else if ((text.size() > 2 && text.substr(0, 2) == "f ") || (text.size() > 5 && text.substr(0, 5) == "find "))
+    else if (ExtractCommand("find", input, true)) // true -> "find" OR "f"
         _HandleCommandFind(input, fromPlayer);
 
-    // TODO: merge this "g " with "g"
-    else if ((text.size() > 2 && text.substr(0, 2) == "g ") || (text.size() > 4 && text.substr(0, 4) == "get "))
-    {
-        extractGOinfo(text, m_lootTargets);
-        SetState(BOTSTATE_LOOTING);
-    }
     // get project: 20:50 02/12/10 rev.4 compact edition, handles multiple linked gameobject & improves visuals
-    else if (text == "g" || text == "get") // get a selected lootable corpse
+    else if (ExtractCommand("get", input, true)) // true -> "get" OR "g"
         _HandleCommandGet(input, fromPlayer);
 
     // Handle all collection related commands here
-    else if (text.size() >= 7 && text.substr(0, 7) == "collect")
+    else if (ExtractCommand("collect", input))
         _HandleCommandCollect(input, fromPlayer);
 
-    else if (text.size() >= 5 && text.substr(0, 5) == "quest")
+    else if (ExtractCommand("quest", input))
         _HandleCommandQuest(input, fromPlayer);
 
-    else if (text.size() > 4 && text.substr(0, 4) == "pet ")
+    else if (ExtractCommand("pet", input))
         _HandleCommandPet(input, fromPlayer);
 
-    else if (text == "spells")
+    else if (ExtractCommand("spells", input))
         _HandleCommandSpells(input, fromPlayer);
 
     // survey project: 20:50 02/12/10 rev.4 compact edition
-    else if (text == "survey")
+    else if (ExtractCommand("survey", input))
         _HandleCommandSurvey(input, fromPlayer);
 
     // Handle class & professions training:
-    else if (text.size() >= 5 && text.substr(0, 5) == "skill")
+    else if (ExtractCommand("skill", input))
         _HandleCommandStats(input, fromPlayer);
 
     // stats project: 11:30 15/12/10 rev.2 display bot statistics
-    else if (text == "stats")
+    else if (ExtractCommand("stats", input))
         _HandleCommandStats(input, fromPlayer);
 
     else
@@ -5346,7 +5340,8 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         }
         else
         {
-            std::string msg = "What? follow, stay, (c)ast <spellname>, spells, (e)quip <itemlink>, (u)se <itemlink>, drop <questlink>, report, quests, stats, collect";
+            // TODO: make this only in response to direct whispers (chatting in party chat can in fact be between humans)
+            std::string msg = "What? For a list of commands, ask for 'help'.";
             SendWhisper(msg, fromPlayer);
             m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
         }
@@ -5399,6 +5394,11 @@ bool PlayerbotAI::ExtractCommand(const std::string sLookingFor, std::string &tex
 
 void PlayerbotAI::_HandleCommandReset(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("reset does not have a subcommand.", fromPlayer);
+        return;
+    }
     SetState(BOTSTATE_NORMAL);
     MovementReset();
     SetQuestNeedItems();
@@ -5407,30 +5407,56 @@ void PlayerbotAI::_HandleCommandReset(std::string &text, Player &fromPlayer)
     m_lootTargets.clear();
     m_lootCurrent = ObjectGuid();
     m_targetCombat = 0;
+    ClearActiveTalentSpec();
 }
 
 void PlayerbotAI::_HandleCommandReport(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("report cannot have a subcommand.", fromPlayer);
+        return;
+    }
     SendQuestNeedList();
 }
 
 void PlayerbotAI::_HandleCommandOrders(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("orders cannot have a subcommand.", fromPlayer);
+        return;
+    }
     SendOrders(*GetMaster());
 }
 
 void PlayerbotAI::_HandleCommandFollow(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("follow cannot have a subcommand.", fromPlayer);
+        return;
+    }
     SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
 }
 
 void PlayerbotAI::_HandleCommandStay(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("stay cannot have a subcommand.", fromPlayer);
+        return;
+    }
     SetMovementOrder(MOVEMENT_STAY);
 }
 
 void PlayerbotAI::_HandleCommandAttack(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("attack cannot have a subcommand.", fromPlayer);
+        return;
+    }
     ObjectGuid attackOnGuid = fromPlayer.GetSelectionGuid();
     if (attackOnGuid)
     {
@@ -5447,9 +5473,13 @@ void PlayerbotAI::_HandleCommandAttack(std::string &text, Player &fromPlayer)
 
 void PlayerbotAI::_HandleCommandCast(std::string &text, Player &fromPlayer)
 {
-    // DEBUG_LOG("Selected link : %s", text.c_str());
+    if (text == "")
+    {
+        SendWhisper("cast must be used with a single spell link (shift + click the spell).", fromPlayer);
+        return;
+    }
 
-    std::string spellStr = text.substr(text.find(" ") + 1);
+    std::string spellStr = text;
     uint32 spellId = (uint32) atol(spellStr.c_str());
 
     // try and get spell ID by name
@@ -5480,6 +5510,12 @@ void PlayerbotAI::_HandleCommandCast(std::string &text, Player &fromPlayer)
 // sell [Item Link][Item Link] .. -- Sells bot(s) items from inventory
 void PlayerbotAI::_HandleCommandSell(std::string &text, Player &fromPlayer)
 {
+
+    if (text == "")
+    {
+        SendWhisper("sell must be used with one or more item links (shift + click the item).", fromPlayer);
+        return;
+    }
 /*    enum NPCFlags VENDOR_MASK = (enum NPCFlags) (UNIT_NPC_FLAG_VENDOR
                                                     | UNIT_NPC_FLAG_VENDOR_AMMO
                                                     | UNIT_NPC_FLAG_VENDOR_FOOD
@@ -5499,25 +5535,24 @@ void PlayerbotAI::_HandleCommandSell(std::string &text, Player &fromPlayer)
 // repair [Item Link][Item Link] .. -- repair select bot(s) items
 void PlayerbotAI::_HandleCommandRepair(std::string &text, Player &fromPlayer)
 {
-    std::string part = "";
-    std::string subcommand = "";
-
-    if (text.size() >= 6 && text.substr(0, 7) == "repair ")
-        part = text.substr(7);  // Truncate 'repair ' part
-
-    if (part.find(" ") > 0)
-        subcommand = part.substr(0, part.find(" "));
+    if (ExtractCommand("all", text))
+    {
+        if (text != "")
+        {
+            SendWhisper("Invalid subcommand for 'repair all'", fromPlayer);
+            return;
+        }
+        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR_ITEMS, 0));
+        m_findNPC.push_back(UNIT_NPC_FLAG_REPAIR);
+        return;
+    }
 
     std::list<uint32> itemIds;
-    extractItemIds(part, itemIds);
+    extractItemIds(text, itemIds);
+
     for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
     {
         m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR, *it));
-        m_findNPC.push_back(UNIT_NPC_FLAG_REPAIR);
-    }
-    if (itemIds.empty() && subcommand == "all")
-    {
-        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR, 0));
         m_findNPC.push_back(UNIT_NPC_FLAG_REPAIR);
     }
 }
@@ -5529,41 +5564,30 @@ void PlayerbotAI::_HandleCommandRepair(std::string &text, Player &fromPlayer)
 // auction remove [Auction Link][Auction Link] .. -- Cancel bot(s) active auction. ([Auction Link] from auction)
 void PlayerbotAI::_HandleCommandAuction(std::string &text, Player &fromPlayer)
 {
-    std::string part = "";
-    std::string subcommand = "";
-    if (text.size() > 7 && text.substr(0, 8) == "auction ")
-        part = text.substr(8);  // Truncate 'auction ' part
-    if (part.find(" ") > 0)
+    if (text == "")
     {
-        subcommand = part.substr(0, part.find(" "));
-        if (part.size() > subcommand.size())
-            part = part.substr(subcommand.size() + 1);
+        m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER); // list all bot auctions
+    }
+    else if (ExtractCommand("add",text))
+    {
+        std::list<uint32> itemIds;
+        extractItemIds(text, itemIds);
+        for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(ADD_AUCTION, *it));
+        m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
+    }
+    else if (ExtractCommand("remove",text))
+    {
+        std::list<uint32> auctionIds;
+        extractAuctionIds(text, auctionIds);
+        for (std::list<uint32>::iterator it = auctionIds.begin(); it != auctionIds.end(); ++it)
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REMOVE_AUCTION, *it));
+        m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
     }
     else
-        subcommand = part;
-        
-    if (subcommand == "add" || subcommand == "remove")
     {
-        if (subcommand == "add")
-         {
-            std::list<uint32> itemIds;
-            extractItemIds(part, itemIds);
-            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
-                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(ADD, *it));
-            m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
-         }
-
-        if (subcommand == "remove")
-        {
-            std::list<uint32> auctionIds;
-            extractAuctionIds(part, auctionIds);
-            for (std::list<uint32>::iterator it = auctionIds.begin(); it != auctionIds.end(); ++it)
-                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REMOVE, *it));
-            m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
-        }
-     }
-    else // list all bot auctions
-        m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
+        SendWhisper("I don't understand what you're trying to do", fromPlayer);
+    }
 }
 
 // _HandleCommandBank: Handle bank:
@@ -5572,40 +5596,30 @@ void PlayerbotAI::_HandleCommandAuction(std::string &text, Player &fromPlayer)
 // bank withdraw [Item Link][Item Link] ..     -- Withdraw item(s) from bank. ([Item Link] from bank)
 void PlayerbotAI::_HandleCommandBank(std::string &text, Player &fromPlayer)
 {
-    std::string part = "";
-    std::string subcommand = "";
-    if (text.size() > 4 && text.substr(0, 5) == "bank ")
-        part = text.substr(5);  // Truncate 'bank ' part
-    if (part.find(" ") > 0)
+    if (text == "")
     {
-        subcommand = part.substr(0, part.find(" "));
-        if (part.size() > subcommand.size())
-            part = part.substr(subcommand.size() + 1);
+        m_findNPC.push_back(UNIT_NPC_FLAG_BANKER); // list all bot balance
+    }
+    else if (ExtractCommand("deposit", text))
+    {
+        std::list<uint32> itemIds;
+        extractItemIds(text, itemIds);
+        for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(BANK_DEPOSIT, *it));
+        m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
+    }
+    else if (ExtractCommand("withdraw", text))
+    {
+        std::list<uint32> itemIds;
+        extractItemIds(text, itemIds);
+        for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(BANK_WITHDRAW, *it));
+        m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
     }
     else
-        subcommand = part;
-
-    if (subcommand == "deposit" || subcommand == "withdraw")
     {
-        if (subcommand == "deposit")
-         {
-            std::list<uint32> itemIds;
-            extractItemIds(part, itemIds);
-            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
-                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(DEPOSIT, *it));
-            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
-         }
-        if (subcommand == "withdraw")
-         {
-            std::list<uint32> itemIds;
-            extractItemIds(part, itemIds);
-            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
-                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(WITHDRAW, *it));
-            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
-         }
-     }
-    else // list all bot balance
-        m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
+        SendWhisper("I don't understand what you're trying to do", fromPlayer);
+    }
 }
 
 void PlayerbotAI::_HandleCommandUse(std::string &text, Player &fromPlayer)
@@ -5660,6 +5674,14 @@ void PlayerbotAI::_HandleCommandFind(std::string &text, Player &fromPlayer)
  
 void PlayerbotAI::_HandleCommandGet(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        extractGOinfo(text, m_lootTargets);
+        SetState(BOTSTATE_LOOTING);
+        return;
+    }
+
+    // get a selected lootable corpse
     ObjectGuid getOnGuid = fromPlayer.GetSelectionGuid();
     if (getOnGuid)
     {
@@ -5689,25 +5711,9 @@ void PlayerbotAI::_HandleCommandGet(std::string &text, Player &fromPlayer)
 
 void PlayerbotAI::_HandleCommandCollect(std::string &text, Player &fromPlayer)
 {
-    std::string part = "";
-    std::string subcommand = "";
- 
-    if (text.size() > 7 && text.substr(0, 8) == "collect ")
-        part = text.substr(8);  // Truncate 'collect ' part
- 
-    // TODO: possible infinite loop; usage looks rather suspicious - check this out
-    while (true)
+    while (text.size() > 0)
     {
-        if (part.find(" ") > 0)
-        {
-             subcommand = part.substr(0, part.find(" "));
-             if (part.size() > subcommand.size())
-                 part = part.substr(subcommand.size() + 1);
-        }
-        else
-             subcommand = part;
- 
-        if (subcommand == "all")
+        if (ExtractCommand("all", text))
         {
             SetCollectFlag(COLLECT_FLAG_COMBAT);
             SetCollectFlag(COLLECT_FLAG_LOOT);
@@ -5717,26 +5723,27 @@ void PlayerbotAI::_HandleCommandCollect(std::string &text, Player &fromPlayer)
             if (m_bot->HasSkill(SKILL_SKINNING))
                 SetCollectFlag(COLLECT_FLAG_SKIN);
         }
-        else if (subcommand == "combat")
+        if (ExtractCommand("combat", text))
             SetCollectFlag(COLLECT_FLAG_COMBAT);
-        else if (subcommand == "loot")
+        else if (ExtractCommand("loot", text))
             SetCollectFlag(COLLECT_FLAG_LOOT);
-        else if (subcommand == "quest")
+        else if (ExtractCommand("quest", text))
             SetCollectFlag(COLLECT_FLAG_QUEST);
-        else if (subcommand == "profession" || subcommand == "skill")
+        else if (ExtractCommand("profession", text) || ExtractCommand("skill", text))
             SetCollectFlag(COLLECT_FLAG_PROFESSION);
-        else if (subcommand == "skin" && m_bot->HasSkill(SKILL_SKINNING))
+        else if (ExtractCommand("skin", text) && m_bot->HasSkill(SKILL_SKINNING)) // removes skin even if bot does not have skill
             SetCollectFlag(COLLECT_FLAG_SKIN);
-        else if (subcommand == "objects" || subcommand == "nearby")
+        else if (ExtractCommand("objects", text) || ExtractCommand("nearby", text))
         {
             SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
             if (!HasCollectFlag(COLLECT_FLAG_NEAROBJECT))
                 m_collectObjects.clear();
         }
-        else if (subcommand == "none" || subcommand == "nothing")
+        else if (ExtractCommand("none", text) || ExtractCommand("nothing", text))
         {
             m_collectionFlags = 0;
             m_collectObjects.clear();
+            break;  // because none is an exclusive choice
         }
         else
         {
@@ -5744,11 +5751,9 @@ void PlayerbotAI::_HandleCommandCollect(std::string &text, Player &fromPlayer)
             if (m_bot->HasSkill(SKILL_SKINNING))
                 collout += ", skin";
             // TODO: perhaps change the command syntax, this way may be lacking in ease of use
-            SendWhisper("Collect <what>?: none, combat, loot, quest, profession, objects" + collout, fromPlayer);
+            SendWhisper("Collect <collectable(s)>: none, combat, loot, quest, profession, objects" + collout, fromPlayer);
             break;
         }
-        if (part == subcommand)
-            break;
     }
 
     std::string collset = "";
@@ -5773,7 +5778,7 @@ void PlayerbotAI::_HandleCommandCollect(std::string &text, Player &fromPlayer)
         if (collset.length() > 1)
             collset += " and ";
         else
-            collset += "  ";    // padding for substr
+            collset += " ";    // padding for substr
         collset += "nearby objects (";
         if (!m_collectObjects.empty())
         {
@@ -5802,26 +5807,10 @@ void PlayerbotAI::_HandleCommandQuest(std::string &text, Player &fromPlayer)
 {
     std::ostringstream msg;
 
-    std::string part = "";
-    std::string subcommand = "";
-
-    if (text.size() > 5 && text.substr(0, 6) == "quest ")
-        part = text.substr(6);  // Truncate 'quest ' part
-
-    if (part.find(" ") != std::string::npos)
-    {
-        subcommand = part.substr(0, part.find(" "));
-        if (part.size() > subcommand.size())
-            part = part.substr(subcommand.size() + 1);
-
-    }
-    else
-        subcommand = part;
-
-    if (subcommand == "a" || subcommand == "add")
+    if (ExtractCommand("add", text, true)) // true -> "quest add" OR "quest a"
     {
         std::list<uint32> questIds;
-        extractQuestIds(part, questIds);
+        extractQuestIds(text, questIds);
         for (std::list<uint32>::iterator it = questIds.begin(); it != questIds.end(); it++)
         {
             m_tasks.push_back(std::pair<enum TaskFlags, uint32>(TAKE, *it));
@@ -5829,13 +5818,13 @@ void PlayerbotAI::_HandleCommandQuest(std::string &text, Player &fromPlayer)
         }
         m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
     }
-    else if (subcommand == "d" || subcommand == "drop")
+    else if (ExtractCommand("drop", text, true)) // true -> "quest drop" OR "quest d"
     {
         fromPlayer.SetSelectionGuid(m_bot->GetObjectGuid());
         PlayerbotChatHandler ch(GetMaster());
-        int8 linkStart = part.find("|");
-        if (part.find("|") != std::string::npos)
-            if (!ch.dropQuest((char *) part.substr(linkStart).c_str()))
+        int8 linkStart = text.find("|");
+        if (text.find("|") != std::string::npos)
+            if (!ch.dropQuest((char *) text.substr(linkStart).c_str()))
                 ch.sysmessage("ERROR: could not drop quest");
             else
             {
@@ -5843,12 +5832,12 @@ void PlayerbotAI::_HandleCommandQuest(std::string &text, Player &fromPlayer)
                 SetQuestNeedCreatures();
             }
     }
-    else if (subcommand == "l" || subcommand == "list")
+    else if (ExtractCommand("list", text, true)) // true -> "quest list" OR "quest l"
     {
         m_tasks.push_back(std::pair<enum TaskFlags, uint32>(LIST, 0));
         m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
     }
-    else if (subcommand == "e" || subcommand == "end")
+    else if (ExtractCommand("end", text, true)) // true -> "quest end" OR "quest e"
     {
         m_tasks.push_back(std::pair<enum TaskFlags, uint32>(END, 0));
         m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
@@ -5890,7 +5879,7 @@ void PlayerbotAI::_HandleCommandQuest(std::string &text, Player &fromPlayer)
         if (hasIncompleteQuests)
             SendWhisper(incomout.str(), fromPlayer);
         if (!hasCompleteQuests && !hasIncompleteQuests)
-            SendWhisper("I have no quests!", fromPlayer);
+            SendWhisper("I have no quests.", fromPlayer);
     }
 }
 
@@ -5902,30 +5891,26 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
         SendWhisper("I have no pet.", fromPlayer);
         return;
     }
- 
-    std::string part = text.substr(4); // Truncate `pet` part
-    std::string subcommand = part.substr(0, part.find(" "));
-    std::string argument;
-    bool argumentFound = false;
- 
-    if (part.find(" ") != std::string::npos)
-    {
-        argument = part.substr(part.find(" ") + 1);
-        if (argument.length() > 0)
-            argumentFound = true;
-    }
 
-    if (subcommand == "react" && argumentFound)
+    if (ExtractCommand("react", text))
     {
-        if (argument == "a" || argument == "aggressive")
+        if (ExtractCommand("aggressive", text, true))
             pet->GetCharmInfo()->SetReactState(REACT_AGGRESSIVE);
-        else if (argument == "d" || argument == "defensive")
+        else if (ExtractCommand("defensive", text, true))
             pet->GetCharmInfo()->SetReactState(REACT_DEFENSIVE);
-        else if (argument == "p" || argument == "passive")
+        else if (ExtractCommand("passive", text, true))
             pet->GetCharmInfo()->SetReactState(REACT_PASSIVE);
+        else
+            _HandleCommandHelp("pet react", fromPlayer);
     }
-    else if (subcommand == "state" && !argumentFound)
+    else if (ExtractCommand("state", text))
     {
+        if (text != "")
+        {
+            SendWhisper("'pet state' does not support subcommands.", fromPlayer);
+            return;
+        }
+
         std::string state;
         switch (pet->GetCharmInfo()->GetReactState())
         {
@@ -5939,15 +5924,21 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
                 SendWhisper("My pet is passive.", fromPlayer);
         }
     }
-    else if (subcommand == "cast" && argumentFound)
+    else if (ExtractCommand("cast", text))
     {
-        uint32 spellId = (uint32) atol(argument.c_str());
+        if (text == "")
+        {
+            _HandleCommandHelp("pet cast", fromPlayer);
+            return;
+        }
+
+        uint32 spellId = (uint32) atol(text.c_str());
 
         if (spellId == 0)
         {
-            spellId = getPetSpellId(argument.c_str());
+            spellId = getPetSpellId(text.c_str());
             if (spellId == 0)
-                extractSpellId(argument, spellId);
+                extractSpellId(text, spellId);
         }
 
         if (spellId != 0 && pet->HasSpell(spellId))
@@ -5963,15 +5954,21 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
             CastPetSpell(spellId, pTarget);
         }
     }
-    else if (subcommand == "toggle" && argumentFound)
+    else if (ExtractCommand("toggle", text))
     {
-        uint32 spellId = (uint32) atol(argument.c_str());
- 
+        if (text == "")
+        {
+            _HandleCommandHelp("pet toggle", fromPlayer);
+            return;
+        }
+
+        uint32 spellId = (uint32) atol(text.c_str());
+
         if (spellId == 0)
         {
-            spellId = getPetSpellId(argument.c_str());
+            spellId = getPetSpellId(text.c_str());
             if (spellId == 0)
-                extractSpellId(argument, spellId);
+                extractSpellId(text, spellId);
         }
 
         if (spellId != 0 && pet->HasSpell(spellId))
@@ -5990,8 +5987,14 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
             }
         }
     }
-    else if (subcommand == "spells" && !argumentFound)
+    else if (ExtractCommand("spells", text))
     {
+        if (text != "")
+        {
+            SendWhisper("'pet spells' does not support subcommands.", fromPlayer);
+            return;
+        }
+
         int loc = GetMaster()->GetSession()->GetSessionDbcLocale();
 
         std::ostringstream posOut;
@@ -6175,31 +6178,16 @@ void PlayerbotAI::_HandleCommandSurvey(std::string &text, Player &fromPlayer)
 
 // _HandleCommandSkill: Handle class & professions training:
 // skill                           -- Lists bot(s) Primary profession skills & weapon skills
-// skill train                     -- List available class or profession (Primary or Secondary) skills & spells, from selected trainer.
-// skill learn [HLINK][HLINK] ..   -- Learn selected skill and spells, from selected trainer ([HLINK] from skill train).
+// skill learn                     -- List available class or profession (Primary or Secondary) skills, spells & abilities from selected trainer.
+// skill learn [HLINK][HLINK] ..   -- Learn selected skill and spells, from selected trainer ([HLINK] from skill learn).
 // skill unlearn [HLINK][HLINK] .. -- Unlearn selected primary profession skill(s) and all associated spells ([HLINK] from skill)
 void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
 {
     uint32 rank[8] = {0, 75, 150, 225, 300, 375, 450, 525};
 
     std::ostringstream msg;
- 
-    std::string part = "";
-    std::string subcommand = "";
- 
-    if (text.size() > 5 && text.substr(0, 6) == "skill ")
-        part = text.substr(6);  // Truncate 'skill ' part
- 
-    if (part.find(" ") > 0)
-    {
-        subcommand = part.substr(0, part.find(" "));
-        if (part.size() > subcommand.size())
-            part = part.substr(subcommand.size() + 1);
-    }
-    else
-        subcommand = part;
 
-    if (subcommand == "train" || subcommand == "learn")
+    if (ExtractCommand("learn", text))
     {
         uint32 totalCost = 0;
 
@@ -6239,13 +6227,13 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
         float fDiscountMod =  m_bot->GetReputationPriceDiscount(creature);
  
         // Handle: Learning class or profession (primary or secondary) skill & spell(s) for selected trainer, skill learn [HLINK][HLINK][HLINK].. ([HLINK] from skill train)
-        if (subcommand == "learn")
+        if (text.size() > 0)
         {
-            msg << "I have learnt the following spells:\r";
+            msg << "I have learned the following spells:\r";
             uint32 totalSpellLearnt = 0;
             bool visuals = true;
             m_spellsToLearn.clear();
-            extractSpellIdList(part, m_spellsToLearn);
+            extractSpellIdList(text, m_spellsToLearn);
             for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); it++)
             {
                 uint32 spellId = *it;
@@ -6326,9 +6314,8 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                 msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
             msg << totalCost <<  "|r|cff95524Cc|r|cff00ff00 spent.";
         }
-        // Handle: List class or profession skill & spells for selected trainer, skill train
+        // Handle: List class or profession skills, spells & abilities for selected trainer
         else
-        if (subcommand == "train")
         {
             msg << "The spells I can learn and their cost:\r";
 
@@ -6408,14 +6395,13 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
         }
     }
     // Handle: Unlearning selected primary profession skill(s) and all associated spells, skill unlearn [HLINK][HLINK].. ([HLINK] from skill)
-    else
-    if (subcommand == "unlearn")
+    else if (ExtractCommand("unlearn", text))
     {
         m_spellsToLearn.clear();
-        extractSpellIdList(part, m_spellsToLearn);
+        extractSpellIdList(text, m_spellsToLearn);
         for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
         {
-            if (sSpellMgr.IsPrimaryProfessionSpell(*it) && subcommand != "learn")
+            if (sSpellMgr.IsPrimaryProfessionSpell(*it))
             {
                 SpellLearnSkillNode const* spellLearnSkill = sSpellMgr.GetSpellLearnSkill(*it);
                 uint32 prev_spell = sSpellMgr.GetPrevSpellInChain(*it);
@@ -6498,6 +6484,12 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
 
 void PlayerbotAI::_HandleCommandStats(std::string &text, Player &fromPlayer)
 {
+    if (text != "")
+    {
+        SendWhisper("'stats' does not have subcommands", fromPlayer);
+        return;
+    }
+
     std::ostringstream out;
 
     uint32 totalused = 0;

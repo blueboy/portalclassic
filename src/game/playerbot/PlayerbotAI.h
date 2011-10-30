@@ -434,6 +434,7 @@ private:
     void _HandleCommandSkill(std::string &text, Player &fromPlayer);
     void _HandleCommandStats(std::string &text, Player &fromPlayer);
     void _HandleCommandHelp(std::string &text, Player &fromPlayer);
+    void _HandleCommandHelp(const char* szText, Player &fromPlayer) { std::string text = szText; _HandleCommandHelp(text, fromPlayer); }
 
     // ****** Closed Actions ********************************
     // These actions may only be called at special times.
