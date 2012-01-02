@@ -509,7 +509,7 @@ bool PlayerbotAI::IsItemUseful(uint32 itemid)
 
     const static uint32 item_armor_skills[MAX_ITEM_SUBCLASS_ARMOR] =
     {
-        0, SKILL_CLOTH, SKILL_LEATHER, SKILL_MAIL, SKILL_PLATE_MAIL, 0, SKILL_SHIELD, 0, 0, 0, 0
+        0, SKILL_CLOTH, SKILL_LEATHER, SKILL_MAIL, SKILL_PLATE_MAIL, 0, SKILL_SHIELD, 0, 0, 0
     };
 
     ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
@@ -536,7 +536,7 @@ bool PlayerbotAI::IsItemUseful(uint32 itemid)
             if (pProto->SubClass >= MAX_ITEM_SUBCLASS_ARMOR)
                 return false;
             else
-                return m_bot->HasSkill(item_armor_skills[pProto->SubClass]);
+                return (m_bot->HasSkill(item_armor_skills[pProto->SubClass]) && !m_bot->HasSkill(item_armor_skills[pProto->SubClass+1]));
                 break;
         case ITEM_CLASS_QUEST:
             if (!HasCollectFlag(COLLECT_FLAG_QUEST))
