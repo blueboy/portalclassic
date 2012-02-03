@@ -101,6 +101,7 @@ public:
         ORDERS_TANK                 = 0x01,             // bind attackers by gaining threat
         ORDERS_ASSIST               = 0x02,             // assist someone (dps type)
         ORDERS_HEAL                 = 0x04,             // concentrate on healing (no attacks, only self defense)
+        ORDERS_NODISPEL             = 0x08,
         ORDERS_PROTECT              = 0x10,             // combinable state: check if protectee is attacked
         ORDERS_PRIMARY              = 0x0F,
         ORDERS_SECONDARY            = 0xF0,
