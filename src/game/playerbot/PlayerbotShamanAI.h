@@ -100,6 +100,10 @@ enum
 	// FIRE_ELEMENTAL_TOTEM uses spell effect index 2
 	// SEARING_TOTEM uses spell effect index 0
 	// EARTH_ELEMENTAL_TOTEM uses spell effect indexes 1 and 2
+
+	//Spec buffs
+	MAELSTROM_WEAPON_1				= 51532, //This is the final rank only, the spell family thing doesn't work so I decided to go with max only
+
 };
 //class Player;
 
@@ -120,64 +124,71 @@ private:
     // Heals the target based off its hps
     void HealTarget (Unit& target, uint8 hp);
     void DropTotems();
+	void CheckShields();
+	void UseCooldowns();
 
     // ENHANCEMENT
-    uint32 ROCKBITER_WEAPON, 
-		STONESKIN_TOTEM, 
-		LIGHTNING_SHIELD,
-		FLAMETONGUE_WEAPON, 
-		STRENGTH_OF_EARTH_TOTEM, 
-		FOCUSED,
-		FROSTBRAND_WEAPON,
-		FROST_RESISTANCE_TOTEM,
-		FLAMETONGUE_TOTEM, 
-		FIRE_RESISTANCE_TOTEM, 
-		WINDFURY_WEAPON, 
-		GROUNDING_TOTEM, 
-		NATURE_RESISTANCE_TOTEM, 
-		WIND_FURY_TOTEM, 
-		STORMSTRIKE, 
-		LAVA_LASH, 
-		SHAMANISTIC_RAGE, 
-		WRATH_OF_AIR_TOTEM, 
-		EARTH_ELEMENTAL_TOTEM, 
-		BLOODLUST, 
-		HEROISM, 
-		FERAL_SPIRIT;
+    uint32 ROCKBITER_WEAPON,
+           STONESKIN_TOTEM,
+           LIGHTNING_SHIELD,
+           FLAMETONGUE_WEAPON,
+           STRENGTH_OF_EARTH_TOTEM,
+           FOCUSED,
+           FROSTBRAND_WEAPON,
+           FROST_RESISTANCE_TOTEM,
+           FLAMETONGUE_TOTEM,
+           FIRE_RESISTANCE_TOTEM,
+           WINDFURY_WEAPON,
+           GROUNDING_TOTEM,
+           NATURE_RESISTANCE_TOTEM,
+           WIND_FURY_TOTEM,
+           STORMSTRIKE,
+           LAVA_LASH,
+           SHAMANISTIC_RAGE,
+           WRATH_OF_AIR_TOTEM,
+           EARTH_ELEMENTAL_TOTEM,
+           BLOODLUST,
+           HEROISM,
+           FERAL_SPIRIT,
+		   MAELSTROM_WEAPON;
 
     // RESTORATION
-    uint32 HEALING_WAVE, 
-		LESSER_HEALING_WAVE, 
-		ANCESTRAL_SPIRIT, 
-		TREMOR_TOTEM, 
-		HEALING_STREAM_TOTEM,
-		MANA_SPRING_TOTEM, 
-		CHAIN_HEAL,
-		MANA_TIDE_TOTEM, 
-		EARTH_SHIELD,
-		WATER_SHIELD,
-		EARTHLIVING_WEAPON, 
-		RIPTIDE, 
-		CURE_TOXINS, 
-		CLEANSE_SPIRIT;
+    uint32 HEALING_WAVE,
+           LESSER_HEALING_WAVE,
+           ANCESTRAL_SPIRIT,
+           TREMOR_TOTEM,
+           HEALING_STREAM_TOTEM,
+           MANA_SPRING_TOTEM,
+           CHAIN_HEAL,
+           MANA_TIDE_TOTEM,
+           EARTH_SHIELD,
+           WATER_SHIELD,
+           EARTHLIVING_WEAPON,
+           RIPTIDE,
+           CURE_TOXINS,
+           CLEANSE_SPIRIT,
+		   NATURES_SWIFTNESS_SHAMAN,
+		   TIDAL_FORCE;
 
     // ELEMENTAL
     uint32 LIGHTNING_BOLT,
-		EARTH_SHOCK, 
-		STONECLAW_TOTEM,
-		FLAME_SHOCK, 
-		SEARING_TOTEM, 
-		PURGE,
-		FIRE_NOVA_TOTEM, 
-		WIND_SHOCK,
-		FROST_SHOCK,
-		MAGMA_TOTEM,
-		CHAIN_LIGHTNING,
-		TOTEM_OF_WRATH,
-		FIRE_ELEMENTAL_TOTEM,
-		LAVA_BURST,
-		EARTHBIND_TOTEM, 
-		HEX;
+           EARTH_SHOCK,
+           STONECLAW_TOTEM,
+           FLAME_SHOCK,
+           SEARING_TOTEM,
+           PURGE,
+           FIRE_NOVA_TOTEM,
+           WIND_SHOCK,
+           FROST_SHOCK,
+           MAGMA_TOTEM,
+           CHAIN_LIGHTNING,
+           TOTEM_OF_WRATH,
+           FIRE_ELEMENTAL_TOTEM,
+           LAVA_BURST,
+           EARTHBIND_TOTEM,
+           HEX,
+		   ELEMENTAL_MASTERY,
+		   THUNDERSTORM;
 
     // first aid
     uint32 RECENTLY_BANDAGED;
