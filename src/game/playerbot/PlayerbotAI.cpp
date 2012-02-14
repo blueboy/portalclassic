@@ -2801,6 +2801,7 @@ void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
     else if (str == "heal") co = ORDERS_HEAL;
     else if (str == "protect") co = ORDERS_PROTECT;
     else if (str == "nodispel") co = ORDERS_NODISPEL;
+    else if (str == "passive") co = ORDERS_PASSIVE;
     else
         co = ORDERS_RESET;
     SetCombatOrder(co, target);
@@ -2808,6 +2809,14 @@ void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
 
 void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
 {
+    // reset m_combatOrder after ORDERS_PASSIVE
+    if (m_combatOrder == ORDERS_PASSIVE)
+    {
+        m_combatOrder = ORDERS_NONE;
+        m_targetAssist = 0;
+        m_targetProtect = 0;
+    }
+
     if ((co == ORDERS_ASSIST || co == ORDERS_PROTECT) && !target) {
         TellMaster("Erf, you forget to target assist/protect characters!");
         return;
@@ -2817,6 +2826,12 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
         m_targetAssist = 0;
         m_targetProtect = 0;
         TellMaster("Orders are cleaned!");
+        return;
+    }
+    if (co == ORDERS_PASSIVE)
+    {
+        m_combatOrder = ORDERS_PASSIVE;
+        SendOrders(*GetMaster());
         return;
     }
     if (co == ORDERS_PROTECT)
