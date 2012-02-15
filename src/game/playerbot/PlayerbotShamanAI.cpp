@@ -137,11 +137,11 @@ void PlayerbotShamanAI::HealTarget(Unit &target, uint8 hp)
                 if(holder->GetSpellProto()->Dispel == DISPEL_DISEASE)
                     ai->CastSpell(DISPEL, target);
             }
-            else if ((1<<holder->GetSpellProto()->Dispel) & dispelMask3 & (DISPEL == CLEANSE_SPIRIT))
-            {	
-                if(holder->GetSpellProto()->Dispel == DISPEL_CURSE)
+            else if ((1 << holder->GetSpellProto()->Dispel) & dispelMask3 & (DISPEL == CLEANSE_SPIRIT))
+			{
+                if (holder->GetSpellProto()->Dispel == DISPEL_CURSE)
                     ai->CastSpell(DISPEL, target);
-            }
+			}
         }
     }
     // end HealTarget
