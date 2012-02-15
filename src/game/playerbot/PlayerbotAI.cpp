@@ -110,11 +110,11 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
             m_classAI = (PlayerbotClassAI *) new PlayerbotWarriorAI(GetMaster(), m_bot, this);
             break;
         case CLASS_SHAMAN:
-			if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
-				m_combatStyle = COMBAT_MELEE;
-				}
-			else
-				m_combatStyle = COMBAT_RANGED;
+            if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
+                m_combatStyle = COMBAT_MELEE;
+                }
+            else
+                m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotShamanAI(GetMaster(), m_bot, this);
             break;
         case CLASS_PALADIN:
@@ -127,10 +127,10 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
             break;
         case CLASS_DRUID:
             if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
-				m_combatStyle = COMBAT_MELEE;
-				}
-			else
-				m_combatStyle = COMBAT_RANGED;
+                m_combatStyle = COMBAT_MELEE;
+                }
+            else
+                m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotDruidAI(GetMaster(), m_bot, this);
             break;
         case CLASS_HUNTER:
@@ -687,10 +687,10 @@ void PlayerbotAI::ReloadAI()
         case CLASS_SHAMAN:
             if (m_classAI) delete m_classAI;
             if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
-				m_combatStyle = COMBAT_MELEE;
-				}
-			else
-				m_combatStyle = COMBAT_RANGED;
+                m_combatStyle = COMBAT_MELEE;
+                }
+            else
+                m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotShamanAI(GetMaster(), m_bot, this);
             break;
         case CLASS_PALADIN:
@@ -706,10 +706,10 @@ void PlayerbotAI::ReloadAI()
         case CLASS_DRUID:
             if (m_classAI) delete m_classAI;
             if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
-				m_combatStyle = COMBAT_MELEE;
-				}
-			else
-				m_combatStyle = COMBAT_RANGED;
+                m_combatStyle = COMBAT_MELEE;
+                }
+            else
+                m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotDruidAI(GetMaster(), m_bot, this);
             break;
         case CLASS_HUNTER:
@@ -734,10 +734,14 @@ void PlayerbotAI::SendOrders(Player& /*player*/)
         out << "I HEAL and DISPEL";
     else if (m_combatOrder & ORDERS_NODISPEL)
         out << "I HEAL and WON'T DISPEL";
+    else if (m_combatOrder & ORDERS_PASSIVE)
+        out << "I'm PASSIVE";
     if ((m_combatOrder & ORDERS_PRIMARY) && (m_combatOrder & ORDERS_SECONDARY))
         out << " and ";
     if (m_combatOrder & ORDERS_PROTECT)
         out << "I PROTECT " << (m_targetProtect ? m_targetProtect->GetName() : "unknown");
+    else if (m_combatOrder & ORDERS_RESIST)
+        out << "I RESIST " << m_resistType;
     out << ".";
 
     if (m_mgr->m_confDebugWhisper)
@@ -2802,6 +2806,22 @@ void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
     else if (str == "protect") co = ORDERS_PROTECT;
     else if (str == "nodispel") co = ORDERS_NODISPEL;
     else if (str == "passive") co = ORDERS_PASSIVE;
+    else if (str == "resistfrost") {
+        co = ORDERS_RESIST; 
+        m_resistType = SCHOOL_FROST;
+    }
+    else if (str == "resistnature") {
+        co = ORDERS_RESIST;
+        m_resistType = SCHOOL_NATURE;
+    }
+    else if (str == "resistfire") {
+        co = ORDERS_RESIST;
+        m_resistType = SCHOOL_FIRE;
+    }
+    else if (str == "resistshadow") {
+        co = ORDERS_RESIST;
+        m_resistType = SCHOOL_SHADOW;
+    }
     else
         co = ORDERS_RESET;
     SetCombatOrder(co, target);
@@ -2825,6 +2845,7 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
         m_combatOrder = ORDERS_NONE;
         m_targetAssist = 0;
         m_targetProtect = 0;
+        m_resistType = SCHOOL_NONE;
         TellMaster("Orders are cleaned!");
         return;
     }
