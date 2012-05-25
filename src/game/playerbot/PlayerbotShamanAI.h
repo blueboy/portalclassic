@@ -115,7 +115,7 @@ public:
 
     // all combat actions go here
     bool DoFirstCombatManeuver(Unit*);
-    void DoNextCombatManeuver(Unit*);
+    bool DoNextCombatManeuver(Unit*);
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
