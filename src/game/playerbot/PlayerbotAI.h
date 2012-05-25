@@ -371,6 +371,7 @@ public:
     uint32 gQuestFetch;
     uint8 gPrimOrder;
     uint8 gSecOrder;
+    void CombatOrderRestore();
     void CombatOrderRestore(uint8 Prim, uint8 Sec);
     void Feast();
     void InterruptCurrentCastingSpell();

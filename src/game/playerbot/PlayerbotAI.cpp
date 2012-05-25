@@ -89,6 +89,7 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
 
     // start following master (will also teleport bot to master)
     SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
+    CombatOrderRestore();
 
     // get class specific ai
     switch (m_bot->getClass())
@@ -2796,6 +2797,35 @@ Unit* PlayerbotAI::FindAttacker(ATTACKERINFOTYPE ait, Unit *victim)
     return a;
 }
 
+/**
+* CombatOrderRestore()
+* Restores only gDelayAttack - the other attributes need a valid target. This function is to be called when the targets
+* may or may not be online (such as upon login).
+*/
+void PlayerbotAI::CombatOrderRestore()
+{
+    QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname,combat_delay FROM playerbot_saved_data WHERE guid = '%li'", m_bot->GetGUIDLow());
+
+    if (!result)
+    {
+        sLog.outString();
+        sLog.outString(">> [CombatOrderRestore()] Loaded `playerbot_saved_data`, found no match for guid %li.", m_bot->GetGUIDLow());
+        gDelayAttack = 0;
+        return;
+    }
+    else
+    {
+        Field* fields = result->Fetch();
+        gDelayAttack = fields[0].GetUInt8();
+        delete result;
+    }
+}
+
+/**
+* CombatOrderRestore()
+* Restores all saved attributes. This function is to be called when the targets are assumed to be online.
+*/
+
 void PlayerbotAI::CombatOrderRestore(uint8 Prim, uint8 Sec)
 {
     QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname,combat_delay FROM playerbot_saved_data WHERE guid = '%li'", m_bot->GetGUIDLow());
@@ -2803,7 +2833,7 @@ void PlayerbotAI::CombatOrderRestore(uint8 Prim, uint8 Sec)
     if (!result)
     {
         sLog.outString();
-        sLog.outString(">> Loaded `playerbot_saved_data`, found no match for guid %li.", m_bot->GetGUIDLow());
+        sLog.outString(">> [CombatOrderRestore(Prim, Sec)] Loaded `playerbot_saved_data`, found no match for guid %li.", m_bot->GetGUIDLow());
         TellMaster("I have no orders");
         return;
     }
@@ -5661,7 +5691,7 @@ void PlayerbotAI::_HandleCommandCombat(std::string &text, Player &fromPlayer)
             TellMaster("Invalid delay. choose a number between 0 and 10");
         return;
     }
-    SendWhisper("Valid sub commands for 'combat' are 'delay:<0 thru 10>", fromPlayer);
+    SendWhisper("Valid sub commands for 'combat' are 'delay <0-10>'", fromPlayer);
     return;
 }
 
