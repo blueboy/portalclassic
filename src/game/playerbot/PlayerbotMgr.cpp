@@ -975,6 +975,49 @@ bool Player::requiredQuests(const char* pQuestIdString)
     return false;
 }
 
+//See MainSpec enum in PlayerbotAI.h for details on class return values
+uint32 Player::GetSpec()
+{
+    uint32 row = 0, spec = 0;
+    Player* player = m_session->GetPlayer();
+    uint32 classMask = player->getClassMask();
+
+    for (unsigned int i = 0; i < sTalentStore.GetNumRows(); ++i)
+    {
+        TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
+
+        if (!talentInfo)
+            continue;
+
+        TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+
+        if (!talentTabInfo)
+            continue;
+            
+        if ((classMask & talentTabInfo->ClassMask) == 0)
+            continue;
+
+        uint32 curtalent_maxrank = 0;
+        for (int32 k = MAX_TALENT_RANK - 1; k > -1; --k)
+        {
+            if (talentInfo->RankID[k] && HasSpell(talentInfo->RankID[k]))
+            {
+                if (row == 0 && spec == 0)
+                    spec = talentInfo->TalentTab;
+                    
+                if (talentInfo->Row > row)
+                {
+                    row = talentInfo->Row;
+                    spec = talentInfo->TalentTab;
+                }
+            }
+        }
+    }
+
+    //Return the tree with the deepest talent
+    return spec;
+}
+
 bool ChatHandler::HandlePlayerbotCommand(char* args)
 {
     if (!(m_session->GetSecurity() > SEC_PLAYER))
