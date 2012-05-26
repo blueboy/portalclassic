@@ -538,6 +538,8 @@ bool PlayerbotShamanAI::DoNextCombatManeuver(Unit *pTarget)
                 break;
                }*/
     }
+
+    return false;
 } // end DoNextCombatManeuver
 
 void PlayerbotShamanAI::DoNonCombatActions()
