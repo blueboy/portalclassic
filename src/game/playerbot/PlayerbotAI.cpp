@@ -90,6 +90,7 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
     // start following master (will also teleport bot to master)
     SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
     CombatOrderRestore();
+    m_DelayAttackInit = time(NULL);
 
     // get class specific ai
     switch (m_bot->getClass())
@@ -1273,7 +1274,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
                 // set back to normal
                 SetState(BOTSTATE_NORMAL);
-                SetIgnoreUpdateTime(0); // Aren't we already - by default - not ignoring the bot AI?
+                SetIgnoreUpdateTime(0);
             }
             return;
         }
@@ -2972,6 +2973,8 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
         TellMaster("Orders are cleaned!");
         gPrimOrder = 0;
         gSecOrder = 0;
+        m_DelayAttackInit = time(NULL);
+        m_DelayAttack = 0;
         CharacterDatabase.PExecute("DELETE FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
         return;
     }
@@ -3186,7 +3189,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         return;
 
     // default updates occur every two seconds
-    m_ignoreAIUpdatesUntilTime = time(0) + 2;
+    SetIgnoreUpdateTime(2);
 
     if (!m_bot->isAlive())
     {
@@ -3202,7 +3205,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
             // set state to dead
             SetState(BOTSTATE_DEAD);
             // wait 30sec
-            m_ignoreAIUpdatesUntilTime = time(0) + 30;
+            SetIgnoreUpdateTime(30);
         }
         else if (m_botState == BOTSTATE_DEAD)
         {
@@ -3241,7 +3244,9 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
             }
             // resurrect now
             // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - Reviving %s to corpse...", m_bot->GetName() );
-            m_ignoreAIUpdatesUntilTime = time(0) + 6;
+
+            SetIgnoreUpdateTime(6);
+
             PlayerbotChatHandler ch(GetMaster());
             if (!ch.revive(*m_bot))
             {
@@ -3252,7 +3257,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
             SetState(BOTSTATE_NORMAL);
         }
     }
-    else
+    else // bot still alive
     {
         if (!m_findNPC.empty())
             findNearbyCreature();
@@ -3307,7 +3312,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
                 m_lootTargets.unique();
             else
                 m_lootTargets.clear();
-            SetIgnoreUpdateTime();
+            SetIgnoreUpdateTime(0); // Aren't we already - by default - not ignoring the bot AI?
         }
         else if (m_botState == BOTSTATE_LOOTING)
             DoLoot();
