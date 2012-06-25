@@ -3433,7 +3433,6 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         else
             m_lootTargets.clear();
 
-        return SetIgnoreUpdateTime(0); // Was set at the start of UpdateAI, make sure we don't unnecessarily wait
     }
 
     if (m_botState == BOTSTATE_LOOTING)
@@ -3665,7 +3664,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
         if (!m_bot->IsWithinLOSInMap(pTarget))
             return false;
 
-        m_bot->CastSpell(pTarget, pSpellInfo, true);       // actually cast spell
+        m_bot->CastSpell(pTarget, pSpellInfo, false);       // actually cast spell
     }
 
     m_ignoreAIUpdatesUntilTime = time(NULL) + CastTime + 1;
