@@ -122,7 +122,7 @@ public:
 
 private:
     // Heals the target based off its hps
-    void HealTarget (Unit& target, uint8 hp);
+    void HealTarget(Unit& target);
     void DropTotems();
     void CheckShields();
     void UseCooldowns();
