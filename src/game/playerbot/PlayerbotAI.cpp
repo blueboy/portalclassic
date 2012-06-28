@@ -89,7 +89,7 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
 
     // start following master (will also teleport bot to master)
     SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
-    CombatOrderRestore();
+    CombatDelayRestore();
     m_DelayAttackInit = time(NULL);
 
     // get class specific ai
@@ -2837,18 +2837,18 @@ Unit* PlayerbotAI::FindAttacker(ATTACKERINFOTYPE ait, Unit *victim)
 }
 
 /**
-* CombatOrderRestore()
+* CombatDelayRestore()
 * Restores only m_DelayAttack - the other attributes need a valid target. This function is to be called when the targets
-* may or may not be online (such as upon login).
+* may or may not be online (such as upon login). See CombatOrderRestore() for full orders restore.
 */
-void PlayerbotAI::CombatOrderRestore()
+void PlayerbotAI::CombatDelayRestore()
 {
     QueryResult* result = CharacterDatabase.PQuery("SELECT combat_delay FROM playerbot_saved_data WHERE guid = '%lu'", m_bot->GetGUIDLow());
 
     if (!result)
     {
         sLog.outString();
-        sLog.outString(">> [CombatOrderRestore()] Loaded `playerbot_saved_data`, found no match for guid %lu.", m_bot->GetGUIDLow());
+        sLog.outString(">> [CombatDelayRestore()] Loaded `playerbot_saved_data`, found no match for guid %lu.", m_bot->GetGUIDLow());
         m_DelayAttack = 0;
         return;
     }
@@ -2865,14 +2865,14 @@ void PlayerbotAI::CombatOrderRestore()
 * Restores all saved attributes. This function is to be called when the targets are assumed to be online.
 */
 
-void PlayerbotAI::CombatOrderRestore(uint8 Prim, uint8 Sec)
+void PlayerbotAI::CombatOrderRestore()
 {
     QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname,combat_delay FROM playerbot_saved_data WHERE guid = '%lu'", m_bot->GetGUIDLow());
 
     if (!result)
     {
         sLog.outString();
-        sLog.outString(">> [CombatOrderRestore(Prim, Sec)] Loaded `playerbot_saved_data`, found no match for guid %lu.", m_bot->GetGUIDLow());
+        sLog.outString(">> [CombatOrderRestore()] Loaded `playerbot_saved_data`, found no match for guid %lu.", m_bot->GetGUIDLow());
         TellMaster("I have no orders");
         return;
     }
@@ -5644,7 +5644,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         _HandleCommandEquip(input, fromPlayer);
         
     else if (ExtractCommand("resumeorders", input)) // restore previous combat orders if any
-        CombatOrderRestore(gPrimOrder, gSecOrder);
+        CombatOrderRestore();
 
     // find project: 20:50 02/12/10 rev.4 item in world and wait until ordered to follow
     else if (ExtractCommand("find", input, true)) // true -> "find" OR "f"
