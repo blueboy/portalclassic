@@ -550,7 +550,8 @@ void PlayerbotShamanAI::DoNonCombatActions()
             if (!tPlayer || !tPlayer->isAlive())
                 continue;
 
-            if (tPlayer->IsInDuel())
+            // TODO: should check for dueling with *anyone*
+            if (tPlayer->IsInDuelWith(GetMaster()))
                 continue;
 
             // heal
