@@ -84,11 +84,10 @@ public:
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
 
-    // buff a specific player, usually a real PC who is not in group
-    bool BuffPlayer(Player *target);
-
 private:
     CombatManeuverReturns CastSpell(uint32 nextAction, Unit *pTarget = NULL) { return CastSpellWand(nextAction, pTarget, SHOOT); }
+
+    static bool BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target);
 
     // ARCANE
     uint32 ARCANE_MISSILES,
