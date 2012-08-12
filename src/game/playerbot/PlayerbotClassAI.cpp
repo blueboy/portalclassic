@@ -17,7 +17,12 @@ PlayerbotClassAI::~PlayerbotClassAI() {}
 CombatManeuverReturns PlayerbotClassAI::DoFirstCombatManeuver(Unit *) { return RETURN_NO_ACTION_OK; }
 CombatManeuverReturns PlayerbotClassAI::DoNextCombatManeuver(Unit *) { return RETURN_NO_ACTION_OK; }
 
-void PlayerbotClassAI::DoNonCombatActions(){}
+CombatManeuverReturns PlayerbotClassAI::DoFirstCombatManeuverPVE(Unit *) { return RETURN_NO_ACTION_OK; }
+CombatManeuverReturns PlayerbotClassAI::DoNextCombatManeuverPVE(Unit *) { return RETURN_NO_ACTION_OK; }
+CombatManeuverReturns PlayerbotClassAI::DoFirstCombatManeuverPVP(Unit *) { return RETURN_NO_ACTION_OK; }
+CombatManeuverReturns PlayerbotClassAI::DoNextCombatManeuverPVP(Unit *) { return RETURN_NO_ACTION_OK; }
+
+void PlayerbotClassAI::DoNonCombatActions() {}
 
 CombatManeuverReturns PlayerbotClassAI::HealPlayer(Player* target) {
     if (!m_ai)  return RETURN_NO_ACTION_ERROR;
