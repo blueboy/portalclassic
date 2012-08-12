@@ -52,12 +52,12 @@ public:
 };
 
 PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
-    m_mgr(mgr), m_bot(bot), m_classAI(0), m_ignoreAIUpdatesUntilTime(CurrentTime()),
-    m_combatOrder(ORDERS_NONE), m_ScenarioType(SCENARIO_PVEEASY),
-    m_TimeDoneEating(0), m_TimeDoneDrinking(0),
-    m_CurrentlyCastingSpellId(0), m_spellIdCommand(0),
-    m_targetGuidCommand(ObjectGuid()),
-    m_taxiMaster(ObjectGuid())
+m_mgr(mgr), m_bot(bot), m_classAI(0), m_ignoreAIUpdatesUntilTime(CurrentTime()),
+m_combatOrder(ORDERS_NONE), m_ScenarioType(SCENARIO_PVE),
+m_TimeDoneEating(0), m_TimeDoneDrinking(0),
+m_CurrentlyCastingSpellId(0), m_spellIdCommand(0),
+m_targetGuidCommand(ObjectGuid()),
+m_taxiMaster(ObjectGuid()),
 {
 
     // set bot state and needed item list
@@ -741,7 +741,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         case SMSG_DUEL_COMPLETE:
         {
             SetIgnoreUpdateTime(4);
-            m_ScenarioType = SCENARIO_PVEEASY;
+            m_ScenarioType = SCENARIO_PVE;
             ReloadAI();
             m_bot->GetMotionMaster()->Clear(true);
             return;
@@ -776,7 +776,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
                 m_bot->SetSelectionGuid(ObjectGuid(playerGuid));
                 SetIgnoreUpdateTime(4);
-                m_ScenarioType = SCENARIO_DUEL;
+                m_ScenarioType = SCENARIO_PVP_DUEL;
             }
             return;
         }
@@ -1916,7 +1916,7 @@ void PlayerbotAI::DoNextCombatManeuver()
         return;
 
     // check for new targets
-    if (m_ScenarioType == SCENARIO_DUEL)
+    if (m_ScenarioType == SCENARIO_PVP_DUEL)
         GetDuelTarget(GetMaster());
     else
         GetCombatTarget();
@@ -3265,7 +3265,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
     }
 
     // handle combat (either self/master/group in combat, or combat state and valid target)
-    if (IsInCombat() || (m_botState == BOTSTATE_COMBAT && m_targetCombat) ||  m_ScenarioType == SCENARIO_DUEL)
+    if (IsInCombat() || (m_botState == BOTSTATE_COMBAT && m_targetCombat) ||  m_ScenarioType == SCENARIO_PVP_DUEL)
     {
         //check if the bot is Mounted
         if (!m_bot->IsMounted())
