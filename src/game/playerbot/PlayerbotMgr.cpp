@@ -1147,45 +1147,6 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
             SetSentErrorMessage(true);
             return false;
         }
-        std::string orderStr = orderChar;
-        if (orderStr == "protect" || orderStr == "assist")
-        {
-            char *targetChar = strtok(NULL, " ");
-            ObjectGuid targetGUID = m_session->GetPlayer()->GetSelectionGuid();
-            if (!targetChar && !targetGUID)
-            {
-                PSendSysMessage("|cffff0000Combat orders protect and assist expect a target either by selection or by giving target player in command string!");
-                SetSentErrorMessage(true);
-                return false;
-            }
-            if (targetChar)
-            {
-                std::string targetStr = targetChar;
-                ObjectGuid targ_guid = sObjectMgr.GetPlayerGuidByName(targetStr.c_str());
 
-                targetGUID.Set(targ_guid.GetRawValue());
-            }
-            target = ObjectAccessor::GetUnit(*m_session->GetPlayer(), targetGUID);
-            if (!target)
-            {
-                PSendSysMessage("|cffff0000Invalid target for combat order protect or assist!");
-                SetSentErrorMessage(true);
-                return false;
-            }
-        }
-        if (mgr->GetPlayerBot(guid) == NULL)
-        {
-            PSendSysMessage("|cffff0000Bot can not receive combat order because bot does not exist in world.");
-            SetSentErrorMessage(true);
-            return false;
-        }
-        QueryResult *resultlvl = CharacterDatabase.PQuery("SELECT guid FROM playerbot_saved_data WHERE guid = '%u'", guid.GetCounter());
-        if (!resultlvl)
-            CharacterDatabase.DirectPExecute("INSERT INTO playerbot_saved_data (guid,bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname) VALUES ('%u',0,0,0,0,'','')", guid.GetCounter());
-        else
-            delete resultlvl;
-
-        mgr->GetPlayerBot(guid)->GetPlayerbotAI()->SetCombatOrderByStr(orderStr, target);
-    }
-    return true;
+        return true;
 }
