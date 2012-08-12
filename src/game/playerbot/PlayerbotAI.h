@@ -508,6 +508,7 @@ private:
     void _HandleCommandFollow(std::string &text, Player &fromPlayer);
     void _HandleCommandStay(std::string &text, Player &fromPlayer);
     void _HandleCommandAttack(std::string &text, Player &fromPlayer);
+    void _HandleCommandPull(std::string &text, Player &fromPlayer);
     void _HandleCommandCast(std::string &text, Player &fromPlayer);
     void _HandleCommandSell(std::string &text, Player &fromPlayer);
     void _HandleCommandRepair(std::string &text, Player &fromPlayer);
