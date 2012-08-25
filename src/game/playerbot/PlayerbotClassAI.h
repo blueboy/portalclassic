@@ -50,7 +50,8 @@ public:
     // Utilities
     Player* GetMaster () { return m_master; }
     Player* GetPlayerBot() { return m_bot; }
-    PlayerbotAI* GetAI (){ return m_ai; };
+    PlayerbotAI* GetAI() { return m_ai; };
+    bool CanPull();
 
 protected:
     virtual CombatManeuverReturns DoFirstCombatManeuverPVE(Unit*);
