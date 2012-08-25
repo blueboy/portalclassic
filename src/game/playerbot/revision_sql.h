@@ -1,1 +1,1 @@
-#define REVISION_DB_PLAYERBOTAI "playerbotai_characters_svdata_002"
+#define REVISION_DB_PLAYERBOTAI "playerbotai_characters_svdata_003"

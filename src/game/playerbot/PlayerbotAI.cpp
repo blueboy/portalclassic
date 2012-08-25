@@ -2851,7 +2851,7 @@ void PlayerbotAI::CombatDelayRestore()
 
 void PlayerbotAI::CombatOrderRestore()
 {
-    QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname,combat_delay FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
+    QueryResult* result = CharacterDatabase.PQuery("SELECT combat_order,primary_target,secondary_target,pname,sname,combat_delay,auto_follow FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
 
     if (!result)
     {
@@ -2860,98 +2860,45 @@ void PlayerbotAI::CombatOrderRestore()
         TellMaster("I have no orders");
         return;
     }
-    else
-    {
-        Field* fields = result->Fetch();
-        gPrimOrder = fields[0].GetUInt8();
-        gSecOrder = fields[1].GetUInt8();
-        ObjectGuid PrimtargetGUID = ObjectGuid(fields[2].GetUInt64());
-        ObjectGuid SectargetGUID = ObjectGuid(fields[3].GetUInt64());
-        std::string pname = fields[4].GetString();
-        std::string sname = fields[5].GetString();
-        m_DelayAttack = fields[6].GetUInt8();
-        //if (gPrimtarget > 0)
-            gPrimtarget = ObjectAccessor::GetUnit(*m_bot->GetMap()->GetWorldObject(PrimtargetGUID), PrimtargetGUID);
-        //if (gSectarget > 0)
-            gSectarget = ObjectAccessor::GetUnit(*m_bot->GetMap()->GetWorldObject(SectargetGUID), SectargetGUID);
-        delete result;
-    }
-    Unit *gtarget = NULL;
-    ObjectGuid NotargetGUID = m_bot->GetObjectGuid();
-    gtarget = ObjectAccessor::GetUnit(*m_bot, NotargetGUID);
-    CombatOrderType co;
-    if (gPrimOrder > 0)
-    {
-        if (gPrimOrder == 1) co = ORDERS_TANK;
-        else if (gPrimOrder == 2) co = ORDERS_ASSIST;
-        else if (gPrimOrder == 3) co = ORDERS_HEAL;
-        SetCombatOrder(co, gPrimtarget);
-    }
-    if (gSecOrder > 0)
-    {
-        if (gSecOrder == 1) co = ORDERS_PROTECT;
-        else if (gSecOrder == 2) co = ORDERS_NODISPEL;
-        else if (gSecOrder == 3) {
-            co = ORDERS_RESIST;
-            m_resistType = SCHOOL_FROST;
-            gSecOrder = 3;
-        }
-        else if (gSecOrder == 4) {
-            co = ORDERS_RESIST;
-            m_resistType = SCHOOL_NATURE;
-            gSecOrder = 4;
-        }
-        else if (gSecOrder == 5) {
-            co = ORDERS_RESIST;
-            m_resistType = SCHOOL_FIRE;
-            gSecOrder = 5;
-        }
-        else if (gSecOrder == 6) {
-            co = ORDERS_RESIST;
-            m_resistType = SCHOOL_SHADOW;
-            gSecOrder = 6;
-        }
-        SetCombatOrder(co, gSectarget);
-    }
-    if (gPrimOrder == 0 && gSecOrder == 0)
-        SetCombatOrder(co, gtarget);
+
+    Field* fields = result->Fetch();
+    CombatOrderType combatOrders = (CombatOrderType)fields[0].GetUInt32();
+    ObjectGuid PrimtargetGUID = ObjectGuid(fields[1].GetUInt64());
+    ObjectGuid SectargetGUID = ObjectGuid(fields[2].GetUInt64());
+    std::string pname = fields[3].GetString();
+    std::string sname = fields[4].GetString();
+    m_DelayAttack = fields[5].GetUInt8();
+    //if (gPrimtarget > 0)
+        gPrimtarget = ObjectAccessor::GetUnit(*m_bot->GetMap()->GetWorldObject(PrimtargetGUID), PrimtargetGUID);
+    //if (gSectarget > 0)
+        gSectarget = ObjectAccessor::GetUnit(*m_bot->GetMap()->GetWorldObject(SectargetGUID), SectargetGUID);
+    delete result;
+
+    //Unit* target = NULL;
+    //ObjectGuid NoTargetGUID = m_bot->GetObjectGuid();
+    //target = ObjectAccessor::GetUnit(*m_bot, NoTargetGUID);
+
+    SetCombatOrder((CombatOrderType)(combatOrders & ORDERS_PRIMARY), gPrimtarget);
+    SetCombatOrder((CombatOrderType)(combatOrders & ORDERS_SECONDARY), gSectarget);
+>>>>>>> ef983af... [tweak] Merge primorder and secorder into combat_order for db as well as code. Add safety check so only a single primary order can be active. Streamline various combat order code. Merge resist types into combat_order.
 }
 
 void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
 {
     CombatOrderType co;
-    if (str == "tank")          co = ORDERS_TANK;
-    else if (str == "assist")   co = ORDERS_ASSIST;
-    else if (str == "heal")     co = ORDERS_HEAL;
-    else if (str == "protect")  co = ORDERS_PROTECT;
-    else if (str == "passive")  co = ORDERS_PASSIVE;
-    else if (str == "pull")     co = ORDERS_PULL;
-    else if (str == "resistfrost") {
-        co = ORDERS_RESIST; 
-        m_resistType = SCHOOL_FROST;
-        gSecOrder = 3;
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
-    }
-    else if (str == "resistnature") {
-        co = ORDERS_RESIST;
-        m_resistType = SCHOOL_NATURE;
-        gSecOrder = 4;
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
-    }
-    else if (str == "resistfire") {
-        co = ORDERS_RESIST;
-        m_resistType = SCHOOL_FIRE;
-        gSecOrder = 5;
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
-    }
-    else if (str == "resistshadow") {
-        co = ORDERS_RESIST;
-        m_resistType = SCHOOL_SHADOW;
-        gSecOrder = 6;
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
-    }
-    else
-        co = ORDERS_RESET;
+    if (str == "tank")              co = ORDERS_TANK;
+    else if (str == "assist")       co = ORDERS_ASSIST;
+    else if (str == "heal")         co = ORDERS_HEAL;
+    else if (str == "protect")      co = ORDERS_PROTECT;
+    else if (str == "passive")      co = ORDERS_PASSIVE;
+    else if (str == "pull")         co = ORDERS_PULL;
+    else if (str == "nodispel")     co = ORDERS_NODISPEL;
+    else if (str == "resistfrost")  co = ORDERS_RESIST_FROST;
+    else if (str == "resistnature") co = ORDERS_RESIST_NATURE;
+    else if (str == "resistfire")   co = ORDERS_RESIST_FIRE;
+    else if (str == "resistshadow") co = ORDERS_RESIST_SHADOW;
+    else                            co = ORDERS_RESET;
+
     SetCombatOrder(co, target);
 }
 
@@ -2997,13 +2944,11 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
         m_combatOrder = ORDERS_NONE;
         m_targetAssist = 0;
         m_targetProtect = 0;
-        m_resistType = SCHOOL_NONE;
-        TellMaster("Orders are cleaned!");
-        gPrimOrder = 0;
-        gSecOrder = 0;
-        m_DelayAttackInit = time(NULL);
+        m_combatOrder = ORDERS_NONE;
+        m_DelayAttackInit = CurrentTime();
         m_DelayAttack = 0;
-        CharacterDatabase.PExecute("DELETE FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = 0, primary_target = 0, secondary_target = 0, pname = '',sname = '', combat_delay = 0 WHERE guid = '%u'", m_bot->GetGUIDLow());
+        TellMaster("Orders are cleaned!");
         return;
     }
 
@@ -3017,8 +2962,13 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
     // Do your magic
     if ((co & ORDERS_PRIMARY))
     {
+        // Primary orders are mutually exclusive - you can only have one at a time
+        if (co & ORDERS_TANK   && (co & ORDERS_PRIMARY) & !ORDERS_TANK   != ORDERS_NONE) return;
+        if (co & ORDERS_ASSIST && (co & ORDERS_PRIMARY) & !ORDERS_ASSIST != ORDERS_NONE) return;
+        if (co & ORDERS_HEAL   && (co & ORDERS_PRIMARY) & !ORDERS_HEAL   != ORDERS_NONE) return;
+
         m_combatOrder = (CombatOrderType) (((uint32) m_combatOrder & (uint32) ORDERS_SECONDARY) | (uint32) co);
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_primary_order = '%u', primary_target = '%u', pname = '%s' WHERE guid = '%u'", (gPrimOrder & (uint8)ORDERS_PRIMARY), gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = '%u', primary_target = '%u', pname = '%s' WHERE guid = '%u'", m_combatOrder, gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
         if (co == ORDERS_ASSIST)
             m_targetAssist = target;
     }
@@ -3026,7 +2976,7 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
     {
         m_combatOrder = (CombatOrderType) ((uint32) m_combatOrder | (uint32) co);
         if (co != ORDERS_PULL)
-            CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u', secondary_target = '%u', sname = '%s' WHERE guid = '%u'", (gSecOrder & (uint8)ORDERS_SECONDARY), gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
+            CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = '%u', secondary_target = '%u', sname = '%s' WHERE guid = '%u'", m_combatOrder, gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
         if (co == ORDERS_PROTECT)
             m_targetProtect = target;    }
 
@@ -3051,13 +3001,6 @@ void PlayerbotAI::ClearCombatOrder(CombatOrderType co)
          SetCombatOrder(ORDERS_RESET);
          return;
 
-     case ORDERS_NODISPEL:
-     case ORDERS_PROTECT:
-     case ORDERS_RESIST:
-         ;
-         return;
-
-     case ORDERS_PULL:
      default:
          return;
      }
