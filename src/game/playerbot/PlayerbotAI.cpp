@@ -2030,13 +2030,73 @@ Player* PlayerbotAI::GetGroupTank()
         {
             Player* groupMember = sObjectMgr.GetPlayer(itr->guid);
             if (!groupMember || !groupMember->GetPlayerbotAI())
-                return NULL;
+                continue;
             if (groupMember->GetPlayerbotAI()->IsTank())
                 return groupMember;
         }
     }
 
     return NULL;
+}
+
+void PlayerbotAI::SetGroupCombatOrder(CombatOrderType co)
+{
+    if (!m_bot) return;
+
+    SetCombatOrder(co);
+
+    if (m_bot->GetGroup())
+    {
+        Group::MemberSlotList const& groupSlot = m_bot->GetGroup()->GetMemberSlots();
+        for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+        {
+            Player* groupMember = sObjectMgr.GetPlayer(itr->guid);
+            if (!groupMember || !groupMember->GetPlayerbotAI())
+                continue;
+            groupMember->GetPlayerbotAI()->SetCombatOrder(co);
+        }
+    }
+}
+
+bool PlayerbotAI::GroupHoTOnTank()
+{
+    if (!m_bot) return false;
+
+    bool bReturn = false;
+
+    if (m_bot->GetGroup())
+    {
+        Group::MemberSlotList const& groupSlot = m_bot->GetGroup()->GetMemberSlots();
+        for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+        {
+            Player* groupMember = sObjectMgr.GetPlayer(itr->guid);
+            if (!groupMember || !groupMember->GetPlayerbotAI())
+                continue;
+            if (groupMember->GetPlayerbotAI()->GetClassAI()->CastHoTOnTank())
+                bReturn = true;
+        }
+
+        if (bReturn)
+        {
+            for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+            {
+                Player* groupMember = sObjectMgr.GetPlayer(itr->guid);
+                if (!groupMember || !groupMember->GetPlayerbotAI())
+                    continue;
+                groupMember->GetPlayerbotAI()->SetIgnoreUpdateTime(1);
+            }
+        }
+    }
+    else // No group
+    {
+        if (GetClassAI()->CastHoTOnTank())
+        {
+            SetIgnoreUpdateTime(1);
+            return true;
+        }
+    }
+
+    return bReturn;
 }
 
 void PlayerbotAI::SetQuestNeedCreatures()
@@ -5863,6 +5923,11 @@ void PlayerbotAI::_HandleCommandPull(std::string &text, Player &fromPlayer)
         SendWhisper(sError, fromPlayer);
         return;
     }
+
+    // Sets Combat Orders to PULL
+    SetGroupCombatOrder(ORDERS_PULL);
+
+    GroupHoTOnTank();
 
     //(4a) if tank, wait a second (if healer class with HoT is present), pull (based on class), deactivate any attack (such as 'shoot (bow/gun)' for warriors), wait until in melee range, attack
     //(4b) if dps, wait (see (4+5) in first post)

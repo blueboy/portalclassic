@@ -542,3 +542,11 @@ void PlayerbotShamanAI::DoNonCombatActions()
         return;
     }
 } // end DoNonCombatActions
+
+bool PlayerbotShamanAI::CastHoTOnTank()
+{
+    // Shaman: Healing Stream Totem, Earthliving Weapon, and Riptide (with talents)
+    // None of these are cast before Pulling
+
+    return false;
+}
