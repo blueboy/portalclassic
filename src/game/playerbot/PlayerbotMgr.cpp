@@ -1015,7 +1015,7 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
     {
         Field *fields = resultlvl->Fetch();
         int charlvl = fields[0].GetUInt32();
-        int maxlvl = botConfig.GetIntDefault("PlayerbotAI.RestrictBotLevel", 80);
+        int maxlvl = botConfig.GetIntDefault("PlayerbotAI.RestrictBotLevel", 60);
         if (!(m_session->GetSecurity() > SEC_PLAYER))
             if (charlvl > maxlvl)
             {

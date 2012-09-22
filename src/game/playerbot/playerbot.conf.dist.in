@@ -28,8 +28,8 @@ ConfVersion=2011031001
 #        Default: 9
 #
 #    PlayerbotAI.RestrictBotLevel
-#        Restrict the allowed bot level (Current Max 80)
-#        Default: 80
+#        Restrict the allowed bot level (Current Max 60)
+#        Default: 60
 #
 #    PlayerbotAI.BotguyQuests
 #        List of Quest ids, any of which, once completed will enable botguy menu on NPCs
@@ -64,7 +64,7 @@ PlayerbotAI.DebugWhisper = 0
 PlayerbotAI.FollowDistanceMin = 0.5
 PlayerbotAI.FollowDistanceMax = 1.0
 PlayerbotAI.MaxNumBots = 9
-PlayerbotAI.RestrictBotLevel = 80
+PlayerbotAI.RestrictBotLevel = 60
 PlayerbotAI.BotguyQuests = ""
 PlayerbotAI.BotguyCost = 0
 PlayerbotAI.Collect.Combat = 1
