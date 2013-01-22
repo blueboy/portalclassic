@@ -47,7 +47,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP /Zm200"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite"
+				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite;..\..\src\game"
 				PreprocessorDefinitions="WIN32;_DEBUG;MANGOS_DEBUG;_LIB;"
 				StringPooling="false"
 				MinimalRebuild="false"
@@ -130,7 +130,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP /bigobj /Zm200"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite"
+				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite;..\..\src\game"
 				PreprocessorDefinitions="WIN32;_DEBUG;MANGOS_DEBUG;_LIB;"
 				StringPooling="false"
 				MinimalRebuild="false"
@@ -213,7 +213,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP /Zm200"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite"
+				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite;..\..\src\game"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_SECURE_SCL=0"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -295,7 +295,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP /bigobj /Zm200"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite"
+				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite;..\..\src\game"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_SECURE_SCL=0"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -377,7 +377,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite"
+				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite;..\..\src\game"
 				PreprocessorDefinitions="WIN32;_DEBUG;MANGOS_DEBUG;_LIB;"
 				StringPooling="false"
 				MinimalRebuild="false"
@@ -458,7 +458,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/MP /bigobj"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite"
+				AdditionalIncludeDirectories="..\..\dep\include;..\..\src\framework;..\..\src\shared;..\..\src\game\vmap;..\..\dep\ACE_wrappers;..\..\dep\include\g3dlite;..\..\src\game"
 				PreprocessorDefinitions="WIN32;_DEBUG;MANGOS_DEBUG;_LIB;"
 				StringPooling="false"
 				MinimalRebuild="false"
@@ -536,50 +536,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\AuctionHouseHandler.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGround.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGround.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundAB.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundAB.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundAV.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundAV.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundHandler.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundMgr.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundWS.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\BattleGroundWS.h"
 				>
 			</File>
 			<File
@@ -856,22 +812,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\ScriptMgr.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\SkillDiscovery.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\SkillDiscovery.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\SkillExtraItems.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\SkillExtraItems.h"
 				>
 			</File>
 			<File
@@ -1784,6 +1724,90 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\movement\util.cpp"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="OutdoorPvP"
+			>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvP.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvP.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvPEP.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvPEP.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvPMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvPMgr.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvPSI.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\OutdoorPvP\OutdoorPvPSI.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="BattleGround"
+			>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGround.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGround.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundAB.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundAB.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundAV.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundAV.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundHandler.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundMgr.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundWS.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\BattleGround\BattleGroundWS.h"
 				>
 			</File>
 		</Filter>

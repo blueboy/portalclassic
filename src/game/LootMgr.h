@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -175,7 +175,7 @@ class LootStore
 
 class LootTemplate
 {
-        class  LootGroup;                                       // A set of loot definitions for items (refs are not allowed inside)
+        class  LootGroup;                                   // A set of loot definitions for items (refs are not allowed inside)
         typedef std::vector<LootGroup> LootGroups;
 
     public:
@@ -203,8 +203,8 @@ class LootValidatorRef :  public Reference<Loot, LootValidatorRef>
 {
     public:
         LootValidatorRef() {}
-        void targetObjectDestroyLink() {}
-        void sourceObjectDestroyLink() {}
+        void targetObjectDestroyLink() override {}
+        void sourceObjectDestroyLink() override {}
 };
 
 //=====================================================
@@ -240,7 +240,7 @@ struct Loot
         LootItemList items;
         uint32 gold;
         uint8 unlootedCount;
-        LootType loot_type;                                     // required for for proper item loot finish (store internal loot types in different from 3.x version, in fact this meaning that it send same loot types for interesting cases like 3.x version code, skip pre-3.x client loot type limitaitons)
+        LootType loot_type;                                 // required for for proper item loot finish (store internal loot types in different from 3.x version, in fact this meaning that it send same loot types for interesting cases like 3.x version code, skip pre-3.x client loot type limitaitons)
 
         Loot(uint32 _gold = 0) : gold(_gold), unlootedCount(0) {}
         ~Loot() { clear(); }
@@ -300,8 +300,7 @@ struct Loot
 
         LootItemList m_questItems;
 
-        typedef std::set<ObjectGuid> PlayersLooting;
-        PlayersLooting m_playersLooting;
+        GuidSet m_playersLooting;
 
         QuestItemMap m_playerQuestItems;
         QuestItemMap m_playerFFAItems;

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,8 +82,7 @@ class ReactorRunnable : protected ACE_Task_Base
             Stop();
             Wait();
 
-            if (m_Reactor)
-                delete m_Reactor;
+            delete m_Reactor;
         }
 
         void Stop()
@@ -217,11 +216,8 @@ WorldSocketMgr::WorldSocketMgr():
 
 WorldSocketMgr::~WorldSocketMgr()
 {
-    if (m_NetThreads)
-        delete [] m_NetThreads;
-
-    if (m_Acceptor)
-        delete m_Acceptor;
+    delete[] m_NetThreads;
+    delete m_Acceptor;
 }
 
 int WorldSocketMgr::StartReactiveIO(ACE_UINT16 port, const char* address)

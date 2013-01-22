@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,8 +40,10 @@ class MANGOS_DLL_SPEC TargetedMovementGeneratorMedium
 {
     protected:
         TargetedMovementGeneratorMedium(Unit& target, float offset, float angle) :
-            TargetedMovementGeneratorBase(target), i_offset(offset), i_angle(angle),
-            i_recalculateTravel(false), i_targetReached(false), i_recheckDistance(0),
+            TargetedMovementGeneratorBase(target),
+            i_recheckDistance(0),
+            i_offset(offset), i_angle(angle),
+            m_speedChanged(false), i_targetReached(false),
             i_path(NULL)
         {
         }
@@ -57,16 +59,15 @@ class MANGOS_DLL_SPEC TargetedMovementGeneratorMedium
 
         Unit* GetTarget() const { return i_target.getTarget(); }
 
-        void unitSpeedChanged() { i_recalculateTravel = true; }
-        void UpdateFinalDistance(float fDistance);
+        void unitSpeedChanged() { m_speedChanged = true; }
 
     protected:
-        void _setTargetLocation(T&);
+        void _setTargetLocation(T&, bool updateDestination);
 
         ShortTimeTracker i_recheckDistance;
         float i_offset;
         float i_angle;
-        bool i_recalculateTravel : 1;
+        bool m_speedChanged : 1;
         bool i_targetReached : 1;
 
         PathFinder* i_path;
@@ -82,7 +83,7 @@ class MANGOS_DLL_SPEC ChaseMovementGenerator : public TargetedMovementGeneratorM
             : TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >(target, offset, angle) {}
         ~ChaseMovementGenerator() {}
 
-        MovementGeneratorType GetMovementGeneratorType() const { return CHASE_MOTION_TYPE; }
+        MovementGeneratorType GetMovementGeneratorType() const override { return CHASE_MOTION_TYPE; }
 
         void Initialize(T&);
         void Finalize(T&);
@@ -106,7 +107,7 @@ class MANGOS_DLL_SPEC FollowMovementGenerator : public TargetedMovementGenerator
             : TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >(target, offset, angle) {}
         ~FollowMovementGenerator() {}
 
-        MovementGeneratorType GetMovementGeneratorType() const { return FOLLOW_MOTION_TYPE; }
+        MovementGeneratorType GetMovementGeneratorType() const override { return FOLLOW_MOTION_TYPE; }
 
         void Initialize(T&);
         void Finalize(T&);

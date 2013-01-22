@@ -142,8 +142,8 @@ BindIP = "0.0.0.0"
 #    vmap.enableHeight
 #        Enable/Disable VMaps support for line of sight and height calculation
 #        You need to extract the VMaps in order to enable those options
-#        Default: 1 (true)
-#                 0 (false)
+#        Default: 1 (enable)
+#                 0 (disable)
 #
 #    vmap.ignoreSpellIds
 #        These spells are ignored for LoS calculation
@@ -265,19 +265,19 @@ CleanCharacterDB = 1
 #        0 = Minimum; 1 = Error; 2 = Detail; 3 = Full/Debug
 #        Default: 0
 #
-#    LogFilter_TransportMoves
 #    LogFilter_CreatureMoves
+#    LogFilter_TransportMoves
+#    LogFilter_PlayerMoves
 #    LogFilter_VisibilityChanges
 #    LogFilter_Weather
 #    LogFilter_DbStrictedCheck
+#    LogFilter_SQLText
 #    LogFilter_Pathfinding
-#        Log filters (active by default)
+#        Log filters (active by default - meaning: the filter is active, hence the log is not displayed)
 #        Default: 1 - not include with any log level
 #                 0 - include in log if log level permit
 #
 #    LogFilter_PeriodicAffects
-#    LogFilter_PlayerMoves
-#    LogFilter_SQLText
 #    LogFilter_AIAndMovegens
 #    LogFilter_PlayerStats
 #    LogFilter_Damage
@@ -362,8 +362,8 @@ LogFilter_Weather = 1
 LogFilter_DbStrictedCheck = 1
 LogFilter_Pathfinding = 1
 LogFilter_PeriodicAffects = 0
-LogFilter_PlayerMoves = 0
-LogFilter_SQLText = 0
+LogFilter_PlayerMoves = 1
+LogFilter_SQLText = 1
 LogFilter_AIAndMovegens = 0
 LogFilter_PlayerStats = 0
 LogFilter_Damage = 0
@@ -1038,6 +1038,11 @@ Channel.SilentlyGMJoin = 0
 #        Default: 0 (disable)
 #                 1 (enable)
 #
+#    GM.InvisibleAura
+#        A spell that will be cast when a gm uses ".gm visible off" (Must be aura spell)
+#        Default: 31748 (Spirit Particles, big)
+#                 0 (Disabled)
+#
 ###################################################################################################################
 
 GM.LoginState            = 2
@@ -1050,6 +1055,7 @@ GM.InWhoList.Level       = 3
 GM.LogTrade              = 1
 GM.StartLevel            = 1
 GM.LowerSecurity         = 0
+GM.InvisibleAura         = 31748
 
 ###################################################################################################################
 # VISIBILITY AND RADIUSES
@@ -1365,7 +1371,19 @@ BattleGround.PrematureFinishTimer = 300000
 BattleGround.PremadeGroupWaitForMatch = 0
 
 ###################################################################################################################
+# OUTDOOR PVP CONFIG
 #
+#    OutdoorPvp.SIEnabled               #Enable Silithus Outdoor pvp
+#    OutdoorPvp.EPEnabled               #Enable Eastern Plaguelands Outdoor pvp
+#        Default: 1 (enable)
+#                 0 (disable)
+#
+###################################################################################################################
+
+OutdoorPvp.SIEnabled = 1
+OutdoorPvp.EPEnabled = 1
+
+###################################################################################################################
 # NETWORK CONFIG
 #
 #    Network.Threads

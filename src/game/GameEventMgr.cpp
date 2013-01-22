@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include "Language.h"
 #include "Log.h"
 #include "MapManager.h"
-#include "BattleGroundMgr.h"
+#include "BattleGround/BattleGroundMgr.h"
 #include "MassMailMgr.h"
 #include "SpellMgr.h"
 #include "Policies/SingletonImp.h"
@@ -146,9 +146,15 @@ void GameEventMgr::LoadFromDB()
             pGameEvent.length       = fields[4].GetUInt32();
             pGameEvent.holiday_id   = HolidayIds(fields[5].GetUInt32());
 
-            if (pGameEvent.length == 0)                         // length>0 is validity check
+            if (pGameEvent.length == 0)                     // length>0 is validity check
             {
                 sLog.outErrorDb("`game_event` game event id (%i) have length 0 and can't be used.", event_id);
+                continue;
+            }
+
+            if (pGameEvent.occurence < pGameEvent.length)   // occurence < length is useless. This also asserts that occurence > 0!
+            {
+                sLog.outErrorDb("`game_event` game event id (%i) has occurence %u  < length %u and can't be used.", event_id, pGameEvent.occurence, pGameEvent.length);
                 continue;
             }
 
@@ -609,10 +615,10 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
     uint32 calcDelay;
     for (uint16 itr = 1; itr < mGameEvent.size(); ++itr)
     {
-        //sLog.outErrorDb("Checking event %u",itr);
+        // sLog.outErrorDb("Checking event %u",itr);
         if (CheckOneGameEvent(itr, currenttime))
         {
-            //DEBUG_LOG("GameEvent %u is active",itr->first);
+            // DEBUG_LOG("GameEvent %u is active",itr->first);
             if (!IsActiveEvent(itr))
             {
                 bool resume = activeAtShutdown && (activeAtShutdown->find(itr) != activeAtShutdown->end());
@@ -621,7 +627,7 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
         }
         else
         {
-            //DEBUG_LOG("GameEvent %u is not active",itr->first);
+            // DEBUG_LOG("GameEvent %u is not active",itr->first);
             if (IsActiveEvent(itr))
                 StopEvent(itr);
             else
@@ -639,7 +645,7 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
             nextEventDelay = calcDelay;
     }
     BASIC_LOG("Next game event check in %u seconds.", nextEventDelay + 1);
-    return (nextEventDelay + 1) * IN_MILLISECONDS;           // Add 1 second to be sure event has started/stopped at next call
+    return (nextEventDelay + 1) * IN_MILLISECONDS;          // Add 1 second to be sure event has started/stopped at next call
 }
 
 void GameEventMgr::UnApplyEvent(uint16 event_id)
@@ -909,7 +915,7 @@ void GameEventMgr::UpdateEventQuests(uint16 event_id, bool Activate)
     {
         const Quest* pQuest = sObjectMgr.GetQuestTemplate(*itr);
 
-        //if (Activate)
+        // if (Activate)
         //{
         // TODO: implement way to reset quests when event begin.
         //}
@@ -947,7 +953,7 @@ void GameEventMgr::SendEventMails(int16 event_id)
 template <>
 int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
 {
-    for (uint16 i = 0; i < mGameEventCreatureGuids.size(); i++) // 0 <= i <= 2*(S := mGameEvent.size()) - 2
+    for (uint16 i = 0; i < mGameEventCreatureGuids.size(); ++i) // 0 <= i <= 2*(S := mGameEvent.size()) - 2
         for (GuidList::const_iterator itr = mGameEventCreatureGuids[i].begin(); itr != mGameEventCreatureGuids[i].end(); ++itr)
             if (*itr == guid_or_poolid)
                 return i + 1 - mGameEvent.size();       // -S *1 + 1 <= . <= 1*S - 1
@@ -958,7 +964,7 @@ int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
 template <>
 int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
 {
-    for (uint16 i = 0; i < mGameEventGameobjectGuids.size(); i++)
+    for (uint16 i = 0; i < mGameEventGameobjectGuids.size(); ++i)
         for (GuidList::const_iterator itr = mGameEventGameobjectGuids[i].begin(); itr != mGameEventGameobjectGuids[i].end(); ++itr)
             if (*itr == guid_or_poolid)
                 return i + 1 - mGameEvent.size();       // -S *1 + 1 <= . <= 1*S - 1
@@ -969,7 +975,7 @@ int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
 template <>
 int16 GameEventMgr::GetGameEventId<Pool>(uint32 guid_or_poolid)
 {
-    for (uint16 i = 0; i < mGameEventSpawnPoolIds.size(); i++)
+    for (uint16 i = 0; i < mGameEventSpawnPoolIds.size(); ++i)
         for (IdList::const_iterator itr = mGameEventSpawnPoolIds[i].begin(); itr != mGameEventSpawnPoolIds[i].end(); ++itr)
             if (*itr == guid_or_poolid)
                 return i;

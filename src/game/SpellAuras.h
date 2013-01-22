@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,9 +107,9 @@ class MANGOS_DLL_SPEC SpellAuraHolder
         void Update(uint32 diff);
         void RefreshHolder();
 
-        bool IsSingleTarget() const { return m_isSingleTarget; }
-        void SetIsSingleTarget(bool val) { m_isSingleTarget = val; }
-        void UnregisterSingleCastHolder();
+        TrackedAuraType GetTrackedAuraType() const { return m_trackedAuraType; }
+        void SetTrackedAuraType(TrackedAuraType val) { m_trackedAuraType = val; }
+        void UnregisterAndCleanupTrackedAuras();
 
         int32 GetAuraMaxDuration() const { return m_maxDuration; }
         void SetAuraMaxDuration(int32 duration);
@@ -134,7 +134,7 @@ class MANGOS_DLL_SPEC SpellAuraHolder
             if (m_procCharges == 0)
                 return false;
 
-            m_procCharges--;
+            --m_procCharges;
             UpdateAuraApplication();
             return m_procCharges == 0;
         }
@@ -166,12 +166,12 @@ class MANGOS_DLL_SPEC SpellAuraHolder
     private:
         void UpdateAuraApplication();                       // called at charges or stack changes
 
+        SpellEntry const* m_spellProto;
+
         Unit* m_target;
         ObjectGuid m_casterGuid;
         ObjectGuid m_castItemGuid;                          // it is NOT safe to keep a pointer to the item because it may get deleted
         time_t m_applyTime;
-
-        SpellEntry const* m_spellProto;
 
         uint8 m_auraSlot;                                   // Aura slot on unit (for show in client)
         uint8 m_auraLevel;                                  // Aura level (store caster level for correct show level dep amount)
@@ -183,12 +183,12 @@ class MANGOS_DLL_SPEC SpellAuraHolder
 
         AuraRemoveMode m_removeMode: 8;                     // Store info for know remove aura reason
         DiminishingGroup m_AuraDRGroup: 8;                  // Diminishing
+        TrackedAuraType m_trackedAuraType: 8;               // store if the caster tracks the aura - can change at spell steal for example
 
         bool m_permanent: 1;
         bool m_isPassive: 1;
         bool m_isDeathPersist: 1;
         bool m_isRemovedOnShapeLost: 1;
-        bool m_isSingleTarget: 1;                           // true if it's a single target spell and registered at caster - can change at spell steal for example
         bool m_deleted: 1;
 
         uint32 m_in_use;                                    // > 0 while in SpellAuraHolder::ApplyModifiers call/SpellAuraHolder::Update/etc
@@ -214,7 +214,7 @@ class MANGOS_DLL_SPEC Aura
         friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
 
     public:
-        //aura handlers
+        // aura handlers
         void HandleNULL(bool, bool)
         {
             // NOT IMPLEMENTED
@@ -417,9 +417,8 @@ class MANGOS_DLL_SPEC Aura
         bool isAffectedOnSpell(SpellEntry const* spell) const;
         bool CanProcFrom(SpellEntry const* spell, uint32 EventProcEx, uint32 procEx, bool active, bool useClassMask) const;
 
-        //SpellAuraHolder const* GetHolder() const { return m_spellHolder; }
         SpellAuraHolder* GetHolder() { return m_spellAuraHolder; }
-        SpellAuraHolder* const GetHolder() const { return m_spellAuraHolder; }
+        SpellAuraHolder const* GetHolder() const { return m_spellAuraHolder; }
 
         bool IsLastAuraOnHolder();
     protected:
@@ -465,7 +464,7 @@ class MANGOS_DLL_SPEC AreaAura : public Aura
         AreaAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster = NULL, Item* castItem = NULL);
         ~AreaAura();
     protected:
-        void Update(uint32 diff);
+        void Update(uint32 diff) override;
     private:
         float m_radius;
         AreaAuraType m_areaAuraType;
@@ -477,7 +476,7 @@ class MANGOS_DLL_SPEC PersistentAreaAura : public Aura
         PersistentAreaAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster = NULL, Item* castItem = NULL);
         ~PersistentAreaAura();
     protected:
-        void Update(uint32 diff);
+        void Update(uint32 diff) override;
 };
 
 class MANGOS_DLL_SPEC SingleEnemyTargetAura : public Aura
@@ -486,7 +485,7 @@ class MANGOS_DLL_SPEC SingleEnemyTargetAura : public Aura
 
     public:
         ~SingleEnemyTargetAura();
-        Unit* GetTriggerTarget() const;
+        Unit* GetTriggerTarget() const override;
 
     protected:
         SingleEnemyTargetAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster  = NULL, Item* castItem = NULL);

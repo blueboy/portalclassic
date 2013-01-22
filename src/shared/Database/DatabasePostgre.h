@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,21 +41,21 @@ class MANGOS_DLL_SPEC PostgreSQLConnection : public SqlConnection
         PostgreSQLConnection() : mPGconn(NULL) {}
         ~PostgreSQLConnection();
 
-        bool Initialize(const char* infoString);
+        bool Initialize(const char* infoString) override;
 
-        QueryResult* Query(const char* sql);
-        QueryNamedResult* QueryNamed(const char* sql);
-        bool Execute(const char* sql);
+        QueryResult* Query(const char* sql) override;
+        QueryNamedResult* QueryNamed(const char* sql) override;
+        bool Execute(const char* sql) override;
 
         unsigned long escape_string(char* to, const char* from, unsigned long length);
 
-        bool BeginTransaction();
-        bool CommitTransaction();
-        bool RollbackTransaction();
+        bool BeginTransaction() override;
+        bool CommitTransaction() override;
+        bool RollbackTransaction() override;
 
     private:
         bool _TransactionCmd(const char* sql);
-        bool _Query(const char* sql, PGresult** pResult, uint64* pRowCount, uint32* pFieldCount);
+        bool _Query(const char* sql, PGresult** pResult, uint64* pRowCount, uint32* pFieldCount) override;
 
         PGconn* mPGconn;
 };
@@ -72,7 +72,7 @@ class MANGOS_DLL_SPEC DatabasePostgre : public Database
         /*! infoString should be formated like hostname;username;password;database. */
 
     protected:
-        virtual SqlConnection* CreateConnection();
+        virtual SqlConnection* CreateConnection() override;
 
     private:
         static size_t db_count;

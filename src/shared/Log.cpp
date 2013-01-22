@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,8 +41,8 @@ LogFilterData logFilterData[LOG_FILTER_COUNT] =
     { "",                    "",                             true  },
     { "weather",             "LogFilter_Weather",            true  },
     { "player_stats",        "LogFilter_PlayerStats",        false },
-    { "sql_text",            "LogFilter_SQLText",            false },
-    { "player_moves",        "LogFilter_PlayerMoves",        false },
+    { "sql_text",            "LogFilter_SQLText",            true  },
+    { "player_moves",        "LogFilter_PlayerMoves",        true  },
     { "periodic_effects",    "LogFilter_PeriodicAffects",    false },
     { "ai_and_movegens",     "LogFilter_AIAndMovegens",      false },
     { "damage",              "LogFilter_Damage",             false },
@@ -717,6 +717,8 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
 {
     if (!worldLogfile)
         return;
+
+    ACE_GUARD(ACE_Thread_Mutex, GuardObj, m_worldLogMtx);
 
     outTimestamp(worldLogfile);
 

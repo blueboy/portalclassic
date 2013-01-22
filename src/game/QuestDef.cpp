@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,6 +139,7 @@ Quest::Quest(Field* questRecord)
     {
         if (ReqItemId[i])
             ++m_reqitemscount;
+
         if (ReqCreatureOrGOId[i])
             ++m_reqCreatureOrGOcount;
     }
@@ -192,6 +193,7 @@ uint32 Quest::XPValue(Player* pPlayer) const
                 return uint32(ceilf(fullxp * 0.1f));
         }
     }
+
     return 0;
 }
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ void BarGoLink::init(int row_count)
 #else
     printf("[");
 #endif
-    for (int i = 0; i < indic_len; i++) printf(empty);
+    for (int i = 0; i < indic_len; ++i) printf(empty);
 #ifdef _WIN32
     printf("\x3D 0%%\r\x3D");
 #else
@@ -98,8 +98,8 @@ void BarGoLink::step()
 #else
         printf("\r[");
 #endif
-        for (i = 0; i < n; i++) printf(full);
-        for (; i < indic_len; i++) printf(empty);
+        for (i = 0; i < n; ++i) printf(full);
+        for (; i < indic_len; ++i) printf(empty);
         float percent = (((float)n / (float)indic_len) * 100);
 #ifdef _WIN32
         printf("\x3D %i%%  \r\x3D", (int)percent);

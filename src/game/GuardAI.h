@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,13 +38,13 @@ class MANGOS_DLL_DECL GuardAI : public CreatureAI
 
         explicit GuardAI(Creature* c);
 
-        void MoveInLineOfSight(Unit*);
-        void AttackStart(Unit*);
-        void EnterEvadeMode();
-        void JustDied(Unit*);
-        bool IsVisible(Unit*) const;
+        void MoveInLineOfSight(Unit*) override;
+        void AttackStart(Unit*) override;
+        void EnterEvadeMode() override;
+        void JustDied(Unit*) override;
+        bool IsVisible(Unit*) const override;
 
-        void UpdateAI(const uint32);
+        void UpdateAI(const uint32) override;
         static int Permissible(const Creature*);
 
     private:

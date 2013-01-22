@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@
   \ingroup realmd
   */
 
+#include "Common.h"
 #include "PatchHandler.h"
 #include "AuthCodes.h"
 #include "Log.h"
-#include "Common.h"
 
 #include <ace/OS_NS_sys_socket.h>
 #include <ace/OS_NS_dirent.h>
@@ -92,7 +92,7 @@ int PatchHandler::open(void*)
     {
         return -1;
     }
-#endif //TCP_CORK
+#endif // TCP_CORK
 
     (void) peer().disable(ACE_NONBLOCK);
 
@@ -134,7 +134,7 @@ int PatchHandler::svc(void)
 
 PatchCache::~PatchCache()
 {
-    for (Patches::iterator i = patches_.begin(); i != patches_.end(); i++)
+    for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
         delete i->second;
 }
 
@@ -182,7 +182,7 @@ void PatchCache::LoadPatchMD5(const char* szFileName)
 
 bool PatchCache::GetHash(const char* pat, ACE_UINT8 mymd5[MD5_DIGEST_LENGTH])
 {
-    for (Patches::iterator i = patches_.begin(); i != patches_.end(); i++)
+    for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
         if (!stricmp(pat, i->first.c_str()))
         {
             memcpy(mymd5, i->second->md5, MD5_DIGEST_LENGTH);

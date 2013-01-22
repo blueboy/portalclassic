@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,13 +85,13 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
         case ACT_COMMAND:                                   // 0x07
             switch (spellid)
             {
-                case COMMAND_STAY:                          // flat=1792  //STAY
+                case COMMAND_STAY:                          // flat=1792  // STAY
                     pet->StopMoving();
                     pet->GetMotionMaster()->Clear(false);
                     pet->GetMotionMaster()->MoveIdle();
                     charmInfo->SetCommandState(COMMAND_STAY);
                     break;
-                case COMMAND_FOLLOW:                        // spellid=1792  //FOLLOW
+                case COMMAND_FOLLOW:                        // spellid=1792  // FOLLOW
                     pet->AttackStop();
                     pet->GetMotionMaster()->MoveFollow(_player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
                     charmInfo->SetCommandState(COMMAND_FOLLOW);
@@ -665,8 +665,8 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
         {
             ((Pet*)pet)->CheckLearning(spellid);
 
-            //10% chance to play special pet attack talk, else growl
-            //actually this only seems to happen on special spells, fire shield for imp, torment for voidwalker, but it's stupid to check every spell
+            // 10% chance to play special pet attack talk, else growl
+            // actually this only seems to happen on special spells, fire shield for imp, torment for voidwalker, but it's stupid to check every spell
             if (((Pet*)pet)->getPetType() == SUMMON_PET && (urand(0, 100) < 10))
                 pet->SendPetTalk((uint32)PET_TALK_SPECIAL_SPELL);
             else

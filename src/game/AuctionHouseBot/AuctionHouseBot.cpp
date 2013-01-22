@@ -1,9 +1,10 @@
 #include "AuctionHouseBot.h"
 #include "ProgressBar.h"
 #include "Log.h"
-#include "../ObjectMgr.h"
-#include "../AuctionHouseMgr.h"
+#include "ObjectMgr.h"
+#include "AuctionHouseMgr.h"
 #include "SystemConfig.h"
+#include "SQLStorages.h"
 
 // Format is YYYYMMDDRR where RR is the change in the conf file
 // for that day.
@@ -293,10 +294,10 @@ void AuctionBotConfig::setConfig(AuctionBotConfigBoolValues index, char const* f
     setConfig(index, m_AhBotCfg.GetBoolDefault(fieldname,defvalue));
 }
 
-//Get AuctionHousebot configuration file
+// Get AuctionHousebot configuration file
 void AuctionBotConfig::GetConfigFromFile()
 {
-    //Check config file version
+    // Check config file version
     if (m_AhBotCfg.GetIntDefault("ConfVersion", 0) != AUCTIONHOUSEBOT_CONF_VERSION)
         sLog.outError("AHBot: Configuration file version doesn't match expected version. Some config variables may be wrong or missing.");
 
@@ -470,7 +471,7 @@ bool AuctionBotBuyer::Initialize()
     if (!active_house)
         return false;
 
-    //load Check interval
+    // load Check interval
     m_CheckInterval = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_RECHECK_INTERVAL) * MINUTE;
     DETAIL_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot buyer interval between 2 check = %u", m_CheckInterval);
     sLog.SetLogFilter(LOG_FILTER_AHBOT_BUYER, !sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_DEBUG_BUYER));
@@ -572,7 +573,7 @@ uint32 AuctionBotBuyer::GetBuyableEntry(AHB_Buyer_Config& config)
     }
 
     DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: %u items added to buyable vector for ah type: %u",count, config.GetHouseType());
-    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: SameItemInfo size = %u", config.SameItemInfo.size());
+    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: SameItemInfo size = " SIZEFMTD,config.SameItemInfo.size());
     return count;
 }
 
@@ -588,7 +589,7 @@ void AuctionBotBuyer::PrepareListOfEntry(AHB_Buyer_Config& config)
             ++itr;
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: CheckedEntry size = %u",config.CheckedEntry.size());
+    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: CheckedEntry size = " SIZEFMTD,config.CheckedEntry.size());
 }
 
 bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice, double MaxBuyablePrice, uint32 MinBuyPrice, uint32 MaxChance, uint32 ChanceRatio)
@@ -944,8 +945,8 @@ bool AuctionBotSeller::Initialize()
 
     uint32 itemsAdded = 0;
 
-    BarGoLink bar(sItemStorage.MaxEntry);
-    for (uint32 itemID = 0; itemID < sItemStorage.MaxEntry; ++itemID)
+    BarGoLink bar(sItemStorage.GetMaxEntry());
+    for (uint32 itemID = 0; itemID < sItemStorage.GetMaxEntry(); ++itemID)
     {
         ItemPrototype const* prototype = sObjectMgr.GetItemPrototype(itemID);
 
@@ -1352,7 +1353,7 @@ void AuctionBotSeller::LoadSellerValues(AHB_Seller_Config& config)
     config.SetPriceRatioPerQuality(AUCTION_QUALITY_ORANGE,PriceRatio);
     config.SetPriceRatioPerQuality(AUCTION_QUALITY_YELLOW,PriceRatio);
 
-    //load min and max auction times
+    // load min and max auction times
     config.SetMinTime(sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_MINTIME));
     config.SetMaxTime(sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_MAXTIME));
 

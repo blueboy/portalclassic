@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ class BIH
             objects.resize(dat.numPrims);
             for (uint32 i = 0; i < dat.numPrims; ++i)
                 objects[i] = dat.indices[i];
-            //nObjects = dat.numPrims;
+            // nObjects = dat.numPrims;
             tree = tempTree;
             delete[] dat.primBound;
             delete[] dat.indices;
@@ -209,7 +209,7 @@ class BIH
                             stack[stackPos].node = back;
                             stack[stackPos].tnear = (tb >= intervalMin) ? tb : intervalMin;
                             stack[stackPos].tfar = intervalMax;
-                            stackPos++;
+                            ++stackPos;
                             // update ray interval for front node
                             intervalMax = (tf <= intervalMax) ? tf : intervalMax;
                             continue;
@@ -248,7 +248,7 @@ class BIH
                     if (stackPos == 0)
                         return;
                     // move back up the stack
-                    stackPos--;
+                    --stackPos;
                     intervalMin = stack[stackPos].tnear;
                     if (maxDist < intervalMin)
                         continue;
@@ -304,7 +304,7 @@ class BIH
                             // point is in both nodes
                             // push back right node
                             stack[stackPos].node = right;
-                            stackPos++;
+                            ++stackPos;
                             continue;
                         }
                         else
@@ -337,7 +337,7 @@ class BIH
                 if (stackPos == 0)
                     return;
                 // move back up the stack
-                stackPos--;
+                --stackPos;
                 node = stack[stackPos].node;
             }
         }
@@ -387,8 +387,8 @@ class BIH
                     for (int i = 0; i < 6; ++i) numLeavesN[i] = 0;
                 }
 
-                void updateInner() { numNodes++; }
-                void updateBVH2() { numBVH2++; }
+                void updateInner() { ++numNodes; }
+                void updateBVH2() { ++numBVH2; }
                 void updateLeaf(int depth, int n);
                 void printStats();
         };

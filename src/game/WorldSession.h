@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,47 +79,48 @@ enum TutorialDataState
     TUTORIALDATA_NEW       = 2
 };
 
-//class to deal with packet processing
-//allows to determine if next packet is safe to be processed
+// class to deal with packet processing
+// allows to determine if next packet is safe to be processed
 class PacketFilter
 {
     public:
         explicit PacketFilter(WorldSession* pSession) : m_pSession(pSession) {}
         virtual ~PacketFilter() {}
 
-        virtual bool Process(WorldPacket* packet) { return true; }
+        virtual bool Process(WorldPacket* /*packet*/) { return true; }
         virtual bool ProcessLogout() const { return true; }
 
     protected:
         WorldSession* const m_pSession;
 };
-//process only thread-safe packets in Map::Update()
+// process only thread-safe packets in Map::Update()
 class MapSessionFilter : public PacketFilter
 {
     public:
         explicit MapSessionFilter(WorldSession* pSession) : PacketFilter(pSession) {}
         ~MapSessionFilter() {}
 
-        virtual bool Process(WorldPacket* packet);
-        //in Map::Update() we do not process player logout!
-        virtual bool ProcessLogout() const { return false; }
+        virtual bool Process(WorldPacket* packet) override;
+        // in Map::Update() we do not process player logout!
+        virtual bool ProcessLogout() const override { return false; }
 };
 
-//class used to filer only thread-unsafe packets from queue
-//in order to update only be used in World::UpdateSessions()
+// class used to filer only thread-unsafe packets from queue
+// in order to update only be used in World::UpdateSessions()
 class WorldSessionFilter : public PacketFilter
 {
     public:
         explicit WorldSessionFilter(WorldSession* pSession) : PacketFilter(pSession) {}
         ~WorldSessionFilter() {}
 
-        virtual bool Process(WorldPacket* packet);
+        virtual bool Process(WorldPacket* packet) override;
 };
 
 /// Player session in the World
 class MANGOS_DLL_SPEC WorldSession
 {
         friend class CharacterHandler;
+
     public:
         WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_t mute_time, LocaleConstant locale);
         ~WorldSession();
@@ -137,6 +138,7 @@ class MANGOS_DLL_SPEC WorldSession
         void SendPetNameInvalid(uint32 error, const std::string& name);
         void SendPartyResult(PartyOperation operation, const std::string& member, PartyResult res);
         void SendAreaTriggerMessage(const char* Text, ...) ATTR_PRINTF(2, 3);
+        void SendTransferAborted(uint32 mapid, uint8 reason, uint8 arg = 0);
         void SendQueryTimeResponse();
 
         AccountTypes GetSecurity() const { return _security; }
@@ -201,7 +203,7 @@ class MANGOS_DLL_SPEC WorldSession
 
         void SendPetitionQueryOpcode(ObjectGuid petitionguid);
 
-        //pet
+        // pet
         void SendPetNameQuery(ObjectGuid guid, uint32 petnumber);
         void SendStablePet(ObjectGuid guid);
         void SendStableResult(uint8 res);
@@ -227,7 +229,7 @@ class MANGOS_DLL_SPEC WorldSession
 
         bool SendItemInfo(uint32 itemid, WorldPacket data);
 
-        //auction
+        // auction
         void SendAuctionHello(Unit* unit);
         void SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError = EQUIP_ERR_OK);
         void SendAuctionBidderNotification(AuctionEntry* auction, bool won);
@@ -237,15 +239,16 @@ class MANGOS_DLL_SPEC WorldSession
         void SendAuctionCancelledToBidderMail(AuctionEntry* auction);
         AuctionHouseEntry const* GetCheckedAuctionHouseForAuctioneer(ObjectGuid guid);
 
-        //Item Enchantment
+        // Item Enchantment
         void SendEnchantmentLog(ObjectGuid targetGuid, ObjectGuid casterGuid, uint32 itemId, uint32 spellId);
         void SendItemEnchantTimeUpdate(ObjectGuid playerGuid, ObjectGuid itemGuid, uint32 slot, uint32 duration);
 
-        //Taxi
+        // Taxi
         void SendTaxiStatus(ObjectGuid guid);
         void SendTaxiMenu(Creature* unit);
         void SendDoFlight(uint32 mountDisplayId, uint32 path, uint32 pathNode = 0);
         bool SendLearnNewTaxiNode(Creature* unit);
+        void SendActivateTaxiReply(ActivateTaxiReply reply);
 
         // Guild Team
         void SendGuildCommandResult(uint32 typecmd, const std::string& str, uint32 cmdresult);
@@ -268,6 +271,11 @@ class MANGOS_DLL_SPEC WorldSession
         uint32 GetLatency() const { return m_latency; }
         void SetLatency(uint32 latency) { m_latency = latency; }
         uint32 getDialogStatus(Player* pPlayer, Object* questgiver, uint32 defstatus);
+
+        // Misc
+        void SendKnockBack(float angle, float horizontalSpeed, float verticalSpeed);
+        void SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit);
+        void SendItemPageInfo(ItemPrototype* itemProto);
 
     public:                                                 // opcodes handlers
 
@@ -449,6 +457,7 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleBuyBankSlotOpcode(WorldPacket& recvPacket);
         void HandleTrainerListOpcode(WorldPacket& recvPacket);
         void HandleTrainerBuySpellOpcode(WorldPacket& recvPacket);
+
         void HandlePetitionShowListOpcode(WorldPacket& recvPacket);
         void HandleGossipHelloOpcode(WorldPacket& recvPacket);
         void HandleGossipSelectOptionOpcode(WorldPacket& recvPacket);
@@ -499,7 +508,6 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleQueryNextMailTime(WorldPacket& recv_data);
         void HandleCancelChanneling(WorldPacket& recv_data);
 
-        void SendItemPageInfo(ItemPrototype* itemProto);
         void HandleSplitItemOpcode(WorldPacket& recvPacket);
         void HandleSwapInvItemOpcode(WorldPacket& recvPacket);
         void HandleDestroyItemOpcode(WorldPacket& recvPacket);
@@ -547,6 +555,8 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleQuestLogRemoveQuest(WorldPacket& recv_data);
         void HandleQuestConfirmAccept(WorldPacket& recv_data);
         void HandleQuestgiverCompleteQuest(WorldPacket& recv_data);
+        bool CanInteractWithQuestGiver(ObjectGuid guid, char const* descr);
+
         void HandleQuestgiverQuestAutoLaunch(WorldPacket& recvPacket);
         void HandlePushQuestToParty(WorldPacket& recvPacket);
         void HandleQuestPushResult(WorldPacket& recvPacket);
@@ -594,7 +604,7 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleTutorialClearOpcode(WorldPacket& recv_data);
         void HandleTutorialResetOpcode(WorldPacket& recv_data);
 
-        //Pet
+        // Pet
         void HandlePetAction(WorldPacket& recv_data);
         void HandlePetStopAttack(WorldPacket& recv_data);
         void HandlePetNameQueryOpcode(WorldPacket& recv_data);
@@ -613,7 +623,7 @@ class MANGOS_DLL_SPEC WorldSession
 
         void HandleTotemDestroyed(WorldPacket& recv_data);
 
-        //BattleGround
+        // BattleGround
         void HandleBattlemasterHelloOpcode(WorldPacket& recv_data);
         void HandleBattlemasterJoinOpcode(WorldPacket& recv_data);
         void HandleBattleGroundPlayerPositionsOpcode(WorldPacket& recv_data);
@@ -666,7 +676,7 @@ class MANGOS_DLL_SPEC WorldSession
         bool m_playerLoading;                               // code processed in LoginPlayer
         bool m_playerLogout;                                // code processed in LogoutPlayer
         bool m_playerRecentlyLogout;
-        bool m_playerSave;
+        bool m_playerSave;                                  // code processed in LogoutPlayer with save request
         LocaleConstant m_sessionDbcLocale;
         int m_sessionDbLocaleIndex;
         uint32 m_latency;

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include "ObjectGuid.h"
 #include "GroupReference.h"
 #include "GroupRefManager.h"
-#include "BattleGround.h"
+#include "BattleGround/BattleGround.h"
 #include "LootMgr.h"
 #include "DBCEnums.h"
 #include "SharedDefines.h"
@@ -125,13 +125,13 @@ class Roll : public LootValidatorRef
         ~Roll() { }
         void setLoot(Loot* pLoot) { link(pLoot, this); }
         Loot* getLoot() { return getTarget(); }
-        void targetObjectBuildLink();
+        void targetObjectBuildLink() override;
 
         ObjectGuid lootedTargetGUID;
         uint32 itemid;
         int32  itemRandomPropId;
         typedef UNORDERED_MAP<ObjectGuid, RollVote> PlayerVote;
-        PlayerVote playerVote;                              //vote position correspond with player position (in group)
+        PlayerVote playerVote;                              // vote position correspond with player position (in group)
         uint8 totalPlayersRolling;
         uint8 totalNeed;
         uint8 totalGreed;
@@ -167,7 +167,6 @@ class MANGOS_DLL_SPEC Group
     protected:
         typedef MemberSlotList::iterator member_witerator;
         typedef std::set<Player*> InvitesList;
-
         typedef std::vector<Roll*> Rolls;
 
     public:
@@ -308,7 +307,7 @@ class MANGOS_DLL_SPEC Group
         void NeedBeforeGreed(WorldObject* pSource, Loot* loot);
         void MasterLoot(WorldObject* pSource, Loot* loot);
         bool CountRollVote(Player* player, ObjectGuid const& lootedTarget, uint32 itemSlot, RollVote vote);
-        void StartLootRool(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot);
+        void StartLootRoll(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot);
         void EndRoll();
 
         void LinkMember(GroupReference* pRef) { m_memberMgr.insertFirst(pRef); }

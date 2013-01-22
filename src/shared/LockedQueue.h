@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 
 namespace ACE_Based
 {
-    template <class T, class LockType, typename StorageType = std::deque<T> >
+    template < class T, class LockType, typename StorageType = std::deque<T> >
     class LockedQueue
     {
             //! Lock access to the queue.

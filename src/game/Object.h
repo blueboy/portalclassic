@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,8 +89,8 @@ struct WorldLocation
 };
 
 
-//use this class to measure time between world update ticks
-//essential for units updating their spells after cells become active
+// use this class to measure time between world update ticks
+// essential for units updating their spells after cells become active
 class WorldUpdateCounter
 {
     public:
@@ -349,8 +349,6 @@ class MANGOS_DLL_SPEC Object
 
         uint16 GetValuesCount() const { return m_valuesCount; }
 
-        void InitValues() { _InitValues(); }
-
         virtual bool HasQuest(uint32 /* quest_id */) const { return false; }
         virtual bool HasInvolvedQuest(uint32 /* quest_id */) const { return false; }
 
@@ -408,8 +406,8 @@ class MANGOS_DLL_SPEC WorldObject : public Object
 
     public:
 
-        //class is used to manipulate with WorldUpdateCounter
-        //it is needed in order to get time diff between two object's Update() calls
+        // class is used to manipulate with WorldUpdateCounter
+        // it is needed in order to get time diff between two object's Update() calls
         class MANGOS_DLL_SPEC UpdateHelper
         {
             public:
@@ -542,7 +540,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         void PlayDirectSound(uint32 sound_id, Player* target = NULL);
 
         void SendObjectDeSpawnAnim(ObjectGuid guid);
-        void SendGameObjectCustomAnim(ObjectGuid guid);
+        void SendGameObjectCustomAnim(ObjectGuid guid, uint32 animId = 0);
 
         virtual bool IsHostileTo(Unit const* unit) const = 0;
         virtual bool IsFriendlyTo(Unit const* unit) const = 0;
@@ -562,15 +560,15 @@ class MANGOS_DLL_SPEC WorldObject : public Object
 
         void SetMap(Map* map);
         Map* GetMap() const { MANGOS_ASSERT(m_currMap); return m_currMap; }
-        //used to check all object's GetMap() calls when object is not in world!
+        // used to check all object's GetMap() calls when object is not in world!
         void ResetMap() { m_currMap = NULL; }
 
-        //obtain terrain data for map where this object belong...
+        // obtain terrain data for map where this object belong...
         TerrainInfo const* GetTerrain() const;
 
-        void AddToClientUpdateList();
-        void RemoveFromClientUpdateList();
-        void BuildUpdateData(UpdateDataMapType&);
+        void AddToClientUpdateList() override;
+        void RemoveFromClientUpdateList() override;
+        void BuildUpdateData(UpdateDataMapType&) override;
 
         Creature* SummonCreature(uint32 id, float x, float y, float z, float ang, TempSummonType spwtype, uint32 despwtime, bool asActiveObject = false);
 
@@ -582,14 +580,14 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         // ASSERT print helper
         bool PrintCoordinatesError(float x, float y, float z, char const* descr) const;
 
-        virtual void StartGroupLoot(Group* group, uint32 timer) {}
+        virtual void StartGroupLoot(Group* /*group*/, uint32 /*timer*/) {}
 
     protected:
         explicit WorldObject();
 
-        //these functions are used mostly for Relocate() and Corpse/Player specific stuff...
-        //use them ONLY in LoadFromDB()/Create() funcs and nowhere else!
-        //mapId/instanceId should be set in SetMap() function!
+        // these functions are used mostly for Relocate() and Corpse/Player specific stuff...
+        // use them ONLY in LoadFromDB()/Create() funcs and nowhere else!
+        // mapId/instanceId should be set in SetMap() function!
         void SetLocationMapId(uint32 _mapId) { m_mapId = _mapId; }
         void SetLocationInstanceId(uint32 _instanceId) { m_InstanceId = _instanceId; }
 
@@ -598,7 +596,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         std::string m_name;
 
     private:
-        Map* m_currMap;                                     //current object's Map location
+        Map* m_currMap;                                     // current object's Map location
 
         uint32 m_mapId;                                     // object at map with map_id
         uint32 m_InstanceId;                                // in map copy with instance id

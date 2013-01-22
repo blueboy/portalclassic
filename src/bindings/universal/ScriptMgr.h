@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #ifndef SCRIPTMGR_H
 #define SCRIPTMGR_H
 
-//Only required includes
+// Only required includes
 #include "../../game/CreatureAI.h"
 #include "../../game/Creature.h"
 #include "../../game/InstanceData.h"
@@ -92,16 +92,16 @@ struct MANGOS_DLL_DECL ScriptedAI : public CreatureAI
     ~ScriptedAI() {}
 
     // Called at stopping attack by any attacker
-    void EnterEvadeMode();
+    void EnterEvadeMode() override;
 
     // Is unit visible for MoveInLineOfSight
-    bool IsVisible(Unit* who) const
+    bool IsVisible(Unit* who) const override
     {
         return !who->HasStealthAura() && m_creature->IsWithinDist(who, VISIBLE_RANGE);
     }
 
     // Called at World update tick
-    void UpdateAI(const uint32);
+    void UpdateAI(const uint32) override;
 
     //= Some useful helpers =========================
 

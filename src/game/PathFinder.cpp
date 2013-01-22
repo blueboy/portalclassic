@@ -75,24 +75,8 @@ bool PathFinder::calculate(float destX, float destY, float destZ, bool forceDest
 
     updateFilter();
 
-    // check if destination moved - if not we can optimize something here
-    // we are following old, precalculated path?
-    float dist = m_sourceUnit->GetObjectBoundingRadius();
-    if (inRange(oldDest, dest, dist, dist) && m_pathPoints.size() > 2)
-    {
-        // our target is not moving - we just coming closer
-        // we are moving on precalculated path - enjoy the ride
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::calculate:: precalculated path\n");
-
-        m_pathPoints.erase(m_pathPoints.begin());
-        return false;
-    }
-    else
-    {
-        // target moved, so we need to update the poly path
-        BuildPolyPath(start, dest);
-        return true;
-    }
+    BuildPolyPath(start, dest);
+    return true;
 }
 
 dtPolyRef PathFinder::getPathPolyByPosition(const dtPolyRef* polyPath, uint32 polyPathSize, const float* point, float* distance) const
@@ -180,8 +164,19 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     {
         DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPoly == 0 || endPoly == 0)\n");
         BuildShortcut();
-        m_type = (m_sourceUnit->GetTypeId() == TYPEID_UNIT && ((Creature*)m_sourceUnit)->CanFly())
-                 ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH;
+
+        if (m_sourceUnit->GetTypeId() == TYPEID_UNIT)
+        {
+            // Check for swimming or flying shortcut
+            if ((startPoly == INVALID_POLYREF && m_sourceUnit->GetTerrain()->IsUnderWater(startPos.x, startPos.y, startPos.z)) ||
+                    (endPoly == INVALID_POLYREF && m_sourceUnit->GetTerrain()->IsUnderWater(endPos.x, endPos.y, endPos.z)))
+                m_type = ((Creature*)m_sourceUnit)->CanSwim() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH;
+            else
+                m_type = ((Creature*)m_sourceUnit)->CanFly() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH;
+        }
+        else
+            m_type = PATHFIND_NOPATH;
+
         return;
     }
 
@@ -581,7 +576,7 @@ uint32 PathFinder::fixupCorridor(dtPolyRef* path, uint32 npath, uint32 maxPath,
     // Adjust beginning of the buffer to include the visited.
     uint32 req = nvisited - furthestVisited;
     uint32 orig = uint32(furthestPath + 1) < npath ? furthestPath + 1 : npath;
-    uint32 size = npath - orig > 0 ? npath - orig : 0;
+    uint32 size = npath > orig ? npath - orig : 0;
     if (req + size > maxPath)
         size = maxPath - req;
 
@@ -618,7 +613,7 @@ bool PathFinder::getSteerTarget(const float* startPos, const float* endPos,
         if ((steerPathFlags[ns] & DT_STRAIGHTPATH_OFFMESH_CONNECTION) ||
                 !inRangeYZX(&steerPath[ns * VERTEX_SIZE], startPos, minTargetDist, 1000.0f))
             break;
-        ns++;
+        ++ns;
     }
     // Failed to find good point to steer to.
     if (ns >= nsteerPath)
@@ -651,7 +646,7 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
         return DT_FAILURE;
 
     dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], iterPos);
-    nsmoothPath++;
+    ++nsmoothPath;
 
     // Move towards target a small advancement at a time until target reached or
     // when ran out of memory to store the path.
@@ -702,7 +697,7 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
             if (nsmoothPath < maxSmoothPathSize)
             {
                 dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], iterPos);
-                nsmoothPath++;
+                ++nsmoothPath;
             }
             break;
         }
@@ -716,7 +711,7 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
             {
                 prevRef = polyRef;
                 polyRef = polys[npos];
-                npos++;
+                ++npos;
             }
 
             for (uint32 i = npos; i < npolys; ++i)
@@ -731,7 +726,7 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
                 if (nsmoothPath < maxSmoothPathSize)
                 {
                     dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], startPos);
-                    nsmoothPath++;
+                    ++nsmoothPath;
                 }
                 // Move position at the other side of the off-mesh link.
                 dtVcopy(iterPos, endPos);
@@ -745,7 +740,7 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
         if (nsmoothPath < maxSmoothPathSize)
         {
             dtVcopy(&smoothPath[nsmoothPath * VERTEX_SIZE], iterPos);
-            nsmoothPath++;
+            ++nsmoothPath;
         }
     }
 

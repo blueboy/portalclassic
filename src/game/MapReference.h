@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,18 +26,18 @@
 class MANGOS_DLL_SPEC MapReference : public Reference<Map, Player>
 {
     protected:
-        void targetObjectBuildLink()
+        void targetObjectBuildLink() override
         {
             // called from link()
             getTarget()->m_mapRefManager.insertFirst(this);
             getTarget()->m_mapRefManager.incSize();
         }
-        void targetObjectDestroyLink()
+        void targetObjectDestroyLink() override
         {
             // called from unlink()
             if (isValid()) getTarget()->m_mapRefManager.decSize();
         }
-        void sourceObjectDestroyLink()
+        void sourceObjectDestroyLink() override
         {
             // called from invalidate()
             getTarget()->m_mapRefManager.decSize();

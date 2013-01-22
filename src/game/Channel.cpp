@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -567,7 +567,7 @@ void Channel::Say(ObjectGuid p, const char* what, uint32 lang)
         data << ObjectGuid(p);
         data << uint32(messageLength);
         data << what;
-        data << uint8(plr ? plr->chatTag() : 0);
+        data << uint8(plr ? plr->GetChatTag() : uint8(CHAT_TAG_NONE));
 
         SendToAll(&data, !m_players[p].IsModerator() ? p : ObjectGuid());
     }

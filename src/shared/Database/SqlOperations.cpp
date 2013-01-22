@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -170,7 +170,7 @@ QueryResult* SqlQueryHolder::GetResult(size_t index)
         /// the query strings are freed on the first GetResult or in the destructor
         if (m_queries[index].first != NULL)
         {
-            delete [](const_cast<char*>(m_queries[index].first));
+            delete[](const_cast<char*>(m_queries[index].first));
             m_queries[index].first = NULL;
         }
         /// when you get a result aways remember to delete it!
@@ -189,15 +189,14 @@ void SqlQueryHolder::SetResult(size_t index, QueryResult* result)
 
 SqlQueryHolder::~SqlQueryHolder()
 {
-    for (size_t i = 0; i < m_queries.size(); i++)
+    for (size_t i = 0; i < m_queries.size(); ++i)
     {
         /// if the result was never used, free the resources
         /// results used already (getresult called) are expected to be deleted
         if (m_queries[i].first != NULL)
         {
-            delete [](const_cast<char*>(m_queries[i].first));
-            if (m_queries[i].second)
-                delete m_queries[i].second;
+            delete[](const_cast<char*>(m_queries[i].first));
+            delete m_queries[i].second;
         }
     }
 }
@@ -216,7 +215,7 @@ bool SqlQueryHolderEx::Execute(SqlConnection* conn)
     LOCK_DB_CONN(conn);
     /// we can do this, we are friends
     std::vector<SqlQueryHolder::SqlResultPair>& queries = m_holder->m_queries;
-    for (size_t i = 0; i < queries.size(); i++)
+    for (size_t i = 0; i < queries.size(); ++i)
     {
         /// execute all queries in the holder and pass the results
         char const* sql = queries[i].first;

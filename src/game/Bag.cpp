@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,8 +36,7 @@ Bag::Bag(): Item()
 Bag::~Bag()
 {
     for (int i = 0; i < MAX_BAG_SIZE; ++i)
-        if (m_bagslot[i])
-            delete m_bagslot[i];
+        delete m_bagslot[i];
 }
 
 void Bag::AddToWorld()
@@ -104,11 +103,9 @@ bool Bag::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
     for (int i = 0; i < MAX_BAG_SIZE; ++i)
     {
         SetGuidValue(CONTAINER_FIELD_SLOT_1 + (i * 2), ObjectGuid());
-        if (m_bagslot[i])
-        {
-            delete m_bagslot[i];
-            m_bagslot[i] = NULL;
-        }
+
+        delete m_bagslot[i];
+        m_bagslot[i] = NULL;
     }
 
     return true;

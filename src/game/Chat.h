@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -343,7 +343,7 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleNpcWhisperCommand(char* args);
         bool HandleNpcYellCommand(char* args);
 
-        //TODO: NpcCommands that needs to be fixed :
+        // TODO: NpcCommands that needs to be fixed :
         bool HandleNpcAddWeaponCommand(char* args);
         bool HandleNpcNameCommand(char* args);
         bool HandleNpcSubNameCommand(char* args);
@@ -376,15 +376,16 @@ class MANGOS_DLL_SPEC ChatHandler
 
         bool HandleReloadAreaTriggerTavernCommand(char* args);
         bool HandleReloadAreaTriggerTeleportCommand(char* args);
+        bool HandleReloadBattleEventCommand(char* args);
+        bool HandleReloadCommandCommand(char* args);
+        bool HandleReloadConditionsCommand(char* args);
+        bool HandleReloadCreatureQuestRelationsCommand(char* args);
+        bool HandleReloadCreatureQuestInvRelationsCommand(char* args);
+        bool HandleReloadDbScriptStringCommand(char* args);
         bool HandleReloadEventScriptsCommand(char* args);
         bool HandleReloadEventAITextsCommand(char* args);
         bool HandleReloadEventAISummonsCommand(char* args);
         bool HandleReloadEventAIScriptsCommand(char* args);
-        bool HandleReloadCommandCommand(char* args);
-        bool HandleReloadBattleEventCommand(char* args);
-        bool HandleReloadCreatureQuestRelationsCommand(char* args);
-        bool HandleReloadCreatureQuestInvRelationsCommand(char* args);
-        bool HandleReloadDbScriptStringCommand(char* args);
         bool HandleReloadGameGraveyardZoneCommand(char* args);
         bool HandleReloadGameObjectScriptsCommand(char* args);
         bool HandleReloadGameTeleCommand(char* args);
@@ -425,8 +426,6 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleReloadReservedNameCommand(char* args);
         bool HandleReloadReputationRewardRateCommand(char* args);
         bool HandleReloadReputationSpilloverTemplateCommand(char* args);
-        bool HandleReloadSkillDiscoveryTemplateCommand(char* args);
-        bool HandleReloadSkillExtraItemTemplateCommand(char* args);
         bool HandleReloadSkillFishingBaseLevelCommand(char* args);
         bool HandleReloadSpellAffectCommand(char* args);
         bool HandleReloadSpellAreaCommand(char* args);
@@ -534,7 +533,6 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleLinkGraveCommand(char* args);
         bool HandleNearGraveCommand(char* args);
         bool HandleExploreCheatCommand(char* args);
-        bool HandleHoverCommand(char* args);
         bool HandleLevelUpCommand(char* args);
         bool HandleShowAreaCommand(char* args);
         bool HandleHideAreaCommand(char* args);
@@ -678,15 +676,15 @@ class CliHandler : public ChatHandler
             : m_accountId(accountId), m_loginAccessLevel(accessLevel), m_callbackArg(callbackArg), m_print(zprint) {}
 
         // overwrite functions
-        const char* GetMangosString(int32 entry) const;
-        uint32 GetAccountId() const;
-        AccountTypes GetAccessLevel() const;
-        bool isAvailable(ChatCommand const& cmd) const;
-        void SendSysMessage(const char* str);
-        std::string GetNameLink() const;
-        bool needReportToTarget(Player* chr) const;
-        LocaleConstant GetSessionDbcLocale() const;
-        int GetSessionDbLocaleIndex() const;
+        const char* GetMangosString(int32 entry) const override;
+        uint32 GetAccountId() const override;
+        AccountTypes GetAccessLevel() const override;
+        bool isAvailable(ChatCommand const& cmd) const override;
+        void SendSysMessage(const char* str) override;
+        std::string GetNameLink() const override;
+        bool needReportToTarget(Player* chr) const override;
+        LocaleConstant GetSessionDbcLocale() const override;
+        int GetSessionDbLocaleIndex() const override;
 
     private:
         uint32 m_accountId;

@@ -353,8 +353,8 @@ void WorldSession::HandleMailReturnToSender(WorldPacket& recv_data)
         return;
     }
 
-    //we can return mail now
-    //so firstly delete the old one
+    // we can return mail now
+    // so firstly delete the old one
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute("DELETE FROM mail WHERE id = '%u'", mailId);
     // needed?
@@ -538,7 +538,7 @@ void WorldSession::HandleGetMailList(WorldPacket& recv_data)
     // client can't work with packets > max int16 value
     const uint32 maxPacketSize = 32767;
 
-    uint32 mailsCount = 0;                                  // real send to client mails amount
+    uint32 mailsCount = 0;                                  // send to client mails amount
 
     WorldPacket data(SMSG_MAIL_LIST_RESULT, (200));         // guess size
     data << uint8(0);                                       // mail's count
@@ -628,7 +628,7 @@ void WorldSession::HandleItemTextQuery(WorldPacket& recv_data)
 
     recv_data >> itemTextId >> mailId >> unk;
 
-    ///TODO: some check needed, if player has item with guid mailId, or has mail with id mailId
+    /// TODO: some check needed, if player has item with guid mailId, or has mail with id mailId
 
     DEBUG_LOG("CMSG_ITEM_TEXT_QUERY itemguid: %u, mailId: %u, unk: %u", itemTextId, mailId, unk);
 

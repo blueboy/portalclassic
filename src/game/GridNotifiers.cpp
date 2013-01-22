@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,12 +25,12 @@
 #include "Map.h"
 #include "Transports.h"
 #include "ObjectAccessor.h"
-#include "BattleGroundMgr.h"
+#include "BattleGround/BattleGroundMgr.h"
+#include "CreatureAI.h"
 
 using namespace MaNGOS;
 
-void
-VisibleChangesNotifier::Visit(CameraMapType& m)
+void VisibleChangesNotifier::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
@@ -38,8 +38,7 @@ VisibleChangesNotifier::Visit(CameraMapType& m)
     }
 }
 
-void
-VisibleNotifier::Notify()
+void VisibleNotifier::Notify()
 {
     Player& player = *i_camera.GetOwner();
     // at this moment i_clientGUIDs have guids that not iterate at grid level checks
@@ -60,7 +59,7 @@ VisibleNotifier::Notify()
 
     // generate outOfRange for not iterate objects
     i_data.AddOutOfRangeGUID(i_clientGUIDs);
-    for (ObjectGuidSet::iterator itr = i_clientGUIDs.begin(); itr != i_clientGUIDs.end(); ++itr)
+    for (GuidSet::iterator itr = i_clientGUIDs.begin(); itr != i_clientGUIDs.end(); ++itr)
     {
         player.m_clientGUIDs.erase(*itr);
 
@@ -76,8 +75,8 @@ VisibleNotifier::Notify()
         player.GetSession()->SendPacket(&packet);
 
         // send out of range to other players if need
-        ObjectGuidSet const& oor = i_data.GetOutOfRangeGUIDs();
-        for (ObjectGuidSet::const_iterator iter = oor.begin(); iter != oor.end(); ++iter)
+        GuidSet const& oor = i_data.GetOutOfRangeGUIDs();
+        for (GuidSet::const_iterator iter = oor.begin(); iter != oor.end(); ++iter)
         {
             if (!iter->IsPlayer())
                 continue;
@@ -98,8 +97,7 @@ VisibleNotifier::Notify()
     }
 }
 
-void
-MessageDeliverer::Visit(CameraMapType& m)
+void MessageDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
@@ -127,9 +125,7 @@ void MessageDelivererExcept::Visit(CameraMapType& m)
     }
 }
 
-
-void
-ObjectMessageDeliverer::Visit(CameraMapType& m)
+void ObjectMessageDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
@@ -138,8 +134,7 @@ ObjectMessageDeliverer::Visit(CameraMapType& m)
     }
 }
 
-void
-MessageDistDeliverer::Visit(CameraMapType& m)
+void MessageDistDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
@@ -155,8 +150,7 @@ MessageDistDeliverer::Visit(CameraMapType& m)
     }
 }
 
-void
-ObjectMessageDistDeliverer::Visit(CameraMapType& m)
+void ObjectMessageDistDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
@@ -168,8 +162,8 @@ ObjectMessageDistDeliverer::Visit(CameraMapType& m)
     }
 }
 
-template<class T> void
-ObjectUpdater::Visit(GridRefManager<T>& m)
+template<class T>
+void ObjectUpdater::Visit(GridRefManager<T>& m)
 {
     for (typename GridRefManager<T>::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
@@ -223,6 +217,44 @@ void MaNGOS::RespawnDo::operator()(GameObject* u) const
     u->Respawn();
 }
 
+void MaNGOS::CallOfHelpCreatureInRangeDo::operator()(Creature* u)
+{
+    if (u == i_funit)
+        return;
+
+    if (!u->CanAssistTo(i_funit, i_enemy, false))
+        return;
+
+    // too far
+    if (!i_funit->IsWithinDistInMap(u, i_range))
+        return;
+
+    // only if see assisted creature
+    if (!i_funit->IsWithinLOSInMap(u))
+        return;
+
+    if (u->AI())
+        u->AI()->AttackStart(i_enemy);
+}
+
+bool MaNGOS::AnyAssistCreatureInRangeCheck::operator()(Creature* u)
+{
+    if (u == i_funit)
+        return false;
+
+    if (!u->CanAssistTo(i_funit, i_enemy))
+        return false;
+
+    // too far
+    if (!i_funit->IsWithinDistInMap(u, i_range))
+        return false;
+
+    // only if see assisted creature
+    if (!i_funit->IsWithinLOSInMap(u))
+        return false;
+
+    return true;
+}
 
 template void ObjectUpdater::Visit<GameObject>(GameObjectMapType&);
 template void ObjectUpdater::Visit<DynamicObject>(DynamicObjectMapType&);

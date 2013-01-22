@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,10 +81,10 @@ class PatchHandler: public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         PatchHandler(ACE_HANDLE socket, ACE_HANDLE patch);
         virtual ~PatchHandler();
 
-        int open(void* = 0);
+        int open(void* = 0) override;
 
     protected:
-        virtual int svc(void);
+        virtual int svc(void) override;
 
     private:
         ACE_HANDLE patch_fd_;

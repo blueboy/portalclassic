@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
  * @{
  *
  * @file Mail.cpp
- * This file contains the the code needed for MaNGOS to handle mails.
+ * This file contains the code needed for MaNGOS to handle mails.
  *
  */
 
@@ -39,7 +39,7 @@
 #include "Unit.h"
 #include "Language.h"
 #include "DBCStores.h"
-#include "BattleGroundMgr.h"
+#include "BattleGround/BattleGroundMgr.h"
 #include "Item.h"
 #include "AuctionHouseMgr.h"
 
@@ -226,7 +226,7 @@ void MailDraft::CloneFrom(MailDraft const& draft)
  * Returns a mail to its sender.
  * @param sender_acc           The id of the account of the sender.
  * @param sender_guid          The low part of the GUID of the sender.
- * @param receiver_guid        The low part of the GUID of the reciever.
+ * @param receiver_guid        The low part of the GUID of the receiver.
  */
 void MailDraft::SendReturnToSender(uint32 sender_acc, ObjectGuid sender_guid, ObjectGuid receiver_guid)
 {

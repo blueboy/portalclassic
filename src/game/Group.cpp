@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #include "Group.h"
 #include "Formulas.h"
 #include "ObjectAccessor.h"
-#include "BattleGround.h"
+#include "BattleGround/BattleGround.h"
 #include "MapManager.h"
 #include "MapPersistentStateMgr.h"
 #include "Util.h"
@@ -85,8 +85,7 @@ Group::~Group()
         itr2->second.state->RemoveGroup(this);
 
     // Sub group counters clean up
-    if (m_subGroupsCounts)
-        delete[] m_subGroupsCounts;
+    delete[] m_subGroupsCounts;
 }
 
 bool Group::Create(ObjectGuid guid, const char* name)
@@ -318,7 +317,7 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
                 player->GetSession()->SendPacket(&data);
             }
 
-            //we already removed player from group and in player->GetGroup() is his original group!
+            // we already removed player from group and in player->GetGroup() is his original group!
             if (Group* group = player->GetGroup())
             {
                 group->SendUpdate();
@@ -373,13 +372,13 @@ void Group::Disband(bool hideDestroy)
         if (!player)
             continue;
 
-        //we cannot call _removeMember because it would invalidate member iterator
-        //if we are removing player from battleground raid
+        // we cannot call _removeMember because it would invalidate member iterator
+        // if we are removing player from battleground raid
         if (isBGGroup())
             player->RemoveFromBattleGroundRaid();
         else
         {
-            //we can remove player who is in battleground from his original group
+            // we can remove player who is in battleground from his original group
             if (player->GetOriginalGroup() == this)
                 player->SetOriginalGroup(NULL);
             else
@@ -400,7 +399,7 @@ void Group::Disband(bool hideDestroy)
             player->GetSession()->SendPacket(&data);
         }
 
-        //we already removed player from group and in player->GetGroup() is his original group, send update
+        // we already removed player from group and in player->GetGroup() is his original group, send update
         if (Group* group = player->GetGroup())
         {
             group->SendUpdate();
@@ -537,9 +536,9 @@ void Group::GroupLoot(WorldObject* pSource, Loot* loot)
             continue;
         }
 
-        //roll for over-threshold item if it's one-player loot
+        // roll for over-threshold item if it's one-player loot
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(pSource, GROUP_LOOT, loot, itemSlot);
+            StartLootRoll(pSource, GROUP_LOOT, loot, itemSlot);
         else
             lootItem.is_underthreshold = 1;
     }
@@ -557,9 +556,9 @@ void Group::NeedBeforeGreed(WorldObject* pSource, Loot* loot)
             continue;
         }
 
-        //only roll for one-player items, not for ones everyone can get
+        // only roll for one-player items, not for ones everyone can get
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(pSource, NEED_BEFORE_GREED, loot, itemSlot);
+            StartLootRoll(pSource, NEED_BEFORE_GREED, loot, itemSlot);
         else
             lootItem.is_underthreshold = 1;
     }
@@ -667,18 +666,18 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     return false;
 }
 
-void Group::StartLootRool(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot)
+void Group::StartLootRoll(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot)
 {
     if (itemSlot >= loot->items.size())
         return;
 
-    LootItem const& lootItem =  loot->items[itemSlot];
+    LootItem const& lootItem = loot->items[itemSlot];
 
     ItemPrototype const* item = ObjectMgr::GetItemPrototype(lootItem.itemid);
 
     Roll* r = new Roll(lootTarget->GetObjectGuid(), lootItem);
 
-    //a vector is filled with only near party members
+    // a vector is filled with only near party members
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
     {
         Player* playerToRoll = itr->getSource();
@@ -687,7 +686,7 @@ void Group::StartLootRool(WorldObject* lootTarget, LootMethod method, Loot* loot
 
         if ((method != NEED_BEFORE_GREED || playerToRoll->CanUseItem(item) == EQUIP_ERR_OK) && lootItem.AllowedForPlayer(playerToRoll))
         {
-            if (playerToRoll->IsWithinDist(lootTarget, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+            if (playerToRoll->IsWithinDistInMap(lootTarget, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
             {
                 r->playerVote[playerToRoll->GetObjectGuid()] = ROLL_NOT_EMITED_YET;
                 ++r->totalPlayersRolling;
@@ -724,9 +723,9 @@ void Group::EndRoll()
 {
     while (!RollId.empty())
     {
-        //need more testing here, if rolls disappear
+        // need more testing here, if rolls disappear
         Rolls::iterator itr = RollId.begin();
-        CountTheRoll(itr);                                  //i don't have to edit player votes, who didn't vote ... he will pass
+        CountTheRoll(itr);                                  // i don't have to edit player votes, who didn't vote ... he will pass
     }
 }
 
@@ -740,7 +739,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
         return;
     }
 
-    //end of the roll
+    // end of the roll
     if (roll->totalNeed > 0)
     {
         if (!roll->playerVote.empty())
@@ -792,7 +791,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
             uint8 maxresul = 0;
             ObjectGuid maxguid = (*roll->playerVote.begin()).first;
             Player* player;
-            RollVote rollvote = ROLL_PASS;                  //Fixed: Using uninitialized memory 'rollvote'
+            RollVote rollvote = ROLL_PASS;                  // Fixed: Using uninitialized memory 'rollvote'
 
             Roll::PlayerVote::iterator itr;
             for (itr = roll->playerVote.begin(); itr != roll->playerVote.end(); ++itr)
@@ -1050,7 +1049,7 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     if (!guid)
         return false;
 
-    Player* player = sObjectMgr.GetPlayer(guid);
+    Player* player = sObjectMgr.GetPlayer(guid, false);
 
     MemberSlot member;
     member.guid      = guid;
@@ -1064,20 +1063,23 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     if (player)
     {
         player->SetGroupInvite(NULL);
-        //if player is in group and he is being added to BG raid group, then call SetBattleGroundRaid()
+        // if player is in group and he is being added to BG raid group, then call SetBattleGroundRaid()
         if (player->GetGroup() && isBGGroup())
             player->SetBattleGroundRaid(this, group);
-        //if player is in bg raid and we are adding him to normal group, then call SetOriginalGroup()
+        // if player is in bg raid and we are adding him to normal group, then call SetOriginalGroup()
         else if (player->GetGroup())
             player->SetOriginalGroup(this, group);
-        //if player is not in group, then call set group
+        // if player is not in group, then call set group
         else
             player->SetGroup(this, group);
 
-        // if the same group invites the player back, cancel the homebind timer
-        if (InstanceGroupBind* bind = GetBoundInstance(player->GetMapId()))
-            if (bind->state->GetInstanceId() == player->GetInstanceId())
-                player->m_InstanceValid = true;
+        if (player->IsInWorld())
+        {
+            // if the same group invites the player back, cancel the homebind timer
+            if (InstanceGroupBind* bind = GetBoundInstance(player->GetMapId()))
+                if (bind->state->GetInstanceId() == player->GetInstanceId())
+                    player->m_InstanceValid = true;
+        }
     }
 
     if (!isRaidGroup())                                     // reset targetIcons for non-raid-groups
@@ -1101,12 +1103,12 @@ bool Group::_removeMember(ObjectGuid guid)
     Player* player = sObjectMgr.GetPlayer(guid);
     if (player)
     {
-        //if we are removing player from battleground raid
+        // if we are removing player from battleground raid
         if (isBGGroup())
             player->RemoveFromBattleGroundRaid();
         else
         {
-            //we can remove player who is in battleground from his original group
+            // we can remove player who is in battleground from his original group
             if (player->GetOriginalGroup() == this)
                 player->SetOriginalGroup(NULL);
             else
@@ -1348,7 +1350,7 @@ void Group::ChangeMembersGroup(Player* player, uint8 group)
     {
         if (player->GetGroup() == this)
             player->GetGroupRef().setSubGroup(group);
-        //if player is in BG raid, it is possible that he is also in normal raid - and that normal raid is stored in m_originalGroup reference
+        // if player is in BG raid, it is possible that he is also in normal raid - and that normal raid is stored in m_originalGroup reference
         else
         {
             prevSubGroup = player->GetOriginalSubGroup();
@@ -1397,7 +1399,7 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
                 {
                     bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
-                    //if(refresh)                           // update loot for new looter
+                    // if(refresh)                          // update loot for new looter
                     //    pl->GetSession()->DoLootRelease(pl->GetLootGUID());
                     SetLooterGuid(pl->GetObjectGuid());
                     SendUpdate();
@@ -1418,7 +1420,7 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
             {
                 bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
-                //if(refresh)                               // update loot for new looter
+                // if(refresh)                              // update loot for new looter
                 //    pl->GetSession()->DoLootRelease(pl->GetLootGUID());
                 SetLooterGuid(pl->GetObjectGuid());
                 SendUpdate();

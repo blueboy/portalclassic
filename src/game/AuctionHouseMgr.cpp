@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction)
 
         if (owner)
         {
-            //send auction owner notification, bidder must be current!
+            // send auction owner notification, bidder must be current!
             owner->GetSession()->SendAuctionOwnerNotification(auction, true);
         }
 
@@ -384,7 +384,7 @@ void AuctionHouseMgr::LoadAuctions()
             auction->itemCount    = pItem->GetCount();
             auction->itemRandomPropertyId = pItem->GetItemRandomPropertyId();
 
-            //No SQL injection (no strings)
+            // No SQL injection (no strings)
             CharacterDatabase.PExecute("UPDATE auction SET item_template = %u, item_count = %u, item_randompropertyid = %i WHERE itemguid = %u",
                                        auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
         }
@@ -406,7 +406,7 @@ void AuctionHouseMgr::LoadAuctions()
                 auction->itemGuidLow = 0;
 
                 // item will deleted or added to received mail list
-                MailDraft(msgAuctionCanceledOwner.str(), "")    // TODO: fix body
+                MailDraft(msgAuctionCanceledOwner.str(), "")// TODO: fix body
                 .AddItem(pItem)
                 .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)), auction, MAIL_CHECK_MASK_COPIED);
             }
@@ -518,6 +518,7 @@ AuctionHouseEntry const* AuctionHouseMgr::GetAuctionHouseEntry(Unit* unit)
                 {
                     case ALLIANCE: houseid = player->GetAuctionAccessMode() == 0 ? 1 : 6; break;
                     case HORDE:    houseid = player->GetAuctionAccessMode() == 0 ? 6 : 1; break;
+                    default: break;
                 }
             }
         }
@@ -634,16 +635,16 @@ void AuctionHouseObject::BuildListAuctionItems(WorldPacket& data, Player* player
     }
 }
 
-AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* it, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= NULL*/)
+AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= NULL*/)
 {
     uint32 auction_time = uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
 
     AuctionEntry* AH = new AuctionEntry;
     AH->Id = sObjectMgr.GenerateAuctionID();
-    AH->itemGuidLow = it->GetObjectGuid().GetCounter();
-    AH->itemTemplate = it->GetEntry();
-    AH->itemCount = it->GetCount();
-    AH->itemRandomPropertyId = it->GetItemRandomPropertyId();
+    AH->itemGuidLow = newItem->GetObjectGuid().GetCounter();
+    AH->itemTemplate = newItem->GetEntry();
+    AH->itemCount = newItem->GetCount();
+    AH->itemRandomPropertyId = newItem->GetItemRandomPropertyId();
     AH->owner = pl ? pl->GetGUIDLow() : 0;
     AH->startbid = bid;
     AH->bidder = 0;
@@ -655,17 +656,17 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
 
     AddAuction(AH);
 
-    sAuctionMgr.AddAItem(it);
+    sAuctionMgr.AddAItem(newItem);
 
     if (pl)
-        pl->MoveItemFromInventory(it->GetBagSlot(), it->GetSlot(), true);
+        pl->MoveItemFromInventory(newItem->GetBagSlot(), newItem->GetSlot(), true);
 
     CharacterDatabase.BeginTransaction();
 
     if (pl)
-        it->DeleteFromInventoryDB();
+        newItem->DeleteFromInventoryDB();
 
-    it->SaveToDB();
+    newItem->SaveToDB();
     AH->SaveToDB();
 
     if (pl)
@@ -689,7 +690,7 @@ bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
     data << uint32(pItem->GetEntry());
 
     // [-ZERO] no other infos about enchantment in 1.12 [?]
-    //for (uint8 i = 0; i < MAX_INSPECTED_ENCHANTMENT_SLOT; ++i)
+    // for (uint8 i = 0; i < MAX_INSPECTED_ENCHANTMENT_SLOT; ++i)
     //{
     data << uint32(pItem->GetEnchantmentId(EnchantmentSlot(PERM_ENCHANTMENT_SLOT)));
     //    data << uint32(pItem->GetEnchantmentDuration(EnchantmentSlot(i)));
@@ -726,13 +727,13 @@ uint32 AuctionEntry::GetAuctionOutBid() const
 
 void AuctionEntry::DeleteFromDB() const
 {
-    //No SQL injection (Id is integer)
+    // No SQL injection (Id is integer)
     CharacterDatabase.PExecute("DELETE FROM auction WHERE id = '%u'", Id);
 }
 
 void AuctionEntry::SaveToDB() const
 {
-    //No SQL injection (no strings)
+    // No SQL injection (no strings)
     CharacterDatabase.PExecute("INSERT INTO auction (id,houseid,itemguid,item_template,item_count,item_randompropertyid,itemowner,buyoutprice,time,buyguid,lastbid,startbid,deposit) "
                                "VALUES ('%u', '%u', '%u', '%u', '%u', '%i', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u')",
                                Id, auctionHouseEntry->houseId, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);

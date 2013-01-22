@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,8 +33,6 @@
 #include "WorldPacket.h"
 #include "Weather.h"
 #include "Player.h"
-#include "SkillExtraItems.h"
-#include "SkillDiscovery.h"
 #include "AccountMgr.h"
 #include "AuctionHouseMgr.h"
 #include "ObjectMgr.h"
@@ -50,7 +48,8 @@
 #include "ScriptMgr.h"
 #include "CreatureAIRegistry.h"
 #include "Policies/SingletonImp.h"
-#include "BattleGroundMgr.h"
+#include "BattleGround/BattleGroundMgr.h"
+#include "OutdoorPvP/OutdoorPvP.h"
 #include "TemporarySummon.h"
 #include "VMapFactory.h"
 #include "MoveMap.h"
@@ -131,14 +130,22 @@ World::~World()
 
     m_weathers.clear();
 
-    CliCommandHolder* command;
+    CliCommandHolder* command = NULL;
     while (cliCmdQueue.next(command))
         delete command;
 
     VMAP::VMapFactory::clear();
     MMAP::MMapFactory::clear();
 
-    //TODO free addSessQueue
+    // TODO free addSessQueue
+}
+
+/// Cleanups before world stop
+void World::CleanupsBeforeStop()
+{
+    KickAll();                                       // save and kick all players
+    UpdateSessions(1);                               // real players unload required UpdateSessions call
+    sBattleGroundMgr.DeleteAllBattleGrounds();       // unload battleground templates before different singletons destroyed
 }
 
 /// Find a player in a specified zone
@@ -199,7 +206,7 @@ World::AddSession_(WorldSession* s)
 {
     MANGOS_ASSERT(s);
 
-    //NOTE - Still there is race condition in WorldSession* being used in the Sockets
+    // NOTE - Still there is race condition in WorldSession* being used in the Sockets
 
     ///- kick already loaded player with same account (if any) and remove session
     ///- if player is in loading and want to load again, return
@@ -232,10 +239,10 @@ World::AddSession_(WorldSession* s)
 
     uint32 Sessions = GetActiveAndQueuedSessionCount();
     uint32 pLimit = GetPlayerAmountLimit();
-    uint32 QueueSize = GetQueuedSessionCount();             //number of players in the queue
+    uint32 QueueSize = GetQueuedSessionCount();             // number of players in the queue
 
-    //so we don't count the user trying to
-    //login as a session and queue the socket that we are using
+    // so we don't count the user trying to
+    // login as a session and queue the socket that we are using
     if (decrease_session)
         --Sessions;
 
@@ -298,8 +305,6 @@ void World::AddQueuedSession(WorldSession* sess)
     packet << uint32(0);                                    // BillingTimeRested
     packet << uint32(GetQueuedSessionPos(sess));            // position in queue
     sess->SendPacket(&packet);
-
-    //sess->SendAuthWaitQue (GetQueuePos (sess));
 }
 
 bool World::RemoveQueuedSession(WorldSession* sess)
@@ -605,6 +610,7 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMinMax(CONFIG_UINT32_START_GM_LEVEL, "GM.StartLevel", 1, getConfig(CONFIG_UINT32_START_PLAYER_LEVEL), MAX_LEVEL);
     setConfig(CONFIG_BOOL_GM_LOWER_SECURITY, "GM.LowerSecurity", false);
+    setConfig(CONFIG_UINT32_GM_INVISIBLE_AURA, "GM.InvisibleAura", 31748);
 
     setConfig(CONFIG_UINT32_GROUP_VISIBILITY, "Visibility.GroupMode", 0);
 
@@ -699,6 +705,8 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_BATTLEGROUND_INVITATION_TYPE,              "Battleground.InvitationType", 0);
     setConfig(CONFIG_UINT32_BATTLEGROUND_PREMATURE_FINISH_TIMER,       "BattleGround.PrematureFinishTimer", 5 * MINUTE * IN_MILLISECONDS);
     setConfig(CONFIG_UINT32_BATTLEGROUND_PREMADE_GROUP_WAIT_FOR_MATCH, "BattleGround.PremadeGroupWaitForMatch", 0);
+    setConfig(CONFIG_BOOL_OUTDOORPVP_SI_ENABLED,                       "OutdoorPvp.SIEnabled", true);
+    setConfig(CONFIG_BOOL_OUTDOORPVP_EP_ENABLED,                       "OutdoorPvp.EPEnabled", true);
 
     setConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET, "Network.KickOnBadPacket", false);
 
@@ -731,7 +739,7 @@ void World::LoadConfigSettings(bool reload)
         m_VisibleObjectGreyDistance = MAX_VISIBILITY_DISTANCE;
     }
 
-    //visibility on continents
+    // visibility on continents
     m_MaxVisibleDistanceOnContinents      = sConfig.GetFloatDefault("Visibility.Distance.Continents",     DEFAULT_VISIBILITY_DISTANCE);
     if (m_MaxVisibleDistanceOnContinents < 45 * getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO))
     {
@@ -744,7 +752,7 @@ void World::LoadConfigSettings(bool reload)
         m_MaxVisibleDistanceOnContinents = MAX_VISIBILITY_DISTANCE - m_VisibleUnitGreyDistance;
     }
 
-    //visibility in instances
+    // visibility in instances
     m_MaxVisibleDistanceInInstances        = sConfig.GetFloatDefault("Visibility.Distance.Instances",       DEFAULT_VISIBILITY_INSTANCE);
     if (m_MaxVisibleDistanceInInstances < 45 * getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO))
     {
@@ -757,7 +765,7 @@ void World::LoadConfigSettings(bool reload)
         m_MaxVisibleDistanceInInstances = MAX_VISIBILITY_DISTANCE - m_VisibleUnitGreyDistance;
     }
 
-    //visibility in BG
+    // visibility in BG
     m_MaxVisibleDistanceInBG        = sConfig.GetFloatDefault("Visibility.Distance.BG",       DEFAULT_VISIBILITY_BG);
     if (m_MaxVisibleDistanceInBG < 45 * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO))
     {
@@ -869,10 +877,10 @@ void World::SetInitialWorldSettings()
     }
 
     ///- Update the realm entry in the database with the realm type from the config file
-    //No SQL injection as values are treated as integers
+    // No SQL injection as values are treated as integers
 
     // not send custom type REALM_FFA_PVP to realm list
-    uint32 server_type = IsFFAPvPRealm() ? REALM_TYPE_PVP : getConfig(CONFIG_UINT32_GAME_TYPE);
+    uint32 server_type = IsFFAPvPRealm() ? uint32(REALM_TYPE_PVP) : getConfig(CONFIG_UINT32_GAME_TYPE);
     uint32 realm_zone = getConfig(CONFIG_UINT32_REALM_ZONE);
     LoginDatabase.PExecute("UPDATE realmlist SET icon = %u, timezone = %u WHERE id = '%u'", server_type, realm_zone, realmID);
 
@@ -968,6 +976,9 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Creature templates...");
     sObjectMgr.LoadCreatureTemplates();
 
+    sLog.outString("Loading Creature template spells...");
+    sObjectMgr.LoadCreatureTemplateSpells();
+
     sLog.outString("Loading SpellsScriptTarget...");
     sSpellMgr.LoadSpellScriptTarget();                      // must be after LoadCreatureTemplates and LoadGameobjectInfo
 
@@ -1024,6 +1035,10 @@ void World::SetInitialWorldSettings()
     sGameEventMgr.LoadFromDB();
     sLog.outString(">>> Game Event Data loaded");
     sLog.outString();
+
+    // Load Conditions
+    sLog.outString("Loading Conditions...");
+    sObjectMgr.LoadConditions();
 
     sLog.outString("Creating map persistent states for non-instanceable maps...");     // must be after PackInstances(), LoadCreatures(), sPoolMgr.LoadFromDB(), sGameEventMgr.LoadFromDB();
     sMapPersistentStateMgr.InitWorldMaps();
@@ -1092,12 +1107,6 @@ void World::SetInitialWorldSettings()
     LoadLootTables();
     sLog.outString(">>> Loot Tables loaded");
     sLog.outString();
-
-    sLog.outString("Loading Skill Discovery Table...");
-    LoadSkillDiscoveryTable();
-
-    sLog.outString("Loading Skill Extra Item Table...");
-    LoadSkillExtraItemTable();
 
     sLog.outString("Loading Skill Fishing base level requirements...");
     sObjectMgr.LoadFishingBaseSkillLevel();
@@ -1181,6 +1190,7 @@ void World::SetInitialWorldSettings()
     sScriptMgr.LoadQuestEndScripts();                       // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
     sScriptMgr.LoadSpellScripts();                          // must be after load Creature/Gameobject(Template/Data)
     sScriptMgr.LoadGameObjectScripts();                     // must be after load Creature/Gameobject(Template/Data)
+    sScriptMgr.LoadGameObjectTemplateScripts();             // must be after load Creature/Gameobject(Template/Data)
     sScriptMgr.LoadEventScripts();                          // must be after load Creature/Gameobject(Template/Data)
     sLog.outString(">>> Scripts loaded");
     sLog.outString();
@@ -1233,18 +1243,18 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_WEATHERS].SetInterval(1 * IN_MILLISECONDS);
     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE * IN_MILLISECONDS);
     m_timers[WUPDATE_UPTIME].SetInterval(getConfig(CONFIG_UINT32_UPTIME_UPDATE)*MINUTE * IN_MILLISECONDS);
-    //Update "uptime" table based on configuration entry in minutes.
+    // Update "uptime" table based on configuration entry in minutes.
     m_timers[WUPDATE_CORPSES].SetInterval(20 * MINUTE * IN_MILLISECONDS);
     m_timers[WUPDATE_DELETECHARS].SetInterval(DAY * IN_MILLISECONDS); // check for chars to delete every day
 
     // for AhBot
-    m_timers[WUPDATE_AHBOT].SetInterval(20*IN_MILLISECONDS); // every 20 sec
+    m_timers[WUPDATE_AHBOT].SetInterval(20*IN_MILLISECONDS);// every 20 sec
 
-    //to set mailtimer to return mails every day between 4 and 5 am
-    //mailtimer is increased when updating auctions
-    //one second is 1000 -(tested on win system)
+    // to set mailtimer to return mails every day between 4 and 5 am
+    // mailtimer is increased when updating auctions
+    // one second is 1000 -(tested on win system)
     mail_timer = uint32((((localtime(&m_gameTime)->tm_hour + 20) % 24) * HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
-    //1440
+    // 1440
     mail_timer_expires = uint32((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
     DEBUG_LOG("Mail timer set to: %u, mail return is called every %u minutes", mail_timer, mail_timer_expires);
 
@@ -1260,7 +1270,11 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting BattleGround System");
     sBattleGroundMgr.CreateInitialBattleGrounds();
 
-    //Not sure if this can be moved up in the sequence (with static data loading) as it uses MapManager
+    ///- Initialize Outdoor PvP
+    sLog.outString("Starting Outdoor PvP System");
+    sOutdoorPvPMgr.InitOutdoorPvP();
+
+    // Not sure if this can be moved up in the sequence (with static data loading) as it uses MapManager
     sLog.outString("Loading Transports...");
     sMapMgr.LoadTransports();
 
@@ -1275,7 +1289,7 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Starting Game Event system...");
     uint32 nextGameEvent = sGameEventMgr.Initialize();
-    m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    //depend on next event
+    m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    // depend on next event
 
     // Delete all characters which have been deleted X days before
     Player::DeleteOldCharacters();
@@ -1397,7 +1411,7 @@ void World::Update(uint32 diff)
         for (WeatherMap::iterator itr = m_weathers.begin(); itr != m_weathers.end();)
         {
             ///- and remove Weather objects for zones with no player
-            //As interval > WorldTick
+            // As interval > WorldTick
             if (!itr->second->Update(m_timers[WUPDATE_WEATHERS].GetInterval()))
             {
                 delete itr->second;
@@ -1423,6 +1437,7 @@ void World::Update(uint32 diff)
     ///- Update objects (maps, transport, creatures,...)
     sMapMgr.Update(diff);
     sBattleGroundMgr.Update(diff);
+    sOutdoorPvPMgr.Update(diff);
 
     ///- Delete all characters which have been deleted X days before
     if (m_timers[WUPDATE_DELETECHARS].Passed())
@@ -1473,25 +1488,8 @@ void World::Update(uint32 diff)
     // And last, but not least handle the issued cli commands
     ProcessCliCommands();
 
-    //cleanup unused GridMap objects as well as VMaps
+    // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);
-}
-
-/// Send a packet to all players (except self if mentioned)
-void World::SendGlobalMessage(WorldPacket* packet, WorldSession* self, uint32 team)
-{
-    SessionMap::const_iterator itr;
-    for (itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-    {
-        if (itr->second &&
-                itr->second->GetPlayer() &&
-                itr->second->GetPlayer()->IsInWorld() &&
-                itr->second != self &&
-                (team == 0 || itr->second->GetPlayer()->GetTeam() == team))
-        {
-            itr->second->SendPacket(packet);
-        }
-    }
 }
 
 namespace MaNGOS
@@ -1532,7 +1530,7 @@ namespace MaNGOS
 
                     uint32 lineLength = (line ? strlen(line) : 0) + 1;
 
-                    data->Initialize(SMSG_MESSAGECHAT, 100);                // guess size
+                    data->Initialize(SMSG_MESSAGECHAT, 100);// guess size
                     *data << uint8(CHAT_MSG_SYSTEM);
                     *data << uint32(LANG_UNIVERSAL);
                     *data << uint64(0);
@@ -1549,7 +1547,7 @@ namespace MaNGOS
     };
 }                                                           // namespace MaNGOS
 
-/// Send a System Message to all players (except self if mentioned)
+/// Sends a system message to all players
 void World::SendWorldText(int32 string_id, ...)
 {
     va_list ap;
@@ -1557,7 +1555,7 @@ void World::SendWorldText(int32 string_id, ...)
 
     MaNGOS::WorldWorldTextBuilder wt_builder(string_id, &ap);
     MaNGOS::LocalizedPacketListDo<MaNGOS::WorldWorldTextBuilder> wt_do(wt_builder);
-    for (SessionMap::iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
     {
         if (!itr->second || !itr->second->GetPlayer() || !itr->second->GetPlayer()->IsInWorld())
             continue;
@@ -1568,48 +1566,72 @@ void World::SendWorldText(int32 string_id, ...)
     va_end(ap);
 }
 
-/// DEPRICATED, only for debug purpose. Send a System Message to all players (except self if mentioned)
-void World::SendGlobalText(const char* text, WorldSession* self)
+/// Sends a packet to all players with optional team and instance restrictions
+void World::SendGlobalMessage(WorldPacket* packet)
 {
-    WorldPacket data;
-
-    // need copy to prevent corruption by strtok call in LineFromMessage original string
-    char* buf = mangos_strdup(text);
-    char* pos = buf;
-
-    while (char* line = ChatHandler::LineFromMessage(pos))
-    {
-        ChatHandler::FillMessageData(&data, NULL, CHAT_MSG_SYSTEM, LANG_UNIVERSAL, line);
-        SendGlobalMessage(&data, self);
-    }
-
-    delete [] buf;
-}
-
-/// Send a packet to all players (or players selected team) in the zone (except self if mentioned)
-void World::SendZoneMessage(uint32 zone, WorldPacket* packet, WorldSession* self, uint32 team)
-{
-    SessionMap::const_iterator itr;
-    for (itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
     {
         if (itr->second &&
                 itr->second->GetPlayer() &&
-                itr->second->GetPlayer()->IsInWorld() &&
-                itr->second->GetPlayer()->GetZoneId() == zone &&
-                itr->second != self &&
-                (team == 0 || itr->second->GetPlayer()->GetTeam() == team))
+                itr->second->GetPlayer()->IsInWorld())
         {
             itr->second->SendPacket(packet);
         }
     }
 }
 
-/// Send a System Message to all players in the zone (except self if mentioned)
-void World::SendZoneText(uint32 zone, const char* text, WorldSession* self, uint32 team)
+/// Sends a server message to the specified or all players
+void World::SendServerMessage(ServerMessageType type, const char* text /*=""*/, Player* player /*= NULL*/)
 {
-    WorldPacket data;
-    ChatHandler::FillMessageData(&data, NULL, CHAT_MSG_SYSTEM, LANG_UNIVERSAL, text);
-    SendZoneMessage(zone, &data, self, team);
+    WorldPacket data(SMSG_SERVER_MESSAGE, 50);              // guess size
+    data << uint32(type);
+    data << text;
+
+    if (player)
+        player->GetSession()->SendPacket(&data);
+    else
+        SendGlobalMessage(&data);
+}
+
+/// Sends a zone under attack message to all players not in an instance
+void World::SendZoneUnderAttackMessage(uint32 zoneId, Team team)
+{
+    WorldPacket data(SMSG_ZONE_UNDER_ATTACK, 4);
+    data << uint32(zoneId);
+
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if (itr->second &&
+                itr->second->GetPlayer() &&
+                itr->second->GetPlayer()->IsInWorld() &&
+                itr->second->GetPlayer()->GetTeam() == team &&
+                !itr->second->GetPlayer()->GetMap()->Instanceable())
+        {
+            itr->second->SendPacket(&data);
+        }
+    }
+}
+
+/// Sends a world defense message to all players not in an instance
+void World::SendDefenseMessage(uint32 zoneId, int32 textId)
+{
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if (itr->second &&
+                itr->second->GetPlayer() &&
+                itr->second->GetPlayer()->IsInWorld() &&
+                !itr->second->GetPlayer()->GetMap()->Instanceable())
+        {
+            char const* message = itr->second->GetMangosString(textId);
+            uint32 messageLength = strlen(message) + 1;
+
+            WorldPacket data(SMSG_DEFENSE_MESSAGE, 4 + 4 + messageLength);
+            data << uint32(zoneId);
+            data << uint32(messageLength);
+            data << message;
+            itr->second->SendPacket(&data);
+        }
+    }
 }
 
 /// Kick (and save) all players
@@ -1639,22 +1661,22 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
     std::string safe_author = author;
     LoginDatabase.escape_string(safe_author);
 
-    QueryResult* resultAccounts = NULL;                     //used for kicking
+    QueryResult* resultAccounts = NULL;                     // used for kicking
 
     ///- Update the database with ban information
     switch (mode)
     {
         case BAN_IP:
-            //No SQL injection as strings are escaped
+            // No SQL injection as strings are escaped
             resultAccounts = LoginDatabase.PQuery("SELECT id FROM account WHERE last_ip = '%s'", nameOrIP.c_str());
             LoginDatabase.PExecute("INSERT INTO ip_banned VALUES ('%s',UNIX_TIMESTAMP(),UNIX_TIMESTAMP()+%u,'%s','%s')", nameOrIP.c_str(), duration_secs, safe_author.c_str(), reason.c_str());
             break;
         case BAN_ACCOUNT:
-            //No SQL injection as string is escaped
+            // No SQL injection as string is escaped
             resultAccounts = LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", nameOrIP.c_str());
             break;
         case BAN_CHARACTER:
-            //No SQL injection as string is escaped
+            // No SQL injection as string is escaped
             resultAccounts = CharacterDatabase.PQuery("SELECT account FROM characters WHERE name = '%s'", nameOrIP.c_str());
             break;
         default:
@@ -1666,7 +1688,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
         if (mode == BAN_IP)
             return BAN_SUCCESS;                             // ip correctly banned but nobody affected (yet)
         else
-            return BAN_NOTFOUND;                                // Nobody to ban
+            return BAN_NOTFOUND;                            // Nobody to ban
     }
 
     ///- Disconnect all affected players (for IP it can be several)
@@ -1677,7 +1699,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
 
         if (mode != BAN_IP)
         {
-            //No SQL injection as strings are escaped
+            // No SQL injection as strings are escaped
             LoginDatabase.PExecute("INSERT INTO account_banned VALUES ('%u', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+%u, '%s', '%s', '1')",
                                    account, duration_secs, safe_author.c_str(), reason.c_str());
         }
@@ -1711,7 +1733,7 @@ bool World::RemoveBanAccount(BanMode mode, std::string nameOrIP)
         if (!account)
             return false;
 
-        //NO SQL injection as account is uint32
+        // NO SQL injection as account is uint32
         LoginDatabase.PExecute("UPDATE account_banned SET active = '0' WHERE id = '%u'", account);
     }
     return true;
@@ -1762,7 +1784,7 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
         if (!(options & SHUTDOWN_MASK_IDLE) || GetActiveAndQueuedSessionCount() == 0)
             m_stopEvent = true;                             // exist code already set
         else
-            m_ShutdownTimer = 1;                            //So that the session count is re-evaluated at next world tick
+            m_ShutdownTimer = 1;                            // So that the session count is re-evaluated at next world tick
     }
     ///- Else set the shutdown timer and warn users
     else
@@ -1773,7 +1795,7 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
 }
 
 /// Display a shutdown message to the user(s)
-void World::ShutdownMsg(bool show, Player* player)
+void World::ShutdownMsg(bool show /*= false*/, Player* player /*= NULL*/)
 {
     // not show messages for idle shutdown mode
     if (m_ShutdownMask & SHUTDOWN_MASK_IDLE)
@@ -1813,19 +1835,6 @@ void World::ShutdownCancel()
     DEBUG_LOG("Server %s cancelled.", (m_ShutdownMask & SHUTDOWN_MASK_RESTART ? "restart" : "shutdown"));
 }
 
-/// Send a server message to the user(s)
-void World::SendServerMessage(ServerMessageType type, const char* text, Player* player)
-{
-    WorldPacket data(SMSG_SERVER_MESSAGE, 50);              // guess size
-    data << uint32(type);
-    data << text;
-
-    if (player)
-        player->GetSession()->SendPacket(&data);
-    else
-        SendGlobalMessage(&data);
-}
-
 void World::UpdateSessions(uint32 diff)
 {
     ///- Add new sessions
@@ -1856,10 +1865,10 @@ void World::ServerMaintenanceStart()
     uint32 LastWeekEnd    = GetDateLastMaintenanceDay();
     m_NextMaintenanceDate   = LastWeekEnd + 7; // next maintenance begin
 
-    if (m_NextMaintenanceDate <= GetDateToday())  // avoid loop in manually case, maybe useless
+    if (m_NextMaintenanceDate <= GetDateToday())            // avoid loop in manually case, maybe useless
         m_NextMaintenanceDate += 7;
 
-    //flushing rank points list ( standing must be reloaded after server maintenance )
+    // flushing rank points list ( standing must be reloaded after server maintenance )
     sObjectMgr.FlushRankPoints(LastWeekEnd);
 
     // save and update all online players
@@ -1920,7 +1929,7 @@ void World::InitResultQueue()
 
 void World::UpdateResultQueue()
 {
-    //process async result queues
+    // process async result queues
     CharacterDatabase.ProcessResultQueue();
     WorldDatabase.ProcessResultQueue();
     LoginDatabase.ProcessResultQueue();
@@ -1977,6 +1986,7 @@ void World::LoadDBVersion()
 
         m_DBVersion              = fields[0].GetCppString();
         m_CreatureEventAIVersion = fields[1].GetCppString();
+
         delete result;
     }
 

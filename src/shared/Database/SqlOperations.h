@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,8 +50,8 @@ class SqlPlainRequest : public SqlOperation
         const char* m_sql;
     public:
         SqlPlainRequest(const char* sql) : m_sql(mangos_strdup(sql)) {}
-        ~SqlPlainRequest() { char* tofree = const_cast<char*>(m_sql); delete [] tofree; }
-        bool Execute(SqlConnection* conn);
+        ~SqlPlainRequest() { char* tofree = const_cast<char*>(m_sql); delete[] tofree; }
+        bool Execute(SqlConnection* conn) override;
 };
 
 class SqlTransaction : public SqlOperation
@@ -63,9 +63,9 @@ class SqlTransaction : public SqlOperation
         SqlTransaction() {}
         ~SqlTransaction();
 
-        void DelayExecute(SqlOperation* sql)   {   m_queue.push_back(sql); }
+        void DelayExecute(SqlOperation* sql) { m_queue.push_back(sql); }
 
-        bool Execute(SqlConnection* conn);
+        bool Execute(SqlConnection* conn) override;
 };
 
 class SqlPreparedRequest : public SqlOperation
@@ -74,7 +74,7 @@ class SqlPreparedRequest : public SqlOperation
         SqlPreparedRequest(int nIndex, SqlStmtParameters* arg);
         ~SqlPreparedRequest();
 
-        bool Execute(SqlConnection* conn);
+        bool Execute(SqlConnection* conn) override;
 
     private:
         const int m_nIndex;
@@ -105,8 +105,8 @@ class SqlQuery : public SqlOperation
     public:
         SqlQuery(const char* sql, MaNGOS::IQueryCallback* callback, SqlResultQueue* queue)
             : m_sql(mangos_strdup(sql)), m_callback(callback), m_queue(queue) {}
-        ~SqlQuery() { char* tofree = const_cast<char*>(m_sql); delete [] tofree; }
-        bool Execute(SqlConnection* conn);
+        ~SqlQuery() { char* tofree = const_cast<char*>(m_sql); delete[] tofree; }
+        bool Execute(SqlConnection* conn) override;
 };
 
 class SqlQueryHolder
@@ -135,6 +135,6 @@ class SqlQueryHolderEx : public SqlOperation
     public:
         SqlQueryHolderEx(SqlQueryHolder* holder, MaNGOS::IQueryCallback* callback, SqlResultQueue* queue)
             : m_holder(holder), m_callback(callback), m_queue(queue) {}
-        bool Execute(SqlConnection* conn);
+        bool Execute(SqlConnection* conn) override;
 };
 #endif                                                      //__SQLOPERATIONS_H

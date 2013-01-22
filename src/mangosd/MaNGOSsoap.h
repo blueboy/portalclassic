@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ class MaNGOSsoapRunnable: public ACE_Based::Runnable
 {
     public:
         MaNGOSsoapRunnable() { }
-        void run();
+        void run() override;
         void setListenArguments(std::string host, uint16 port)
         {
             m_host = host;
@@ -53,7 +53,7 @@ class SOAPWorkingThread : public ACE_Task<ACE_MT_SYNCH>
         SOAPWorkingThread()
         { }
 
-        virtual int svc(void)
+        virtual int svc(void) override
         {
             while (1)
             {

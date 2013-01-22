@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,13 +31,8 @@ DBCFileLoader::DBCFileLoader()
 
 bool DBCFileLoader::Load(const char* filename, const char* fmt)
 {
-
     uint32 header;
-    if (data)
-    {
-        delete [] data;
-        data = NULL;
-    }
+    delete[] data;
 
     FILE* f = fopen(filename, "rb");
     if (!f)return false;
@@ -71,7 +66,7 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
 
     fieldsOffset = new uint32[fieldCount];
     fieldsOffset[0] = 0;
-    for (uint32 i = 1; i < fieldCount; i++)
+    for (uint32 i = 1; i < fieldCount; ++i)
     {
         fieldsOffset[i] = fieldsOffset[i - 1];
         if (fmt[i - 1] == 'b' || fmt[i - 1] == 'X')         // byte fields
@@ -92,10 +87,8 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
 
 DBCFileLoader::~DBCFileLoader()
 {
-    if (data)
-        delete [] data;
-    if (fieldsOffset)
-        delete [] fieldsOffset;
+    delete[] data;
+    delete[] fieldsOffset;
 }
 
 DBCFileLoader::Record DBCFileLoader::getRecord(size_t id)
@@ -166,15 +159,15 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
     if (strlen(format) != fieldCount)
         return NULL;
 
-    //get struct size and index pos
+    // get struct size and index pos
     int32 i;
     uint32 recordsize = GetFormatRecordSize(format, &i);
 
     if (i >= 0)
     {
         uint32 maxi = 0;
-        //find max index
-        for (uint32 y = 0; y < recordCount; y++)
+        // find max index
+        for (uint32 y = 0; y < recordCount; ++y)
         {
             uint32 ind = getRecord(y).getUInt(i);
             if (ind > maxi)maxi = ind;

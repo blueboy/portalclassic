@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #ifndef MANGOS_CALLBACK_H
 #define MANGOS_CALLBACK_H
 
-//defines to simplify multi param templates code and readablity
+// defines to simplify multi param templates code and readablity
 #define TYPENAMES_1 typename T1
 #define TYPENAMES_2 TYPENAMES_1, typename T2
 #define TYPENAMES_3 TYPENAMES_2, typename T3
@@ -43,13 +43,13 @@
 #define PARAMS_9 PARAMS_8, T9 param9
 #define PARAMS_10 PARAMS_9, T10 param10
 
-//empty struct to use in templates instead of void type
+// empty struct to use in templates instead of void type
 struct null { null() {} };
 /// ------------ BASE CLASSES ------------
 
 namespace MaNGOS
 {
-    template<class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void>
+    template < class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void >
     class _Callback
     {
         protected:
@@ -181,7 +181,7 @@ namespace MaNGOS
 
     /// ---- Statics ----
 
-    template<typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void>
+    template < typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void >
     class _SCallback
     {
         protected:
@@ -330,7 +330,7 @@ namespace MaNGOS
             void Execute() { CB::_Execute(); }
     };
 
-    template<class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void>
+    template < class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void >
     class Callback : public _ICallback<_Callback<Class, ParamType1, ParamType2, ParamType3, ParamType4> >
     {
         private:
@@ -433,7 +433,7 @@ namespace MaNGOS
             QueryResult* GetResult() { return CB::m_param1; }
     };
 
-    template<class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void>
+    template < class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void >
     class QueryCallback : public _IQueryCallback<_Callback<Class, QueryResult*, ParamType1, ParamType2, ParamType3> >
     {
         private:
@@ -494,7 +494,7 @@ namespace MaNGOS
 
     /// ---- Statics ----
 
-    template<typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void>
+    template < typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void >
     class SQueryCallback : public _IQueryCallback<_SCallback<QueryResult*, ParamType1, ParamType2, ParamType3> >
     {
         private:

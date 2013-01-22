@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@
 #include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "Policies/Singleton.h"
-#include "SQLStorages.h"
 
 #include <string>
 #include <map>
@@ -45,6 +44,7 @@
 
 class Group;
 class Item;
+class SQLStorage;
 
 struct GameTele
 {
@@ -65,12 +65,24 @@ struct AreaTrigger
     uint32 requiredItem;
     uint32 requiredItem2;
     uint32 requiredQuest;
-    std::string requiredFailedText;
     uint32 target_mapId;
     float  target_X;
     float  target_Y;
     float  target_Z;
     float  target_Orientation;
+
+    // Operators
+    bool IsMinimal() const
+    {
+        return requiredLevel == 0 && requiredItem == 0 && requiredItem2 == 0 && requiredQuest == 0;
+    }
+
+    bool IsLessOrEqualThan(AreaTrigger const* l) const      // Expected to have same map
+    {
+        MANGOS_ASSERT(target_mapId == l->target_mapId);
+        return requiredLevel <= l->requiredLevel && requiredItem <= l->requiredItem && requiredItem2 <= l->requiredItem2
+                && requiredQuest <= l->requiredQuest;
+    }
 };
 
 typedef std::map < uint32/*player guid*/, uint32/*instance*/ > CellCorpseSet;
@@ -221,9 +233,7 @@ struct GossipMenuItems
     uint32          action_script_id;
     bool            box_coded;
     std::string     box_text;
-    uint16          cond_1;
-    uint16          cond_2;
-    uint16          cond_3;
+    uint16          conditionId;
 };
 
 struct GossipMenus
@@ -231,8 +241,7 @@ struct GossipMenus
     uint32          entry;
     uint32          text_id;
     uint32          script_id;
-    uint16          cond_1;
-    uint16          cond_2;
+    uint16          conditionId;
 };
 
 typedef std::multimap<uint32, GossipMenus> GossipMenusMap;
@@ -263,18 +272,21 @@ struct GraveYardData
     uint32 safeLocId;
     Team team;
 };
-typedef std::multimap<uint32, GraveYardData> GraveYardMap;
+typedef std::multimap < uint32 /*zoneId*/, GraveYardData > GraveYardMap;
 typedef std::pair<GraveYardMap::const_iterator, GraveYardMap::const_iterator> GraveYardMapBounds;
 
 enum ConditionType
 {
-    // value1       value2  for the Condition enumed
+    //                                                      // value1       value2  for the Condition enumed
+    CONDITION_NOT                   = -3,                   // cond-id-1    0          returns !cond-id-1
+    CONDITION_OR                    = -2,                   // cond-id-1    cond-id-2  returns cond-id-1 OR cond-id-2
+    CONDITION_AND                   = -1,                   // cond-id-1    cond-id-2  returns cond-id-1 AND cond-id-2
     CONDITION_NONE                  = 0,                    // 0            0
     CONDITION_AURA                  = 1,                    // spell_id     effindex
     CONDITION_ITEM                  = 2,                    // item_id      count   check present req. amount items in inventory
     CONDITION_ITEM_EQUIPPED         = 3,                    // item_id      0
     CONDITION_AREAID                = 4,                    // area_id      0, 1 (0: in (sub)area, 1: not in (sub)area)
-    CONDITION_REPUTATION_RANK       = 5,                    // faction_id   min_rank
+    CONDITION_REPUTATION_RANK_MIN   = 5,                    // faction_id   min_rank
     CONDITION_TEAM                  = 6,                    // player_team  0,      (469 - Alliance 67 - Horde)
     CONDITION_SKILL                 = 7,                    // skill_id     skill_value
     CONDITION_QUESTREWARDED         = 8,                    // quest_id     0
@@ -304,24 +316,29 @@ enum ConditionType
     CONDITION_SKILL_BELOW           = 29,                   // skill_id     skill_value
     // True if player has skill skill_id and skill less than (and not equal) skill_value (for skill_value > 1)
     // If skill_value == 1, then true if player has not skill skill_id
+    CONDITION_REPUTATION_RANK_MAX   = 30,                   // faction_id   max_rank
 };
 
-struct PlayerCondition
+class PlayerCondition
 {
-    ConditionType condition;                                // additional condition type
-    uint32  value1;                                         // data for the condition - see ConditionType definition
-    uint32  value2;
+    public:
+        // Default constructor, required for SQL Storage (Will give errors if used elsewise)
+        PlayerCondition() : m_entry(0), m_condition(CONDITION_AND), m_value1(0), m_value2(0) {}
 
-    PlayerCondition(uint8 _condition = 0, uint32 _value1 = 0, uint32 _value2 = 0)
-        : condition(ConditionType(_condition)), value1(_value1), value2(_value2) {}
+        PlayerCondition(uint16 _entry, int16 _condition, uint32 _value1, uint32 _value2)
+            : m_entry(_entry), m_condition(ConditionType(_condition)), m_value1(_value1), m_value2(_value2) {}
 
-    static bool IsValid(ConditionType condition, uint32 value1, uint32 value2);
-    // Checks correctness of values
-    bool Meets(Player const* APlayer) const;                // Checks if the player meets the condition
-    bool operator == (PlayerCondition const& lc) const
-    {
-        return (lc.condition == condition && lc.value1 == value1 && lc.value2 == value2);
-    }
+        // Checks correctness of values
+        bool IsValid() const { return IsValid(m_entry, m_condition, m_value1, m_value2); }
+        static bool IsValid(uint16 entry, ConditionType condition, uint32 value1, uint32 value2);
+
+        bool Meets(Player const* pPlayer) const;            // Checks if the player meets the condition
+
+    private:
+        uint16 m_entry;                                     // entry of the condition
+        ConditionType m_condition;                          // additional condition type
+        uint32 m_value1;                                    // data for the condition - see ConditionType definition
+        uint32 m_value2;
 };
 
 // NPC gossip text id
@@ -431,11 +448,6 @@ class ObjectMgr
 
         typedef UNORDERED_MAP<uint32, PetCreateSpellEntry> PetCreateSpellMap;
 
-        static Player* GetPlayer(const char* name) { return ObjectAccessor::FindPlayerByName(name);}
-        static Player* GetPlayer(ObjectGuid guid) { return ObjectAccessor::FindPlayer(guid); }
-
-        static GameObjectInfo const* GetGameObjectInfo(uint32 id) { return sGOStorage.LookupEntry<GameObjectInfo>(id); }
-
         void LoadGameobjectInfo();
         void AddGameobjectInfo(GameObjectInfo* goinfo);
 
@@ -444,34 +456,8 @@ class ObjectMgr
         void AddGroup(Group* group);
         void RemoveGroup(Group* group);
 
-        static CreatureInfo const* GetCreatureTemplate(uint32 id);
-        CreatureModelInfo const* GetCreatureModelInfo(uint32 modelid);
-        CreatureModelInfo const* GetCreatureModelRandomGender(uint32 display_id);
-        uint32 GetCreatureModelOtherTeamModel(uint32 modelId);
-
-        EquipmentInfo const* GetEquipmentInfo(uint32 entry);
-        EquipmentInfoRaw const* GetEquipmentInfoRaw(uint32 entry);
-        static CreatureDataAddon const* GetCreatureAddon(uint32 lowguid)
-        {
-            return sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(lowguid);
-        }
-
-        static CreatureDataAddon const* GetCreatureTemplateAddon(uint32 entry)
-        {
-            return sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(entry);
-        }
-
-        static ItemPrototype const* GetItemPrototype(uint32 id) { return sItemStorage.LookupEntry<ItemPrototype>(id); }
-
-        static InstanceTemplate const* GetInstanceTemplate(uint32 map)
-        {
-            return sInstanceTemplate.LookupEntry<InstanceTemplate>(map);
-        }
-
-        static WorldTemplate const* GetWorldTemplate(uint32 map)
-        {
-            return sWorldTemplate.LookupEntry<WorldTemplate>(map);
-        }
+        CreatureModelInfo const* GetCreatureModelRandomGender(uint32 display_id) const;
+        uint32 GetCreatureModelOtherTeamModel(uint32 modelId) const;
 
         PetLevelInfo const* GetPetLevelInfo(uint32 creature_id, uint32 level) const;
 
@@ -530,6 +516,7 @@ class ObjectMgr
 
         WorldSafeLocsEntry const* GetClosestGraveYard(float x, float y, float z, uint32 MapId, Team team);
         bool AddGraveYardLink(uint32 id, uint32 zone, Team team, bool inDB = true);
+        void SetGraveYardLinkTeam(uint32 id, uint32 zoneId, Team team);
         void LoadGraveyardZones();
         GraveYardData const* FindGraveYardData(uint32 id, uint32 zone) const;
 
@@ -586,6 +573,20 @@ class ObjectMgr
             return NULL;
         }
 
+        // Static wrappers for various accessors
+        static GameObjectInfo const* GetGameObjectInfo(uint32 id);                  ///< Wrapper for sGOStorage.LookupEntry
+        static Player* GetPlayer(const char* name);         ///< Wrapper for ObjectAccessor::FindPlayerByName
+        static Player* GetPlayer(ObjectGuid guid, bool inWorld = true);             ///< Wrapper for ObjectAccessor::FindPlayer
+        static CreatureInfo const* GetCreatureTemplate(uint32 id);                  ///< Wrapper for sCreatureStorage.LookupEntry
+        static CreatureModelInfo const* GetCreatureModelInfo(uint32 modelid);       ///< Wrapper for sCreatureModelStorage.LookupEntry
+        static EquipmentInfo const* GetEquipmentInfo(uint32 entry);                 ///< Wrapper for sEquipmentStorage.LookupEntry
+        static EquipmentInfoRaw const* GetEquipmentInfoRaw(uint32 entry);           ///< Wrapper for sEquipmentStorageRaw.LookupEntry
+        static CreatureDataAddon const* GetCreatureAddon(uint32 lowguid);           ///< Wrapper for sCreatureDataAddonStorage.LookupEntry
+        static CreatureDataAddon const* GetCreatureTemplateAddon(uint32 entry);     ///< Wrapper for sCreatureInfoAddonStorage.LookupEntry
+        static ItemPrototype const* GetItemPrototype(uint32 id);                    ///< Wrapper for sItemStorage.LookupEntry
+        static InstanceTemplate const* GetInstanceTemplate(uint32 map);             ///< Wrapper for sInstanceTemplate.LookupEntry
+        static WorldTemplate const* GetWorldTemplate(uint32 map);                   ///< Wrapper for sWorldTemplate.LookupEntry
+
         void LoadGroups();
         void LoadQuests();
         void LoadQuestRelations()
@@ -621,6 +622,7 @@ class ObjectMgr
         void LoadPointOfInterestLocales();
         void LoadInstanceTemplate();
         void LoadWorldTemplate();
+        void LoadConditions();
 
         void LoadGossipText();
 
@@ -645,6 +647,8 @@ class ObjectMgr
         void LoadReputationSpilloverTemplate();
 
         void LoadPointsOfInterest();
+
+        void LoadCreatureTemplateSpells();
 
         void LoadWeatherZoneChances();
         void LoadGameTele();
@@ -875,14 +879,8 @@ class ObjectMgr
         int GetIndexForLocale(LocaleConstant loc);
         LocaleConstant GetLocaleForIndex(int i);
 
-        uint16 GetConditionId(ConditionType condition, uint32 value1, uint32 value2);
-        bool IsPlayerMeetToCondition(Player const* player, uint16 condition_id) const
-        {
-            if (condition_id >= mConditions.size())
-                return false;
-
-            return mConditions[condition_id].Meets(player);
-        }
+        // Check if a player meets condition conditionId
+        bool IsPlayerMeetToCondition(Player const* pPlayer, uint16 conditionId) const;
 
         GameTele const* GetGameTele(uint32 id) const
         {
@@ -1041,7 +1039,7 @@ class ObjectMgr
 
         PetCreateSpellMap   mPetCreateSpell;
 
-        //character reserved names
+        // character reserved names
         typedef std::set<std::wstring> ReservedNamesMap;
         ReservedNamesMap    m_ReservedNames;
 
@@ -1088,7 +1086,7 @@ class ObjectMgr
         typedef std::map<uint32, uint32> BaseXPMap;         // [area level][base xp]
         BaseXPMap mBaseXPTable;
 
-        typedef std::map<uint32, int32> FishingBaseSkillMap; // [areaId][base skill level]
+        typedef std::map<uint32, int32> FishingBaseSkillMap;// [areaId][base skill level]
         FishingBaseSkillMap mFishingBaseForArea;
 
         // Standing System
@@ -1111,10 +1109,6 @@ class ObjectMgr
         MangosStringLocaleMap mMangosStringLocaleMap;
         GossipMenuItemsLocaleMap mGossipMenuItemsLocaleMap;
         PointOfInterestLocaleMap mPointOfInterestLocaleMap;
-
-        // Storage for Conditions. First element (index 0) is reserved for zero-condition (nothing required)
-        typedef std::vector<PlayerCondition> ConditionStore;
-        ConditionStore mConditions;
 
         CacheNpcTextIdMap m_mCacheNpcTextIdMap;
         CacheVendorItemMap m_mCacheVendorTemplateItemMap;

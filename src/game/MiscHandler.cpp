@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,8 @@
 #include <zlib/zlib.h>
 #include "ObjectAccessor.h"
 #include "Object.h"
-#include "BattleGround.h"
+#include "BattleGround/BattleGround.h"
+#include "OutdoorPvP/OutdoorPvP.h"
 #include "Pet.h"
 #include "SocialMgr.h"
 
@@ -62,7 +63,7 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
         GetPlayer()->KillPlayer();
     }
 
-    //this is spirit release confirm?
+    // this is spirit release confirm?
     GetPlayer()->RemovePet(PET_SAVE_REAGENTS);
     GetPlayer()->BuildPlayerRepop();
     GetPlayer()->RepopAtGraveyard();
@@ -71,7 +72,7 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
 void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Recvd CMSG_WHO Message");
-    //recv_data.hexlike();
+    // recv_data.hexlike();
 
     uint32 clientcount = 0;
 
@@ -265,9 +266,9 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     if (ObjectGuid lootGuid = GetPlayer()->GetLootGuid())
         DoLootRelease(lootGuid);
 
-    //Can not logout if...
+    // Can not logout if...
     if (GetPlayer()->isInCombat() ||                        //...is in combat
-            GetPlayer()->duel         ||                        //...is in Duel
+            GetPlayer()->duel         ||                    //...is in Duel
             //...is jumping ...is falling
             GetPlayer()->m_movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)))
     {
@@ -280,7 +281,7 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
         return;
     }
 
-    //instant logout in taverns/cities or on taxi or for admins, gm's, mod's if its enabled in mangosd.conf
+    // instant logout in taverns/cities or on taxi or for admins, gm's, mod's if its enabled in mangosd.conf
     if (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || GetPlayer()->IsTaxiFlying() ||
             GetSecurity() >= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_INSTANT_LOGOUT))
     {
@@ -295,10 +296,7 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
         if ((GetPlayer()->GetPositionZ() < height + 0.1f) && !(GetPlayer()->IsInWater()))
             GetPlayer()->SetStandState(UNIT_STAND_STATE_SIT);
 
-        WorldPacket data(SMSG_FORCE_MOVE_ROOT, (8 + 4));    // guess size
-        data << GetPlayer()->GetPackGUID();
-        data << (uint32)2;
-        SendPacket(&data);
+        GetPlayer()->SetRoot(true);
         GetPlayer()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
     }
 
@@ -327,10 +325,7 @@ void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
     if (GetPlayer()->CanFreeMove())
     {
         //!we can move again
-        data.Initialize(SMSG_FORCE_MOVE_UNROOT, 8);         // guess size
-        data << GetPlayer()->GetPackGUID();
-        data << uint32(0);
-        SendPacket(&data);
+        GetPlayer()->SetRoot(false);
 
         //! Stand Up
         GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
@@ -580,10 +575,8 @@ void WorldSession::HandleDelIgnoreOpcode(WorldPacket& recv_data)
 
 void WorldSession::HandleBugOpcode(WorldPacket& recv_data)
 {
-    uint32 suggestion, contentlen;
-    std::string content;
-    uint32 typelen;
-    std::string type;
+    uint32 suggestion, contentlen, typelen;
+    std::string content, type;
 
     recv_data >> suggestion >> contentlen >> content;
 
@@ -667,42 +660,42 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
 
     recv_data >> Trigger_ID;
     DEBUG_LOG("Trigger ID: %u", Trigger_ID);
+    Player* player = GetPlayer();
 
-    if (GetPlayer()->IsTaxiFlying())
+    if (player->IsTaxiFlying())
     {
-        DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore Area Trigger ID: %u", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow(), Trigger_ID);
+        DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
         return;
     }
 
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
     if (!atEntry)
     {
-        DEBUG_LOG("Player '%s' (GUID: %u) send unknown (by DBC) Area Trigger ID: %u", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow(), Trigger_ID);
+        DEBUG_LOG("Player '%s' (GUID: %u) send unknown (by DBC) Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
         return;
     }
 
     // delta is safe radius
     const float delta = 5.0f;
-    // check if player in the range of areatrigger
-    Player* pl = GetPlayer();
 
-    if (!IsPointInAreaTriggerZone(atEntry, pl->GetMapId(), pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), delta))
+    // check if player in the range of areatrigger
+    if (!IsPointInAreaTriggerZone(atEntry, player->GetMapId(), player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), delta))
     {
-        DEBUG_LOG("Player '%s' (GUID: %u) too far, ignore Area Trigger ID: %u", pl->GetName(), pl->GetGUIDLow(), Trigger_ID);
+        DEBUG_LOG("Player '%s' (GUID: %u) too far, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
         return;
     }
 
-    if (sScriptMgr.OnAreaTrigger(pl, atEntry))
+    if (sScriptMgr.OnAreaTrigger(player, atEntry))
         return;
 
     uint32 quest_id = sObjectMgr.GetQuestForAreaTrigger(Trigger_ID);
-    if (quest_id && pl->isAlive() && pl->IsActiveQuest(quest_id))
+    if (quest_id && player->isAlive() && player->IsActiveQuest(quest_id))
     {
         Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
         if (pQuest)
         {
-            if (pl->GetQuestStatus(quest_id) == QUEST_STATUS_INCOMPLETE)
-                pl->AreaExploredOrEventHappens(quest_id);
+            if (player->GetQuestStatus(quest_id) == QUEST_STATUS_INCOMPLETE)
+                player->AreaExploredOrEventHappens(quest_id);
         }
     }
 
@@ -710,16 +703,20 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     if (sObjectMgr.IsTavernAreaTrigger(Trigger_ID))
     {
         // set resting flag we are in the inn
-        if (pl->GetRestType() != REST_TYPE_IN_CITY)
-            pl->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID);
+        if (player->GetRestType() != REST_TYPE_IN_CITY)
+            player->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID);
         return;
     }
 
-    if (pl->InBattleGround())
+    if (BattleGround* bg = player->GetBattleGround())
     {
-        if (BattleGround* bg = pl->GetBattleGround())
-            bg->HandleAreaTrigger(pl, Trigger_ID);
+        bg->HandleAreaTrigger(player, Trigger_ID);
         return;
+    }
+    else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(player->GetCachedZoneId()))
+    {
+        if (outdoorPvP->HandleAreaTrigger(player, Trigger_ID))
+            return;
     }
 
     // NULL if all values default (non teleport trigger)
@@ -731,99 +728,64 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     if (!targetMapEntry)
         return;
 
-    if (!pl->isGameMaster())
+    // ghost resurrected at enter attempt to dungeon with corpse (including fail enter cases)
+    if (!player->isAlive() && targetMapEntry->IsDungeon())
     {
-        // ghost resurrected at enter attempt to dungeon with corpse (including fail enter cases)
-        if (!pl->isAlive() && targetMapEntry->IsDungeon())
+        int32 corpseMapId = 0;
+        if (Corpse* corpse = player->GetCorpse())
+            corpseMapId = corpse->GetMapId();
+
+        // check back way from corpse to entrance
+        uint32 instance_map = corpseMapId;
+        do
         {
-            int32 corpseMapId = 0;
-            if (Corpse* corpse = pl->GetCorpse())
-                corpseMapId = corpse->GetMapId();
+            // most often fast case
+            if (instance_map == targetMapEntry->MapID)
+                break;
 
-            // check back way from corpse to entrance
-            uint32 instance_map = corpseMapId;
-            do
-            {
-                // most often fast case
-                if (instance_map == targetMapEntry->MapID)
-                    break;
-
-                InstanceTemplate const* instance = ObjectMgr::GetInstanceTemplate(instance_map);
-                instance_map = instance ? instance->parent : 0;
-            }
-            while (instance_map);
-
-            // corpse not in dungeon or some linked deep dungeons
-            if (!instance_map)
-            {
-                pl->GetSession()->SendAreaTriggerMessage("You cannot enter %s while in a ghost mode",
-                        targetMapEntry->name[pl->GetSession()->GetSessionDbcLocale()]);
-                return;
-            }
-
-            // need find areatrigger to inner dungeon for landing point
-            if (at->target_mapId != corpseMapId)
-            {
-                if (AreaTrigger const* corpseAt = sObjectMgr.GetMapEntranceTrigger(corpseMapId))
-                {
-                    at = corpseAt;
-                    targetMapEntry = sMapStore.LookupEntry(at->target_mapId);
-                }
-            }
-
-            // now we can resurrect player, and then check teleport requirements
-            pl->ResurrectPlayer(0.5f);
-            pl->SpawnCorpseBones();
+            InstanceTemplate const* instance = ObjectMgr::GetInstanceTemplate(instance_map);
+            instance_map = instance ? instance->parent : 0;
         }
+        while (instance_map);
 
-        uint32 missingLevel = 0;
-        if (GetPlayer()->getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL))
-            missingLevel = at->requiredLevel;
-
-        // must have one or the other, report the first one that's missing
-        uint32 missingItem = 0;
-        if (at->requiredItem)
+        // corpse not in dungeon or some linked deep dungeons
+        if (!instance_map)
         {
-            if (!pl->HasItemCount(at->requiredItem, 1) &&
-                    (!at->requiredItem2 || !GetPlayer()->HasItemCount(at->requiredItem2, 1)))
-                missingItem = at->requiredItem;
-        }
-        else if (at->requiredItem2 && !GetPlayer()->HasItemCount(at->requiredItem2, 1))
-            missingItem = at->requiredItem2;
-
-        uint32 missingQuest = 0;
-        if (at->requiredQuest && !GetPlayer()->GetQuestRewardStatus(at->requiredQuest))
-            missingQuest = at->requiredQuest;
-
-        if (missingLevel || missingItem || missingQuest)
-        {
-            // TODO: all this is probably wrong
-            if (missingItem)
-                SendAreaTriggerMessage(GetMangosString(LANG_LEVEL_MINREQUIRED_AND_ITEM), at->requiredLevel, ObjectMgr::GetItemPrototype(missingItem)->Name1);
-            /*[-ZERO] else if(missingKey)
-                GetPlayer()->SendTransferAborted(at->target_mapId,0); */
-            else if (missingQuest)
-                SendAreaTriggerMessage("%s", at->requiredFailedText.c_str());
-            else if (missingLevel)
-                SendAreaTriggerMessage(GetMangosString(LANG_LEVEL_MINREQUIRED), missingLevel);
+            player->GetSession()->SendAreaTriggerMessage("You cannot enter %s while in a ghost mode",
+                    targetMapEntry->name[player->GetSession()->GetSessionDbcLocale()]);
             return;
         }
+
+        // need find areatrigger to inner dungeon for landing point
+        if (at->target_mapId != corpseMapId)
+        {
+            if (AreaTrigger const* corpseAt = sObjectMgr.GetMapEntranceTrigger(corpseMapId))
+            {
+                at = corpseAt;
+                targetMapEntry = sMapStore.LookupEntry(at->target_mapId);
+            }
+        }
+
+        // now we can resurrect player, and then check teleport requirements
+        player->ResurrectPlayer(0.5f);
+        player->SpawnCorpseBones();
     }
 
-    GetPlayer()->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT);
+    // teleport player (trigger requirement will be checked on TeleportTo)
+    player->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT, at);
 }
 
 void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received CMSG_UPDATE_ACCOUNT_DATA");
     recv_data.rpos(recv_data.wpos());                       // prevent spam at unimplemented packet
-    //recv_data.hexlike();
+    // recv_data.hexlike();
 }
 
 void WorldSession::HandleRequestAccountData(WorldPacket& /*recv_data*/)
 {
     DETAIL_LOG("WORLD: Received CMSG_REQUEST_ACCOUNT_DATA");
-    //recv_data.hexlike();
+    // recv_data.hexlike();
 }
 
 void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recv_data)
@@ -881,6 +843,7 @@ void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recv_data)
 
     recv_data >> Unused<uint64>();
     recv_data >> Unused<uint32>();
+
     /*
         ObjectGuid guid;
         uint32 time_skipped;
@@ -915,13 +878,13 @@ void WorldSession::HandleMoveUnRootAck(WorldPacket& recv_data)
         // now can skip not our packet
         if(_player->GetGUID() != guid)
         {
-            recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
+            recv_data.rpos(recv_data.wpos());               // prevent warnings spam
             return;
         }
 
         DEBUG_LOG( "WORLD: CMSG_FORCE_MOVE_UNROOT_ACK" );
 
-        recv_data.read_skip<uint32>();                          // unk
+        recv_data.read_skip<uint32>();                      // unk
 
         MovementInfo movementInfo;
         ReadMovementInfo(recv_data, &movementInfo);
@@ -939,13 +902,13 @@ void WorldSession::HandleMoveRootAck(WorldPacket& recv_data)
         // now can skip not our packet
         if(_player->GetObjectGuid() != guid)
         {
-            recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
+            recv_data.rpos(recv_data.wpos());               // prevent warnings spam
             return;
         }
 
         DEBUG_LOG( "WORLD: CMSG_FORCE_MOVE_ROOT_ACK" );
 
-        recv_data.read_skip<uint32>();                          // unk
+        recv_data.read_skip<uint32>();                      // unk
 
         MovementInfo movementInfo;
         ReadMovementInfo(recv_data, &movementInfo);
@@ -1063,7 +1026,7 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
     recv_data >> PositionZ;
     recv_data >> Orientation;                               // o (3.141593 = 180 degrees)
 
-    //DEBUG_LOG("Received opcode CMSG_WORLD_TELEPORT");
+    // DEBUG_LOG("Received opcode CMSG_WORLD_TELEPORT");
 
     if (GetPlayer()->IsTaxiFlying())
     {
@@ -1140,7 +1103,7 @@ void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
 void WorldSession::HandleFarSightOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_FAR_SIGHT");
-    //recv_data.hexlike();
+    // recv_data.hexlike();
 
     uint8 op;
     recv_data >> op;
@@ -1179,7 +1142,7 @@ void WorldSession::HandleCancelMountAuraOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: CMSG_CANCEL_MOUNT_AURA");
 
-    //If player is not mounted, so go out :)
+    // If player is not mounted, so go out :)
     if (!_player->IsMounted())                              // not blizz like; no any messages on blizz
     {
         ChatHandler(this).SendSysMessage(LANG_CHAR_NON_MOUNTED);

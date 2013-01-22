@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -589,7 +589,7 @@ int kb_hit_return()
 void CliRunnable::run()
 {
     ///- Init new SQL thread for the world database (one connection call enough)
-    WorldDatabase.ThreadStart();                                // let thread do safe mySQL requests
+    WorldDatabase.ThreadStart();                            // let thread do safe mySQL requests
 
     char commandbuf[256];
 
@@ -617,7 +617,7 @@ void CliRunnable::run()
         char* command_str = fgets(commandbuf, sizeof(commandbuf), stdin);
         if (command_str != NULL)
         {
-            for (int x = 0; command_str[x]; x++)
+            for (int x = 0; command_str[x]; ++x)
                 if (command_str[x] == '\r' || command_str[x] == '\n')
                 {
                     command_str[x] = 0;
@@ -647,5 +647,5 @@ void CliRunnable::run()
     }
 
     ///- End the database thread
-    WorldDatabase.ThreadEnd();                                  // free mySQL thread resources
+    WorldDatabase.ThreadEnd();                              // free mySQL thread resources
 }

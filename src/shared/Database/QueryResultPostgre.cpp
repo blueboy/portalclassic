@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ QueryResultPostgre::QueryResultPostgre(PGresult* result, uint64 rowCount, uint32
     mCurrentRow = new Field[mFieldCount];
     MANGOS_ASSERT(mCurrentRow);
 
-    for (uint32 i = 0; i < mFieldCount; i++)
+    for (uint32 i = 0; i < mFieldCount; ++i)
         mCurrentRow[i].SetType(ConvertNativeType(PQftype(result, i)));
 }
 
@@ -49,7 +49,7 @@ bool QueryResultPostgre::NextRow()
     }
 
     char* pPQgetvalue;
-    for (int j = 0; j < mFieldCount; j++)
+    for (int j = 0; j < mFieldCount; ++j)
     {
         pPQgetvalue = PQgetvalue(mResult, mTableIndex, j);
         if (pPQgetvalue && !(*pPQgetvalue))
@@ -64,11 +64,8 @@ bool QueryResultPostgre::NextRow()
 
 void QueryResultPostgre::EndQuery()
 {
-    if (mCurrentRow)
-    {
-        delete [] mCurrentRow;
-        mCurrentRow = 0;
-    }
+    delete[] mCurrentRow;
+    mCurrentRow = 0;
 
     if (mResult)
     {

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -379,8 +379,6 @@ void PoolGroup<Creature>::Spawn1Object(MapPersistentState& mapState, PoolObject*
 {
     if (CreatureData const* data = sObjectMgr.GetCreatureData(obj->guid))
     {
-        MapEntry const* mapEntry = sMapStore.LookupEntry(data->mapid);
-
         // for non-instanceable maps pool spawn can be at different map from provided mapState
         if (MapPersistentState* dataMapState = mapState.GetMapId() == data->mapid ? &mapState : sMapPersistentStateMgr.GetPersistentState(data->mapid, 0))
         {
@@ -392,7 +390,7 @@ void PoolGroup<Creature>::Spawn1Object(MapPersistentState& mapState, PoolObject*
             if (dataMap && dataMap->IsLoaded(data->posX, data->posY))
             {
                 Creature* pCreature = new Creature;
-                //DEBUG_LOG("Spawning creature %u",obj->guid);
+                // DEBUG_LOG("Spawning creature %u",obj->guid);
                 if (!pCreature->LoadFromDB(obj->guid, dataMap))
                 {
                     delete pCreature;
@@ -425,8 +423,6 @@ void PoolGroup<GameObject>::Spawn1Object(MapPersistentState& mapState, PoolObjec
 {
     if (GameObjectData const* data = sObjectMgr.GetGOData(obj->guid))
     {
-        MapEntry const* mapEntry = sMapStore.LookupEntry(data->mapid);
-
         // for non-instanceable maps pool spawn can be at different map from provided mapState
         if (MapPersistentState* dataMapState = mapState.GetMapId() == data->mapid ? &mapState : sMapPersistentStateMgr.GetPersistentState(data->mapid, 0))
         {
@@ -438,7 +434,7 @@ void PoolGroup<GameObject>::Spawn1Object(MapPersistentState& mapState, PoolObjec
             if (dataMap && dataMap->IsLoaded(data->posX, data->posY))
             {
                 GameObject* pGameobject = new GameObject;
-                //DEBUG_LOG("Spawning gameobject %u", obj->guid);
+                // DEBUG_LOG("Spawning gameobject %u", obj->guid);
                 if (!pGameobject->LoadFromDB(obj->guid, dataMap))
                 {
                     delete pGameobject;
@@ -875,7 +871,7 @@ void PoolManager::LoadFromDB()
                     goinfo->type != GAMEOBJECT_TYPE_GOOBER &&
                     goinfo->type != GAMEOBJECT_TYPE_FISHINGHOLE)
             {
-                sLog.outErrorDb("`pool_gameobject_template` has a not lootable gameobject spawn (GUID: %u Entry % Type: %u) defined for pool id (%u), skipped.", guid, entry_id, goinfo->type, pool_id);
+                sLog.outErrorDb("`pool_gameobject_template` has a not lootable gameobject spawn (GUID: %u Entry %u Type: %u) defined for pool id (%u), skipped.", guid, entry_id, goinfo->type, pool_id);
                 continue;
             }
             if (pool_id > max_pool_id)

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include "NPCHandler.h"
 #include "Pet.h"
 #include "MapManager.h"
+#include "SQLStorages.h"
 
 void WorldSession::SendNameQueryOpcode(Player* p)
 {
@@ -41,8 +42,8 @@ void WorldSession::SendNameQueryOpcode(Player* p)
 
     // guess size
     WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 1 + 4 + 4 + 4 + 10));
-    data << ObjectGuid(p->GetObjectGuid());
-    data << p->GetName();
+    data << p->GetObjectGuid();                             // player guid
+    data << p->GetName();                                   // played name
     data << uint8(0);                                       // realm name for cross realm BG usage
     data << uint32(p->getRace());
     data << uint32(p->getGender());
@@ -128,7 +129,7 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
 
     Creature* unit = _player->GetMap()->GetAnyTypeCreature(guid);
 
-    //if (unit == NULL)
+    // if (unit == NULL)
     //    sLog.outDebug( "WORLD: HandleCreatureQueryOpcode - (%u) NO SUCH UNIT! (GUID: %u, ENTRY: %u)", uint32(GUID_LOPART(guid)), guid, entry );
 
     CreatureInfo const* ci = ObjectMgr::GetCreatureTemplate(entry);
@@ -149,7 +150,7 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
         data << subName;
         data << uint32(ci->type_flags);                     // flags
         if (unit)
-            data << uint32(((unit->IsPet()) ? 0 : ci->type));   //CreatureType.dbc   wdbFeild8
+            data << uint32(((unit->IsPet()) ? 0 : ci->type));   // CreatureType.dbc   wdbFeild8
         else
             data << uint32(ci->type);
 
@@ -158,11 +159,11 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
         data << uint32(0);                                  // unknown        wdbFeild11
         data << uint32(ci->PetSpellDataId);                 // Id from CreatureSpellData.dbc    wdbField12
         if (unit)
-            data << unit->GetUInt32Value(UNIT_FIELD_DISPLAYID); //DisplayID      wdbFeild13
+            data << unit->GetUInt32Value(UNIT_FIELD_DISPLAYID); // DisplayID      wdbFeild13
         else
             data << uint32(Creature::ChooseDisplayId(ci));  // workaround, way to manage models must be fixed
 
-        data << uint16(ci->civilian);                       //wdbFeild14
+        data << uint16(ci->civilian);                       // wdbFeild14
         SendPacket(&data);
         DEBUG_LOG("WORLD: Sent SMSG_CREATURE_QUERY_RESPONSE");
     }
@@ -206,9 +207,9 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
         data << uint32(info->type);
         data << uint32(info->displayId);
         data << Name;
-        data << uint16(0) << uint8(0) << uint8(0);           // name2, name3, name4
+        data << uint16(0) << uint8(0) << uint8(0);          // name2, name3, name4
         data.append(info->raw.data, 24);
-        //data << float(info->size);                          // go size , to check
+        // data << float(info->size);                       // go size , to check
         SendPacket(&data);
         DEBUG_LOG("WORLD: Sent SMSG_GAMEOBJECT_QUERY_RESPONSE");
     }
@@ -350,10 +351,10 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
 
 void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 {
-    uint32 pageID;
+    DETAIL_LOG("WORLD: Received CMSG_PAGE_TEXT_QUERY");
 
+    uint32 pageID;
     recv_data >> pageID;
-    DETAIL_LOG("WORLD: Received CMSG_PAGE_TEXT_QUERY for pageID '%u'", pageID);
 
     while (pageID)
     {

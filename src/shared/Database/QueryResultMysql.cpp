@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ QueryResultMysql::QueryResultMysql(MYSQL_RES* result, MYSQL_FIELD* fields, uint6
     mCurrentRow = new Field[mFieldCount];
     MANGOS_ASSERT(mCurrentRow);
 
-    for (uint32 i = 0; i < mFieldCount; i++)
+    for (uint32 i = 0; i < mFieldCount; ++i)
         mCurrentRow[i].SetType(ConvertNativeType(fields[i].type));
 }
 
@@ -52,7 +52,7 @@ bool QueryResultMysql::NextRow()
         return false;
     }
 
-    for (uint32 i = 0; i < mFieldCount; i++)
+    for (uint32 i = 0; i < mFieldCount; ++i)
         mCurrentRow[i].SetValue(row[i]);
 
     return true;
@@ -60,11 +60,8 @@ bool QueryResultMysql::NextRow()
 
 void QueryResultMysql::EndQuery()
 {
-    if (mCurrentRow)
-    {
-        delete [] mCurrentRow;
-        mCurrentRow = 0;
-    }
+    delete[] mCurrentRow;
+    mCurrentRow = 0;
 
     if (mResult)
     {

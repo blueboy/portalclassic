@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "Group.h"
 #include "World.h"
 #include "Util.h"
+#include "DBCStores.h"
 
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
 {
@@ -136,7 +137,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
         if (qitem)
         {
             qitem->is_looted = true;
-            //freeforall is 1 if everyone's supposed to get the quest item.
+            // freeforall is 1 if everyone's supposed to get the quest item.
             if (item->freeforall || loot->GetPlayerQuestItems().size() == 1)
                 player->SendNotifyLootItemRemoved(lootSlot);
             else
@@ -146,20 +147,20 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
         {
             if (ffaitem)
             {
-                //freeforall case, notify only one player of the removal
+                // freeforall case, notify only one player of the removal
                 ffaitem->is_looted = true;
                 player->SendNotifyLootItemRemoved(lootSlot);
             }
             else
             {
-                //not freeforall, notify everyone
+                // not freeforall, notify everyone
                 if (conditem)
                     conditem->is_looted = true;
                 loot->NotifyItemRemoved(lootSlot);
             }
         }
 
-        //if only one person is supposed to loot the item, then set it to looted
+        // if only one person is supposed to loot the item, then set it to looted
         if (!item->freeforall)
             item->is_looted = true;
 
@@ -232,7 +233,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
     {
         pLoot->NotifyMoneyRemoved();
 
-        if (!guid.IsItem() && player->GetGroup())           //item can be looted only single player
+        if (!guid.IsItem() && player->GetGroup())           // item can be looted only single player
         {
             Group* group = player->GetGroup();
 
@@ -251,9 +252,10 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
             for (std::vector<Player*>::const_iterator i = playersNear.begin(); i != playersNear.end(); ++i)
             {
                 (*i)->ModifyMoney(money_per_player);
-                //Offset surely incorrect, but works
+
                 WorldPacket data(SMSG_LOOT_MONEY_NOTIFY, 4);
                 data << uint32(money_per_player);
+
                 (*i)->GetSession()->SendPacket(&data);
             }
         }
@@ -357,22 +359,22 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
                                 {
                                     go->SetLootState(GO_READY);
                                 }
-                                else                            // not have more uses
+                                else                        // not have more uses
                                     go->SetLootState(GO_JUST_DEACTIVATED);
                             }
-                            else                                // 100% chance until min uses
+                            else                            // 100% chance until min uses
                                 go->SetLootState(GO_READY);
                         }
-                        else                                    // max uses already
+                        else                                // max uses already
                             go->SetLootState(GO_JUST_DEACTIVATED);
                     }
-                    else                                        // not vein
+                    else                                    // not vein
                         go->SetLootState(GO_JUST_DEACTIVATED);
                 }
                 else if (go->GetGoType() == GAMEOBJECT_TYPE_FISHINGHOLE)
                 {
                     // The fishing hole used once more
-                    go->AddUse();                               // if the max usage is reached, will be despawned at next tick
+                    go->AddUse();                           // if the max usage is reached, will be despawned at next tick
                     if (go->GetUseCount() >= urand(go->GetGOInfo()->fishinghole.minSuccessOpens, go->GetGOInfo()->fishinghole.maxSuccessOpens))
                     {
                         go->SetLootState(GO_JUST_DEACTIVATED);
@@ -452,13 +454,11 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
                 if (group->GetLooterGuid() == player->GetObjectGuid())
                     group->UpdateLooterGuid(pCreature);
 
-            if (loot->isLooted())
+            if (loot->isLooted() && !pCreature->isAlive())
             {
                 // for example skinning after normal loot
                 pCreature->PrepareBodyLootState();
-
-                if (!pCreature->isAlive())
-                    pCreature->AllLootRemovedFromCorpse();
+                pCreature->AllLootRemovedFromCorpse();
             }
             break;
         }
@@ -469,7 +469,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
         }
     }
 
-    //Player is not looking at loot list, he doesn't need to see updates on the loot list
+    // Player is not looking at loot list, he doesn't need to see updates on the loot list
     loot->RemoveLooter(player->GetObjectGuid());
 }
 
@@ -519,7 +519,7 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
 
     if (slotid > pLoot->items.size())
     {
-        DEBUG_LOG("AutoLootItem: Player %s might be using a hack! (slot %d, size %lu)", GetPlayer()->GetName(), slotid, (unsigned long)pLoot->items.size());
+        DEBUG_LOG("AutoLootItem: Player %s might be using a hack! (slot %d, size " SIZEFMTD ")", GetPlayer()->GetName(), slotid, pLoot->items.size());
         return;
     }
 

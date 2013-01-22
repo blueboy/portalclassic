@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ void WaypointManager::Load()
 
     std::set<uint32> movementScriptSet;
 
-    for (ScriptMapMap::const_iterator itr = sCreatureMovementScripts.begin(); itr != sCreatureMovementScripts.end(); ++itr)
+    for (ScriptMapMap::const_iterator itr = sCreatureMovementScripts.second.begin(); itr != sCreatureMovementScripts.second.end(); ++itr)
         movementScriptSet.insert(itr->first);
 
     // creature_movement
@@ -163,7 +163,7 @@ void WaypointManager::Load()
 
             if (node.script_id)
             {
-                if (sCreatureMovementScripts.find(node.script_id) == sCreatureMovementScripts.end())
+                if (sCreatureMovementScripts.second.find(node.script_id) == sCreatureMovementScripts.second.end())
                 {
                     sLog.outErrorDb("Table creature_movement for id %u, point %u have script_id %u that does not exist in `creature_movement_scripts`, ignoring", id, point, node.script_id);
                     continue;
@@ -328,7 +328,7 @@ void WaypointManager::Load()
 
             if (node.script_id)
             {
-                if (sCreatureMovementScripts.find(node.script_id) == sCreatureMovementScripts.end())
+                if (sCreatureMovementScripts.second.find(node.script_id) == sCreatureMovementScripts.second.end())
                 {
                     sLog.outErrorDb("Table creature_movement_template for entry %u, point %u have script_id %u that does not exist in `creature_movement_scripts`, ignoring", entry, point, node.script_id);
                     continue;
@@ -439,8 +439,7 @@ void WaypointManager::Unload()
 void WaypointManager::_clearPath(WaypointPath& path)
 {
     for (WaypointPath::const_iterator itr = path.begin(); itr != path.end(); ++itr)
-        if (itr->behavior)
-            delete itr->behavior;
+        delete itr->behavior;
     path.clear();
 }
 
@@ -453,7 +452,7 @@ void WaypointManager::AddLastNode(uint32 id, float x, float y, float z, float o,
 /// - Insert after a certain point
 void WaypointManager::AddAfterNode(uint32 id, uint32 point, float x, float y, float z, float o, uint32 delay, uint32 wpGuid)
 {
-    for (uint32 i = GetLastPoint(id, 0); i > point; i--)
+    for (uint32 i = GetLastPoint(id, 0); i > point; --i)
         WorldDatabase.PExecuteLog("UPDATE creature_movement SET point=point+1 WHERE id=%u AND point=%u", id, i);
 
     _addNode(id, point + 1, x, y, z, o, delay, wpGuid);

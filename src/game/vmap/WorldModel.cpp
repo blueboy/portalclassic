@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ template<> struct BoundsTrait<VMAP::GroupModel>
     static void getBounds(const VMAP::GroupModel& obj, G3D::AABox& out) { out = obj.GetBound(); }
 };
 
-
 namespace VMAP
 {
     bool IntersectTriangle(const MeshTriangle& tri, std::vector<Vector3>::const_iterator points, const G3D::Ray& ray, float& distance)
@@ -43,7 +42,7 @@ namespace VMAP
         const Vector3 p(ray.direction().cross(e2));
         const float a = e1.dot(p);
 
-        if (abs(a) < EPS)
+        if (fabs(a) < EPS)
         {
             // Determinant is ill-conditioned; abort early
             return false;
@@ -445,14 +444,14 @@ namespace VMAP
             void operator()(const Vector3& point, uint32 entry)
             {
                 float group_Z;
-                //float pVol = prims[entry].GetBound().volume();
-                //if(pVol < minVol)
+                // float pVol = prims[entry].GetBound().volume();
+                // if(pVol < minVol)
                 //{
                 /* if (prims[entry].iBound.contains(point)) */
                 if (prims[entry].IsInsideObject(point, zVec, group_Z))
                 {
-                    //minVol = pVol;
-                    //hit = prims + entry;
+                    // minVol = pVol;
+                    // hit = prims + entry;
                     if (group_Z < zDist)
                     {
                         zDist = group_Z;
@@ -466,7 +465,7 @@ namespace VMAP
 #endif
                 }
                 //}
-                //std::cout << "trying to intersect '" << prims[entry].name << "'\n";
+                // std::cout << "trying to intersect '" << prims[entry].name << "'\n";
             }
     };
 
@@ -509,9 +508,8 @@ namespace VMAP
         if (!wf)
             return false;
 
-        bool result = true;
         uint32 chunkSize, count;
-        result = fwrite(VMAP_MAGIC, 1, 8, wf) == 8;
+        bool result = fwrite(VMAP_MAGIC, 1, 8, wf) == 8;
         if (result && fwrite("WMOD", 1, 4, wf) != 4) result = false;
         chunkSize = sizeof(uint32) + sizeof(uint32);
         if (result && fwrite(&chunkSize, sizeof(uint32), 1, wf) != 1) result = false;
@@ -522,8 +520,8 @@ namespace VMAP
         if (count)
         {
             if (result && fwrite("GMOD", 1, 4, wf) != 4) result = false;
-            //chunkSize = sizeof(uint32)+ sizeof(GroupModel)*count;
-            //if (result && fwrite(&chunkSize, sizeof(uint32), 1, wf) != 1) result = false;
+            // chunkSize = sizeof(uint32)+ sizeof(GroupModel)*count;
+            // if (result && fwrite(&chunkSize, sizeof(uint32), 1, wf) != 1) result = false;
             if (result && fwrite(&count, sizeof(uint32), 1, wf) != 1) result = false;
             for (uint32 i = 0; i < groupModels.size() && result; ++i)
                 result = groupModels[i].writeToFile(wf);
@@ -555,11 +553,11 @@ namespace VMAP
         // read group models
         if (result && readChunk(rf, chunk, "GMOD", 4))
         {
-            //if (fread(&chunkSize, sizeof(uint32), 1, rf) != 1) result = false;
+            // if (fread(&chunkSize, sizeof(uint32), 1, rf) != 1) result = false;
 
             if (result && fread(&count, sizeof(uint32), 1, rf) != 1) result = false;
             if (result) groupModels.resize(count);
-            //if (result && fread(&groupModels[0], sizeof(GroupModel), count, rf) != count) result = false;
+            // if (result && fread(&groupModels[0], sizeof(GroupModel), count, rf) != count) result = false;
             for (uint32 i = 0; i < count && result; ++i)
                 result = groupModels[i].readFromFile(rf);
 

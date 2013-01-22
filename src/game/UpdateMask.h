@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@ class UpdateMask
 
         ~UpdateMask()
         {
-            if (mUpdateMask)
-                delete [] mUpdateMask;
+            delete[] mUpdateMask;
         }
 
         void SetBit(uint32 index)
@@ -57,8 +56,7 @@ class UpdateMask
 
         void SetCount(uint32 valuesCount)
         {
-            if (mUpdateMask)
-                delete [] mUpdateMask;
+            delete[] mUpdateMask;
 
             mCount = valuesCount;
             mBlocks = (valuesCount + 31) / 32;

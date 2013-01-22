@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,8 +88,7 @@ WorldSocket::WorldSocket(void) :
 
 WorldSocket::~WorldSocket(void)
 {
-    if (m_RecvWPct)
-        delete m_RecvWPct;
+    delete m_RecvWPct;
 
     if (m_OutBuffer)
         m_OutBuffer->release();
@@ -295,7 +294,7 @@ int WorldSocket::handle_output(ACE_HANDLE)
 
         return -1;
     }
-    else if (n < (ssize_t)send_len) //now n > 0
+    else if (n < (ssize_t)send_len) // now n > 0
     {
         m_OutBuffer->rd_ptr(static_cast<size_t>(n));
 
@@ -304,7 +303,7 @@ int WorldSocket::handle_output(ACE_HANDLE)
 
         return schedule_wakeup_output(Guard);
     }
-    else //now n == send_len
+    else // now n == send_len
     {
         m_OutBuffer->reset();
 
@@ -443,7 +442,7 @@ int WorldSocket::handle_input_missing_data(void)
     {
         if (m_Header.space() > 0)
         {
-            //need to receive the header
+            // need to receive the header
             const size_t to_header = (message_block.length() > m_Header.space() ? m_Header.space() : message_block.length());
             m_Header.copy(message_block.rd_ptr(), to_header);
             message_block.rd_ptr(to_header);
@@ -477,7 +476,7 @@ int WorldSocket::handle_input_missing_data(void)
         // We have full read header, now check the data payload
         if (m_RecvPct.space() > 0)
         {
-            //need more data in the payload
+            // need more data in the payload
             const size_t to_data = (message_block.length() > m_RecvPct.space() ? m_RecvPct.space() : message_block.length());
             m_RecvPct.copy(message_block.rd_ptr(), to_data);
             message_block.rd_ptr(to_data);
@@ -491,7 +490,7 @@ int WorldSocket::handle_input_missing_data(void)
             }
         }
 
-        //just received fresh new payload
+        // just received fresh new payload
         if (handle_input_payload() == -1)
         {
             MANGOS_ASSERT((errno != EWOULDBLOCK) && (errno != EAGAIN));
@@ -577,7 +576,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 
                 return HandleAuthSession(*new_pct);
             case CMSG_KEEP_ALIVE:
-                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: "SIZEFMTD" ", new_pct->size());
+                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: " SIZEFMTD " ", new_pct->size());
 
                 return 0;
             default:
@@ -629,10 +628,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 {
     // NOTE: ATM the socket is singlethread, have this in mind ...
     uint8 digest[20];
-    uint32 clientSeed;
+    uint32 clientSeed, id, security;
     uint32 unk2;
     uint32 BuiltNumberClient;
-    uint32 id, security;
     LocaleConstant locale;
     std::string account;
     Sha1Hash sha1;
@@ -643,7 +641,6 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     recvPacket >> BuiltNumberClient;
     recvPacket >> unk2;
     recvPacket >> account;
-
     recvPacket >> clientSeed;
     recvPacket.read(digest, 20);
 
@@ -672,15 +669,15 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     QueryResult* result =
         LoginDatabase.PQuery("SELECT "
-                             "id, "                      //0
-                             "gmlevel, "                 //1
-                             "sessionkey, "              //2
-                             "last_ip, "                 //3
-                             "locked, "                  //4
-                             "v, "                       //5
-                             "s, "                       //6
-                             "mutetime, "                //7
-                             "locale "                   //8
+                             "id, "                      // 0
+                             "gmlevel, "                 // 1
+                             "sessionkey, "              // 2
+                             "last_ip, "                 // 3
+                             "locked, "                  // 4
+                             "v, "                       // 5
+                             "s, "                       // 6
+                             "mutetime, "                // 7
+                             "locale "                   // 8
                              "FROM account "
                              "WHERE username = '%s'",
                              safe_account.c_str());
@@ -705,8 +702,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     v.SetHexStr(fields[5].GetString());
     s.SetHexStr(fields[6].GetString());
 
-    const char* sStr = s.AsHexStr();                        //Must be freed by OPENSSL_free()
-    const char* vStr = v.AsHexStr();                        //Must be freed by OPENSSL_free()
+    const char* sStr = s.AsHexStr();                        // Must be freed by OPENSSL_free()
+    const char* vStr = v.AsHexStr();                        // Must be freed by OPENSSL_free()
 
     DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) check s: %s v: %s",
               sStr,
@@ -845,7 +842,7 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
     recvPacket >> latency;
 
     if (m_LastPingTime == ACE_Time_Value::zero)
-        m_LastPingTime = ACE_OS::gettimeofday();  // for 1st ping
+        m_LastPingTime = ACE_OS::gettimeofday();            // for 1st ping
     else
     {
         ACE_Time_Value cur_time = ACE_OS::gettimeofday();

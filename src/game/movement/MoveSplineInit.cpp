@@ -19,7 +19,7 @@
 #include "MoveSplineInit.h"
 #include "MoveSpline.h"
 #include "packet_builder.h"
-#include "../Unit.h"
+#include "Unit.h"
 
 namespace Movement
 {
@@ -34,7 +34,7 @@ namespace Movement
         }
         else if (moveFlags & MOVEFLAG_WALK_MODE)
         {
-            //if ( speed_obj.run > speed_obj.walk )
+            // if ( speed_obj.run > speed_obj.walk )
             return MOVE_WALK;
         }
         else if (moveFlags & MOVEFLAG_BACKWARD /*&& speed_obj.run >= speed_obj.run_back*/)
@@ -72,7 +72,7 @@ namespace Movement
         if (args.velocity == 0.f)
             args.velocity = unit.GetSpeed(SelectSpeedType(moveFlags));
 
-        if (!args.Validate())
+        if (!args.Validate(&unit))
             return 0;
 
         unit.m_movementInfo.SetMovementFlags((MovementFlags)moveFlags);

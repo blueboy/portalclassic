@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@
 #include "Util.h"
 #include "Language.h"
 #include "Chat.h"
+#include "SpellMgr.h"
 
 // Playerbot mod:
 #include "playerbot/PlayerbotMgr.h"
@@ -225,6 +226,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
             {
                 case ALLIANCE: disabled = mask & (1 << 0); break;
                 case HORDE:    disabled = mask & (1 << 1); break;
+                default: break;
             }
 
             if (disabled)
@@ -547,7 +549,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         DEBUG_LOG("WORLD: Sent motd (SMSG_MOTD)");
     }
 
-    //QueryResult *result = CharacterDatabase.PQuery("SELECT guildid,rank FROM guild_member WHERE guid = '%u'",pCurrChar->GetGUIDLow());
+    // QueryResult *result = CharacterDatabase.PQuery("SELECT guildid,rank FROM guild_member WHERE guid = '%u'",pCurrChar->GetGUIDLow());
     QueryResult* resultGuild = holder->GetResult(PLAYER_LOGIN_QUERY_LOADGUILD);
 
     if (resultGuild)
@@ -568,7 +570,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         Guild* guild = sGuildMgr.GetGuildById(pCurrChar->GetGuildId());
         if (guild)
         {
-            data.Initialize(SMSG_GUILD_EVENT, (2 + guild->GetMOTD().size() + 1));
+            data.Initialize(SMSG_GUILD_EVENT, (1 + 1 + guild->GetMOTD().size() + 1));
             data << uint8(GE_MOTD);
             data << uint8(1);
             data << guild->GetMOTD();
@@ -590,7 +592,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 
-    //Show cinematic at the first time that player login
+    // Show cinematic at the first time that player login
     if (!pCurrChar->getCinematic())
     {
         pCurrChar->setCinematic(1);
@@ -610,7 +612,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
 
     sObjectAccessor.AddObject(pCurrChar);
-    //DEBUG_LOG("Player %s added to Map.",pCurrChar->GetName());
+    // DEBUG_LOG("Player %s added to Map.",pCurrChar->GetName());
     pCurrChar->GetSocial()->SendFriendList();
     pCurrChar->GetSocial()->SendIgnoreList();
 
@@ -645,7 +647,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
             pCurrChar->CastSpell(pCurrChar, 20584, true);   // auras SPELL_AURA_INCREASE_SPEED(+speed in wisp form), SPELL_AURA_INCREASE_SWIM_SPEED(+swim speed in wisp form), SPELL_AURA_TRANSFORM (to wisp form)
         pCurrChar->CastSpell(pCurrChar, 8326, true);        // auras SPELL_AURA_GHOST, SPELL_AURA_INCREASE_SPEED(why?), SPELL_AURA_INCREASE_SWIM_SPEED(why?)
 
-        pCurrChar->SetMovement(MOVE_WATER_WALK);
+        pCurrChar->SetWaterWalk(true);
     }
 
     pCurrChar->ContinueTaxiFlight();
@@ -687,7 +689,12 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         SendNotification(LANG_GM_ON);
 
     if (!pCurrChar->isGMVisible())
+    {
         SendNotification(LANG_INVISIBLE_INVISIBLE);
+        SpellEntry const* invisibleAuraInfo = sSpellStore.LookupEntry(sWorld.getConfig(CONFIG_UINT32_GM_INVISIBLE_AURA));
+        if (invisibleAuraInfo && IsSpellAppliesAura(invisibleAuraInfo))
+            pCurrChar->CastSpell(pCurrChar, invisibleAuraInfo, true);
+    }
 
     std::string IP_str = GetRemoteAddress();
     sLog.outChar("Account: %d (IP: %s) Login Character:[%s] (guid: %u)",
@@ -730,7 +737,7 @@ void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
     uint32 wInt = (iFlag / 32);
     if (wInt >= 8)
     {
-        //sLog.outError("CHEATER? Account:[%d] Guid[%u] tried to send wrong CMSG_TUTORIAL_FLAG", GetAccountId(),GetGUID());
+        // sLog.outError("CHEATER? Account:[%d] Guid[%u] tried to send wrong CMSG_TUTORIAL_FLAG", GetAccountId(),GetGUID());
         return;
     }
     uint32 rInt = (iFlag % 32);
@@ -739,19 +746,19 @@ void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
     tutflag |= (1 << rInt);
     SetTutorialInt(wInt, tutflag);
 
-    //DEBUG_LOG("Received Tutorial Flag Set {%u}.", iFlag);
+    // DEBUG_LOG("Received Tutorial Flag Set {%u}.", iFlag);
 }
 
 void WorldSession::HandleTutorialClearOpcode(WorldPacket& /*recv_data*/)
 {
-    for (uint32 iI = 0; iI < 8; ++iI)
-        SetTutorialInt(iI, 0xFFFFFFFF);
+    for (int i = 0; i < 8; ++i)
+        SetTutorialInt(i, 0xFFFFFFFF);
 }
 
 void WorldSession::HandleTutorialResetOpcode(WorldPacket& /*recv_data*/)
 {
-    for (uint32 iI = 0; iI < 8; iI++)
-        SetTutorialInt(iI, 0x00000000);
+    for (int i = 0; i < 8; ++i)
+        SetTutorialInt(i, 0x00000000);
 }
 
 void WorldSession::HandleSetWatchedFactionOpcode(WorldPacket& recv_data)

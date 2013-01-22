@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ void BigNumber::SetQword(uint64 val)
 void BigNumber::SetBinary(const uint8* bytes, int len)
 {
     uint8 t[1000];
-    for (int i = 0; i < len; i++)
+    for (int i = 0; i < len; ++i)
         t[i] = bytes[len - 1 - i];
     BN_bin2bn(t, len, _bn);
 }
@@ -170,11 +170,7 @@ uint8* BigNumber::AsByteArray(int minSize)
 {
     int length = (minSize >= GetNumBytes()) ? minSize : GetNumBytes();
 
-    if (_array)
-    {
-        delete[] _array;
-        _array = NULL;
-    }
+    delete[] _array;
     _array = new uint8[length];
 
     // If we need more bytes than length of BigNumber set the rest to 0

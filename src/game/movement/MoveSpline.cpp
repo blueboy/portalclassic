@@ -19,6 +19,7 @@
 #include "MoveSpline.h"
 #include <sstream>
 #include "Log.h"
+#include "Unit.h"
 
 namespace Movement
 {
@@ -47,7 +48,7 @@ namespace Movement
                 c.orientation = facing.angle;
             else if (splineflags.final_point)
                 c.orientation = atan2(facing.f.y - c.y, facing.f.x - c.x);
-            //nothing to do for MoveSplineFlag::Final_Target flag
+            // nothing to do for MoveSplineFlag::Final_Target flag
         }
         else
         {
@@ -107,8 +108,8 @@ namespace Movement
         {
             uint32 cyclic_point = 0;
             // MoveSplineFlag::Enter_Cycle support dropped
-            //if (splineflags & SPLINEFLAG_ENTER_CYCLE)
-            //cyclic_point = 1;   // shouldn't be modified, came from client
+            // if (splineflags & SPLINEFLAG_ENTER_CYCLE)
+            // cyclic_point = 1;   // shouldn't be modified, came from client
             spline.init_cyclic_spline(&args.path[0], args.path.size(), modes[args.flags.isSmooth()], cyclic_point);
         }
         else
@@ -155,17 +156,17 @@ namespace Movement
 
 /// ============================================================================================
 
-    bool MoveSplineInitArgs::Validate() const
+    bool MoveSplineInitArgs::Validate(Unit* unit) const
     {
 #define CHECK(exp) \
     if (!(exp))\
     {\
-        sLog.outError("MoveSplineInitArgs::Validate: expression '%s' failed", #exp);\
+        sLog.outError("MoveSplineInitArgs::Validate: expression '%s' failed for %s", #exp, unit->GetGuidStr().c_str());\
         return false;\
     }
         CHECK(path.size() > 1);
         CHECK(velocity > 0.f);
-        //CHECK(_checkPathBounds());
+        // CHECK(_checkPathBounds());
         return true;
 #undef CHECK
     }

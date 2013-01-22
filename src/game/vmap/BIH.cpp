@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ void BIH::buildHierarchy(std::vector<uint32>& tempTree, buildData& dat, BuildSta
     // create space for the first node
     tempTree.push_back(3 << 30); // dummy leaf
     tempTree.insert(tempTree.end(), 2, 0);
-    //tempTree.add(0);
+    // tempTree.add(0);
 
     // seed bbox
     AABound gridBox = { bounds.low(), bounds.high() };
@@ -55,11 +55,11 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
         Vector3 d(gridBox.hi - gridBox.lo);
         if (d.x < 0 || d.y < 0 || d.z < 0)
             throw std::logic_error("negative node extents");
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; ++i)
         {
             if (nodeBox.hi[i] < gridBox.lo[i] || nodeBox.lo[i] > gridBox.hi[i])
             {
-                //UI.printError(Module.ACCEL, "Reached tree area in error - discarding node with: %d objects", right - left + 1);
+                // UI.printError(Module.ACCEL, "Reached tree area in error - discarding node with: %d objects", right - left + 1);
                 throw std::logic_error("invalid node overlap");
             }
         }
@@ -81,7 +81,7 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
             if (center <= split)
             {
                 // stay left
-                i++;
+                ++i;
                 if (clipL < maxb)
                     clipL = maxb;
             }
@@ -91,7 +91,7 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
                 int t = dat.indices[i];
                 dat.indices[i] = dat.indices[right];
                 dat.indices[right] = t;
-                right--;
+                --right;
                 if (clipR > minb)
                     clipR = minb;
             }
@@ -199,7 +199,7 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
                     tempTree[nodeIndex + 2] = floatToRawIntBits(prevClip);
                 }
                 // count stats for the unused leaf
-                depth++;
+                ++depth;
                 stats.updateLeaf(depth, 0);
                 // now we keep going as we are, with a new nodeIndex:
                 nodeIndex = nextIndex;
@@ -282,7 +282,7 @@ bool BIH::readFromFile(FILE* rf)
 
 void BIH::BuildStats::updateLeaf(int depth, int n)
 {
-    numLeaves++;
+    ++numLeaves;
     minDepth = std::min(depth, minDepth);
     maxDepth = std::max(depth, maxDepth);
     sumDepth += depth;

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "RandomMovementGenerator.h"
 #include "movement/MoveSpline.h"
 #include "movement/MoveSplineInit.h"
+#include "DBCStores.h"
 
 #include <cassert>
 
@@ -222,7 +223,7 @@ void MotionMaster::MoveIdle()
         push(&si_idleMovement);
 }
 
-void MotionMaster::MoveRandom()
+void MotionMaster::MoveRandomAroundPoint(float x, float y, float z, float radius, float verticalZ)
 {
     if (m_owner->GetTypeId() == TYPEID_PLAYER)
     {
@@ -231,7 +232,7 @@ void MotionMaster::MoveRandom()
     else
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s move random.", m_owner->GetGuidStr().c_str());
-        Mutate(new RandomMovementGenerator<Creature>(*m_owner));
+        Mutate(new RandomMovementGenerator<Creature>(x, y, z, radius, verticalZ));
     }
 }
 
@@ -471,12 +472,6 @@ bool MotionMaster::GetDestination(float& x, float& y, float& z)
     return true;
 }
 
-void MotionMaster::UpdateFinalDistanceToTarget(float fDistance)
-{
-    if (!empty())
-        top()->UpdateFinalDistance(fDistance);
-}
-
 void MotionMaster::MoveFall()
 {
     // use larger distance for vmap height search than in most other cases
@@ -484,7 +479,7 @@ void MotionMaster::MoveFall()
     if (tz <= INVALID_HEIGHT)
     {
         DEBUG_LOG("MotionMaster::MoveFall: unable retrive a proper height at map %u (x: %f, y: %f, z: %f).",
-                  m_owner->GetMap()->GetId(), m_owner->GetPositionX(), m_owner->GetPositionX(), m_owner->GetPositionZ());
+                  m_owner->GetMap()->GetId(), m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ());
         return;
     }
 

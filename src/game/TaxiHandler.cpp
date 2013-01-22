@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -149,6 +149,15 @@ bool WorldSession::SendLearnNewTaxiNode(Creature* unit)
     }
     else
         return false;
+}
+
+void WorldSession::SendActivateTaxiReply(ActivateTaxiReply reply)
+{
+    WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
+    data << uint32(reply);
+    SendPacket(&data);
+
+    DEBUG_LOG("WORLD: Sent SMSG_ACTIVATETAXIREPLY");
 }
 
 void WorldSession::HandleActivateTaxiExpressOpcode(WorldPacket& recv_data)

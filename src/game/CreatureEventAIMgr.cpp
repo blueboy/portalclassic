@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+ * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -133,8 +133,11 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
                 switch (action.type)
                 {
                     case ACTION_T_TEXT:
+                    case ACTION_T_CHANCED_TEXT:
                     {
-                        for (int k = 0; k < 3; ++k)
+                        // ACTION_T_CHANCED_TEXT contains a chance value in first param
+                        int k = action.type == ACTION_T_TEXT ? 0 : 1;
+                        for (; k < 3; ++k)
                             if (action.text.TextId[k])
                                 idx_set.erase(action.text.TextId[k]);
                         break;
@@ -154,7 +157,7 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
 void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
 {
 
-    //Drop Existing EventSummon Map
+    // Drop Existing EventSummon Map
     m_CreatureEventAI_Summon_Map.clear();
 
     // Gather additional data for EventAI
@@ -171,21 +174,21 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
 
             CreatureEventAI_Summon temp;
 
-            uint32 i = fields[0].GetUInt32();
-            temp.position_x = fields[1].GetFloat();
-            temp.position_y = fields[2].GetFloat();
-            temp.position_z = fields[3].GetFloat();
-            temp.orientation = fields[4].GetFloat();
-            temp.SpawnTimeSecs = fields[5].GetUInt32();
+            temp.id             = fields[0].GetUInt32();
+            temp.position_x     = fields[1].GetFloat();
+            temp.position_y     = fields[2].GetFloat();
+            temp.position_z     = fields[3].GetFloat();
+            temp.orientation    = fields[4].GetFloat();
+            temp.SpawnTimeSecs  = fields[5].GetUInt32();
 
             if (!MaNGOS::IsValidMapCoord(temp.position_x, temp.position_y, temp.position_z, temp.orientation))
             {
-                sLog.outErrorDb("CreatureEventAI:  Summon id %u have wrong coordinates (%f,%f,%f,%f), skipping.", i, temp.position_x, temp.position_y, temp.position_z, temp.orientation);
+                sLog.outErrorDb("CreatureEventAI:  Summon id %u have wrong coordinates (%f, %f, %f, %f), skipping.", temp.id, temp.position_x, temp.position_y, temp.position_z, temp.orientation);
                 continue;
             }
 
-            //Add to map
-            m_CreatureEventAI_Summon_Map[i] = temp;
+            // Add to map
+            m_CreatureEventAI_Summon_Map[temp.id] = temp;
             ++Count;
         }
         while (result->NextRow());
@@ -245,7 +248,7 @@ void CreatureEventAIMgr::CheckUnusedAISummons()
 // -------------------
 void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
 {
-    //Drop Existing EventAI List
+    // Drop Existing EventAI List
     m_CreatureEventAI_Event_Map.clear();
 
     // Gather event data
@@ -273,7 +276,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
             uint32 creature_id = temp.creature_id;
 
             uint32 e_type = fields[2].GetUInt32();
-            //Report any errors in event
+            // Report any errors in event
             if (e_type >= EVENT_T_END)
             {
                 sLog.outErrorDb("CreatureEventAI:  Event %u have wrong type (%u), skipping.", i, e_type);
@@ -289,28 +292,29 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
             temp.raw.param3 = fields[8].GetUInt32();
             temp.raw.param4 = fields[9].GetUInt32();
 
-            //Creature does not exist in database
+            // Creature does not exist in database
             if (!sCreatureStorage.LookupEntry<CreatureInfo>(temp.creature_id))
             {
                 sLog.outErrorDb("CreatureEventAI:  Event %u has script for non-existing creature entry (%u), skipping.", i, temp.creature_id);
                 continue;
             }
 
-            //No chance of this event occuring
+            // No chance of this event occuring
             if (temp.event_chance == 0)
                 sLog.outErrorDb("CreatureEventAI:  Event %u has 0 percent chance. Event will never trigger!", i);
-            //Chance above 100, force it to be 100
+            // Chance above 100, force it to be 100
             else if (temp.event_chance > 100)
             {
                 sLog.outErrorDb("CreatureEventAI:  Creature %u are using event %u with more than 100 percent chance. Adjusting to 100 percent.", temp.creature_id, i);
                 temp.event_chance = 100;
             }
 
-            //Individual event checks
+            // Individual event checks
             switch (temp.event_type)
             {
-                case EVENT_T_TIMER:
+                case EVENT_T_TIMER_IN_COMBAT:
                 case EVENT_T_TIMER_OOC:
+                case EVENT_T_TIMER_GENERIC:
                     if (temp.timer.initialMax < temp.timer.initialMin)
                         sLog.outErrorDb("CreatureEventAI:  Creature %u are using timed event(%u) with param2 < param1 (InitialMax < InitialMin). Event will never repeat.", temp.creature_id, i);
                     if (temp.timer.repeatMax < temp.timer.repeatMin)
@@ -374,6 +378,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         case SPAWNED_EVENT_ZONE:
                             if (!GetAreaEntryByAreaID(temp.spawned.conditionValue1))
                                 sLog.outErrorDb("CreatureEventAI:  Creature %u are using spawned event(%u) with param1 = %u 'area specific' but area (param2: %u) does not exist. Event will never repeat.", temp.creature_id, i, temp.spawned.condition, temp.spawned.conditionValue1);
+                            break;
                         default:
                             sLog.outErrorDb("CreatureEventAI:  Creature %u are using invalid spawned event %u mode (%u) in param1", temp.creature_id, i, temp.spawned.condition);
                             break;
@@ -449,7 +454,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         continue;
                     }
 
-                    if (!PlayerCondition::IsValid(ConditionType(temp.receive_emote.condition), temp.receive_emote.conditionValue1, temp.receive_emote.conditionValue2))
+                    if (!PlayerCondition::IsValid(0, ConditionType(temp.receive_emote.condition), temp.receive_emote.conditionValue1, temp.receive_emote.conditionValue2))
                     {
                         sLog.outErrorDb("CreatureEventAI: Creature %u using event %u: param2 (Condition: %u) are not valid.", temp.creature_id, i, temp.receive_emote.condition);
                         continue;
@@ -490,7 +495,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                     break;
             }
 
-            for (uint32 j = 0; j < MAX_ACTIONS; j++)
+            for (uint32 j = 0; j < MAX_ACTIONS; ++j)
             {
                 uint16 action_type = fields[10 + (j * 4)].GetUInt16();
                 if (action_type >= ACTION_T_END)
@@ -507,19 +512,27 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                 action.raw.param2 = fields[12 + (j * 4)].GetUInt32();
                 action.raw.param3 = fields[13 + (j * 4)].GetUInt32();
 
-                //Report any errors in actions
+                // Report any errors in actions
                 switch (action.type)
                 {
                     case ACTION_T_NONE:
                         break;
+                    case ACTION_T_CHANCED_TEXT:
+                        // Check first param as chance
+                        if (!action.chanced_text.chance)
+                            sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has not set chance param1. Text will not be displayed", i, j + 1);
+                        else if (action.chanced_text.chance >= 100)
+                            sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has set chance param1 >= 100. Text will always be displayed", i, j + 1);
+                        // no break here to check texts
                     case ACTION_T_TEXT:
                     {
                         bool not_set = false;
-                        for (int k = 0; k < 3; ++k)
+                        int firstTextParam = action.type == ACTION_T_TEXT ? 0 : 1;
+                        for (int k = firstTextParam; k < 3; ++k)
                         {
                             if (action.text.TextId[k])
                             {
-                                if (k > 0 && not_set)
+                                if (k > firstTextParam && not_set)
                                     sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has param%d, but it follow after not set param. Required for randomized text.", i, j + 1, k + 1);
 
                                 if (!action.text.TextId[k])
@@ -604,14 +617,14 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         {
                             if (spell->RecoveryTime > 0 && temp.event_flags & EFLAG_REPEATABLE)
                             {
-                                //output as debug for now, also because there's no general rule all spells have RecoveryTime
+                                // output as debug for now, also because there's no general rule all spells have RecoveryTime
                                 if (temp.event_param3 < spell->RecoveryTime)
                                     DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "CreatureEventAI:  Event %u Action %u uses SpellID %u but cooldown is longer(%u) than minumum defined in event param3(%u).", i, j+1,action.cast.spellId, spell->RecoveryTime, temp.event_param3);
                             }
                         }
                         */
 
-                        //Cast is always triggered if target is forced to cast on self
+                        // Cast is always triggered if target is forced to cast on self
                         if (action.cast.castFlags & CAST_FORCE_TARGET_SELF)
                             action.cast.castFlags |= CAST_TRIGGERED;
 
@@ -699,7 +712,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         if (action.remove_aura.target >= TARGET_T_END)
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u uses incorrect Target type", i, j + 1);
                         break;
-                    case ACTION_T_RANDOM_PHASE:             //PhaseId1, PhaseId2, PhaseId3
+                    case ACTION_T_RANDOM_PHASE:             // PhaseId1, PhaseId2, PhaseId3
                         if (action.random_phase.phase1 >= MAX_PHASE)
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u attempts to set phase1 >= %u. Phase mask cannot be used past phase %u.", i, j + 1, MAX_PHASE, MAX_PHASE - 1);
                         if (action.random_phase.phase2 >= MAX_PHASE)
@@ -707,7 +720,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         if (action.random_phase.phase3 >= MAX_PHASE)
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u attempts to set phase3 >= %u. Phase mask cannot be used past phase %u.", i, j + 1, MAX_PHASE, MAX_PHASE - 1);
                         break;
-                    case ACTION_T_RANDOM_PHASE_RANGE:       //PhaseMin, PhaseMax
+                    case ACTION_T_RANDOM_PHASE_RANGE:       // PhaseMin, PhaseMax
                         if (action.random_phase_range.phaseMin >= MAX_PHASE)
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u attempts to set phaseMin >= %u. Phase mask cannot be used past phase %u.", i, j + 1, MAX_PHASE, MAX_PHASE - 1);
                         if (action.random_phase_range.phaseMin >= MAX_PHASE)
@@ -734,13 +747,13 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u uses incorrect Target type", i, j + 1);
                         break;
                     case ACTION_T_SET_INST_DATA:
-                        //if (!(temp.event_flags & EFLAG_NORMAL) && !(temp.event_flags & EFLAG_HEROIC))
+                        // if (!(temp.event_flags & EFLAG_NORMAL) && !(temp.event_flags & EFLAG_HEROIC))
                         //    sLog.outErrorDb("CreatureEventAI:  Event %u Action %u. Cannot set instance data without event flags (normal/heroic).", i, j+1);
                         if (action.set_inst_data.value > 4/*SPECIAL*/)
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u attempts to set instance data above encounter state 4. Custom case?", i, j + 1);
                         break;
                     case ACTION_T_SET_INST_DATA64:
-                        //if (!(temp.event_flags & EFLAG_NORMAL) && !(temp.event_flags & EFLAG_HEROIC))
+                        // if (!(temp.event_flags & EFLAG_NORMAL) && !(temp.event_flags & EFLAG_HEROIC))
                         //    sLog.outErrorDb("CreatureEventAI:  Event %u Action %u. Cannot set instance data without event flags (normal/heroic).", i, j+1);
                         if (action.set_inst_data64.target >= TARGET_T_END)
                             sLog.outErrorDb("CreatureEventAI:  Event %u Action %u uses incorrect Target type", i, j + 1);
@@ -790,15 +803,15 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             }
                         }
                         break;
-                    case ACTION_T_EVADE:                    //No Params
-                    case ACTION_T_FLEE_FOR_ASSIST:          //No Params
-                    case ACTION_T_DIE:                      //No Params
-                    case ACTION_T_ZONE_COMBAT_PULSE:        //No Params
-                    case ACTION_T_FORCE_DESPAWN:            //Delay
-                    case ACTION_T_AUTO_ATTACK:              //AllowAttackState (0 = stop attack, anything else means continue attacking)
-                    case ACTION_T_COMBAT_MOVEMENT:          //AllowCombatMovement (0 = stop combat based movement, anything else continue attacking)
-                    case ACTION_T_RANGED_MOVEMENT:          //Distance, Angle
-                    case ACTION_T_CALL_FOR_HELP:            //Distance
+                    case ACTION_T_EVADE:                    // No Params
+                    case ACTION_T_FLEE_FOR_ASSIST:          // No Params
+                    case ACTION_T_DIE:                      // No Params
+                    case ACTION_T_ZONE_COMBAT_PULSE:        // No Params
+                    case ACTION_T_FORCE_DESPAWN:            // Delay
+                    case ACTION_T_AUTO_ATTACK:              // AllowAttackState (0 = stop attack, anything else means continue attacking)
+                    case ACTION_T_COMBAT_MOVEMENT:          // AllowCombatMovement (0 = stop combat based movement, anything else continue attacking)
+                    case ACTION_T_RANGED_MOVEMENT:          // Distance, Angle
+                    case ACTION_T_CALL_FOR_HELP:            // Distance
                         break;
 
                     case ACTION_T_RANDOM_SAY:
@@ -812,7 +825,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                 }
             }
 
-            //Add to list
+            // Add to list
             m_CreatureEventAI_Event_Map[creature_id].push_back(temp);
             ++Count;
         }
@@ -821,7 +834,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
         delete result;
 
         // post check
-        for (uint32 i = 1; i < sCreatureStorage.MaxEntry; ++i)
+        for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
         {
             if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i))
             {
