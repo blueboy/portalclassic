@@ -458,17 +458,6 @@ struct GameObjectInfo
             default: return 0;
         }
     }
-
-    uint32 GetEventScriptId() const
-    {
-        switch (type)
-        {
-            case GAMEOBJECT_TYPE_GOOBER:        return goober.eventId;
-            case GAMEOBJECT_TYPE_CHEST:         return chest.eventId;
-            case GAMEOBJECT_TYPE_CAMERA:        return camera.eventID;
-            default: return 0;
-        }
-    }
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
@@ -542,6 +531,7 @@ enum CapturePointSlider
 };
 
 class Unit;
+class GameObjectModel;
 struct GameObjectDisplayInfoEntry;
 
 // 5 sec for bobber catch
@@ -626,7 +616,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         GameobjectTypes GetGoType() const { return GameobjectTypes(GetUInt32Value(GAMEOBJECT_TYPE_ID)); }
         void SetGoType(GameobjectTypes type) { SetUInt32Value(GAMEOBJECT_TYPE_ID, type); }
         GOState GetGoState() const { return GOState(GetUInt32Value(GAMEOBJECT_STATE)); }
-        void SetGoState(GOState state) { SetUInt32Value(GAMEOBJECT_STATE, state); }
+        void SetGoState(GOState state);
         uint32 GetGoArtKit() const { return GetUInt32Value(GAMEOBJECT_ARTKIT); }
         void SetGoArtKit(uint32 artkit) { SetUInt32Value(GAMEOBJECT_ARTKIT, artkit); }
         uint32 GetGoAnimProgress() const { return GetUInt32Value(GAMEOBJECT_ANIMPROGRESS); }
@@ -639,7 +629,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         void Use(Unit* user);
 
         LootState getLootState() const { return m_lootState; }
-        void SetLootState(LootState s) { m_lootState = s; }
+        void SetLootState(LootState s);
 
         void AddToSkillupList(Player* player);
         bool IsInSkillupList(Player* player) const;
@@ -689,12 +679,16 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         bool isVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const override;
 
+        bool IsCollisionEnabled() const;                    // Check if a go should collide. Like if a door is closed
+
         GameObject* LookupFishingHoleAround(float range);
 
         void SetCapturePointSlider(float value);
         float GetCapturePointSlider() const { return m_captureSlider; }
 
         GridReference<GameObject>& GetGridRef() { return m_gridRef; }
+
+        GameObjectModel* m_model;
 
     protected:
         uint32      m_spellId;
@@ -729,7 +723,10 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
     private:
         void SwitchDoorOrButton(bool activate, bool alternative = false);
         void TickCapturePoint();
+        void UpdateModel();                                 // updates model in case displayId were changed
+        void UpdateCollisionState() const;                  // updates state in Map's dynamic collision tree
 
         GridReference<GameObject> m_gridRef;
 };
+
 #endif

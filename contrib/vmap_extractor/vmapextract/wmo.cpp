@@ -41,7 +41,7 @@ bool WMORoot::open()
     MPQFile f(filename.c_str());
     if (f.isEof())
     {
-        printf("No such file.\n");
+        printf("No such file %s.\n", filename.c_str());
         return false;
     }
 
@@ -405,11 +405,58 @@ int WMOGroup::ConvertToVMAPGroupWmo(FILE* output, WMORoot* rootWMO, bool pPrecis
         if (rootWMO->liquidType & 4)
             liquidEntry = liquidType;
         else if (liquidType == 15)
-            liquidEntry = 1; // first entry, generic "Water"
+            liquidEntry = 0;
         else
             liquidEntry = liquidType + 1;
-        // overwrite material type in header...
-        hlq->type = LiqType[liquidEntry];
+
+        if (!liquidEntry)
+        {
+            int v1; // edx@1
+            int v2; // eax@1
+
+            v1 = hlq->xtiles * hlq->ytiles;
+            v2 = 0;
+            if (v1 > 0)
+            {
+                while ((LiquBytes[v2] & 0xF) == 15)
+                {
+                    ++v2;
+                    if (v2 >= v1)
+                        break;
+                }
+
+                if (v2 < v1 && (LiquBytes[v2] & 0xF) != 15)
+                    liquidEntry = (LiquBytes[v2] & 0xF) + 1;
+            }
+        }
+
+        if (liquidEntry && liquidEntry < 21)
+        {
+            switch (((uint8)liquidEntry - 1) & 3)
+            {
+                case 0:
+                    liquidEntry = ((mogpFlags & 0x80000) != 0) + 1;
+                    break;
+                case 1:
+                    liquidEntry = 2;        // ocean
+                    break;
+                case 2:
+                    liquidEntry = 3;        // magma
+                    break;
+                case 3:
+                    if (filename.find("Stratholme_raid") != string::npos)
+                    {
+                        liquidEntry = 21;   // Naxxramas slime
+                    }
+                    else
+                        liquidEntry = 4;    // Normal slime
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        hlq->type = liquidEntry;
 
         /* std::ofstream llog("Buildings/liquid.log", ios_base::out | ios_base::app);
         llog << filename;

@@ -52,10 +52,11 @@ struct AreaTableEntry
     // 8        m_ZoneMusic
     // 9        m_IntroSound
     int32   area_level;                                     // 10       m_ExplorationLevel
-    char*     area_name[8];                                 // 11-18    m_AreaName_lang
+    char*   area_name[8];                                   // 11-18    m_AreaName_lang
     // 19 string flags
     uint32  team;                                           // 20       m_factionGroupMask
-    // 21-24    m_liquidTypeID[4]
+    // 21-23    uknown/unused
+    uint32  LiquidTypeOverride;                             // 24       m_liquidTypeID override for water type
 };
 
 struct AreaTriggerEntry
@@ -356,8 +357,8 @@ struct FactionTemplateEntry
 struct GameObjectDisplayInfoEntry
 {
     uint32      Displayid;                                  // 0        m_ID
-    // char* filename;                                      // 1        m_modelName
-    // 2-11     m_Sound
+    char*       filename;                                   // 1        m_modelName
+    // 2-11     m_Sound                                     // 2-11     m_Sound
 };
 
 // All Gt* DBC store data for 100 levels, some by 100 per class/race
@@ -405,6 +406,14 @@ struct ItemSetEntry
     uint32    items_to_triggerspell[8];                     // 35-42    m_setThreshold
     uint32    required_skill_id;                            // 43       m_requiredSkill
     uint32    required_skill_value;                         // 44       m_requiredSkillRank
+};
+
+struct LiquidTypeEntry
+{
+    uint32 Id;                                              // 0
+    uint32 LiquidId;                                        // 1        23: Water; 29: Ocean; 35: Magma; 41: Slime; 47: Naxxramas - Slime.
+    uint32 Type;                                            // 2        0: Magma; 2: Slime; 3: Water.
+    uint32 SpellId;                                         // 3        Reference to Spell.dbc
 };
 
 #define MAX_LOCK_CASE 8
