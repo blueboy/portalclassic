@@ -21,7 +21,7 @@
 #include "Database/DatabaseEnv.h"
 #include "Map.h"
 
-void InstanceData::SaveToDB()
+void InstanceData::SaveToDB() const
 {
     // no reason to save BGs/Arenas
     if (instance->IsBattleGround())
@@ -39,9 +39,9 @@ void InstanceData::SaveToDB()
         CharacterDatabase.PExecute("UPDATE world SET data = '%s' WHERE map = '%u'", data.c_str(), instance->GetId());
 }
 
-bool InstanceData::CheckConditionCriteriaMeet(Player const* /*source*/, uint32 map_id, uint32 instance_condition_id)
+bool InstanceData::CheckConditionCriteriaMeet(Player const* /*source*/, uint32 instance_condition_id, WorldObject const* /*conditionSource*/, uint32 conditionSourceType) const
 {
-    sLog.outError("Condition system call InstanceData::CheckConditionCriteriaMeet but instance script for map %u not have implementation for player condition criteria with internal id %u for map %u",
-                  instance->GetId(), instance_condition_id, map_id);
+    sLog.outError("Condition system call InstanceData::CheckConditionCriteriaMeet but instance script for map %u not have implementation for player condition criteria with internal id %u (called from %u)",
+                  instance->GetId(), instance_condition_id, uint32(conditionSourceType));
     return false;
 }
