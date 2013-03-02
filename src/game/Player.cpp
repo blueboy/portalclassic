@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -404,6 +403,7 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_zoneUpdateId = 0;
     m_zoneUpdateTimer = 0;
+    m_positionStatusUpdateTimer = 0;
 
     m_areaUpdateId = 0;
 
@@ -1195,6 +1195,14 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             m_regenTimer = 0;
         else
             m_regenTimer -= update_diff;
+    }
+
+    if (m_positionStatusUpdateTimer)
+    {
+        if (update_diff >= m_positionStatusUpdateTimer)
+            m_positionStatusUpdateTimer = 0;
+        else
+            m_positionStatusUpdateTimer -= update_diff;
     }
 
     if (m_weaponChangeTimer > 0)
@@ -5417,9 +5425,14 @@ bool Player::SetPosition(float x, float y, float z, float orientation, bool tele
             GetSession()->SendCancelTrade();   // will close both side trade windows
     }
 
+    if (m_positionStatusUpdateTimer)                        // Update position's state only on interval
+        return true;
+    m_positionStatusUpdateTimer = 100;
+
     // code block for underwater state update
     UpdateUnderwaterState(m, x, y, z);
 
+    // code block for outdoor state and area-explore check
     CheckAreaExploreAndOutdoor();
 
     return true;
@@ -16941,6 +16954,12 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
         return false;
     }
 
+    if (crItem->conditionId && !isGameMaster() && !sObjectMgr.IsPlayerMeetToCondition(crItem->conditionId, this, pCreature->GetMap(), pCreature, CONDITION_FROM_VENDOR))
+    {
+        SendBuyError(BUY_ERR_CANT_FIND_ITEM, pCreature, item, 0);
+        return false;
+    }
+
     uint32 price = pProto->BuyPrice * count;
 
     // reputation discount
@@ -19300,11 +19319,6 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
     if (getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL))
     {
         miscRequirement = at->requiredLevel;
-        return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
-    }
-    if (!sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL) && getLevel() < uint32(MAX_LEVEL_CLASSIC))
-    {
-        miscRequirement = uint32(MAX_LEVEL_CLASSIC);
         return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
     }
 

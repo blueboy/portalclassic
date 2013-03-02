@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
-  `required_z2193_s1826_12279_01_mangos_creature_template` bit(1) default NULL
+  `required_z2258_s1896_12363_02_mangos_npc_vendor_template` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -722,7 +722,7 @@ INSERT INTO `command` VALUES
 ('wp export',3,'Syntax: .wp export [#creature_guid or Select a Creature] $filename'),
 ('wp import',3,'Syntax: .wp import $filename'),
 ('wp modify',2,'Syntax: .wp modify [#creature_guid or Select a Creature]\r\nadd - Add a waypoint after the selected visual\r\nwaittime $time\r\nemote ID\r\nspell ID\r\ntext1| text2| text3| text4| text5 <text>\r\nmodel1 ID\r\nmodel2 ID\r\nmove(moves wp to player pos)\r\ndel (deletes the wp)\r\n\r\nOnly one parameter per time!'),
-('wp show',2,'Syntax: .wp show [#creature_guid or Select a Creature]\r\non\r\nfirst\r\nlast\r\noff\r\ninfo\r\n\r\nFor using info you have to do first show on and than select a Visual-Waypoint and do the show info!');
+('wp show',2,'Syntax: .wp show [#creature_guid or Select a Creature]\r\nwhere command can have one of the following values\r\non (to show all related wp)\r\nfirst (to see only first one)\r\nlast (to see only last one)\r\noff (to hide all related wp)\r\ninfo (to get more info about theses wp)\r\n\r\nFor using info you have to do first show on and than select a Visual-Waypoint and do the show info!');
 /*!40000 ALTER TABLE `command` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1362,7 +1362,7 @@ CREATE TABLE `dbscripts_on_creature_movement` (
 --
 -- Table structure of `dbscripts_on_event`, `dbscripts_on_go_use`, `dbscripts_on_go_template_use`,
 --                    `dbscripts_on_gossip`, `dbscripts_on_quest_end`, `dbscripts_on_quest_start`,
---                    `dbscripts_on_spell`
+--                    `dbscripts_on_spell`, `dbscripts_on_creature_death`
 DROP TABLE IF EXISTS dbscripts_on_event;
 CREATE TABLE dbscripts_on_event LIKE dbscripts_on_creature_movement;
 DROP TABLE IF EXISTS dbscripts_on_go_use;
@@ -1377,6 +1377,8 @@ DROP TABLE IF EXISTS dbscripts_on_quest_start;
 CREATE TABLE dbscripts_on_quest_start LIKE dbscripts_on_creature_movement;
 DROP TABLE IF EXISTS dbscripts_on_spell;
 CREATE TABLE dbscripts_on_spell LIKE dbscripts_on_creature_movement;
+DROP TABLE IF EXISTS dbscripts_on_creature_death;
+CREATE TABLE dbscripts_on_creature_death LIKE dbscripts_on_creature_movement;
 
 
 --
@@ -3978,6 +3980,7 @@ CREATE TABLE `npc_vendor` (
   `item` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `maxcount` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `incrtime` int(10) unsigned NOT NULL DEFAULT '0',
+  `condition_id` mediumint(8) unsigned NOT NULL default '0',
   PRIMARY KEY (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Npc System';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -4001,6 +4004,7 @@ CREATE TABLE `npc_vendor_template` (
   `item` mediumint(8) unsigned NOT NULL default '0',
   `maxcount` tinyint(3) unsigned NOT NULL default '0',
   `incrtime` int(10) unsigned NOT NULL default '0',
+  `condition_id` mediumint(8) unsigned NOT NULL default '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Npc System';
 
@@ -13039,6 +13043,7 @@ CREATE TABLE `spell_script_target` (
   `entry` mediumint(8) unsigned NOT NULL,
   `type` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `targetEntry` mediumint(8) unsigned NOT NULL DEFAULT '0',
+  `inverseEffectMask` mediumint(8) unsigned NOT NULL default '0',
   UNIQUE KEY `entry_type_target` (`entry`,`type`,`targetEntry`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Spell System';
 /*!40101 SET character_set_client = @saved_cs_client */;

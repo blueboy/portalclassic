@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -244,10 +243,6 @@ class BattleGround
         /*BattleGround(const BattleGround& bg);*/
         virtual ~BattleGround();
         virtual void Update(uint32 diff);                   // must be implemented in BG subclass of BG specific update code, but must in begginning call parent version
-        virtual bool SetupBattleGround()                    // must be implemented in BG subclass
-        {
-            return true;
-        }
         virtual void Reset();                               // resets all common properties for battlegrounds, must be implemented and called in BG subclass
         virtual void StartingEventCloseDoors() {}
         virtual void StartingEventOpenDoors() {}

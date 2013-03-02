@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +24,7 @@
 #include "MapPersistentStateMgr.h"
 #include "MapManager.h"
 #include "World.h"
-#include "Policies/SingletonImp.h"
+#include "Policies/Singleton.h"
 
 INSTANTIATE_SINGLETON_1(PoolManager);
 
@@ -165,10 +164,10 @@ template <class T>
 void PoolGroup<T>::CheckEventLinkAndReport(int16 event_id, std::map<uint32, int16> const& creature2event, std::map<uint32, int16> const& go2event) const
 {
     for (uint32 i = 0; i < EqualChanced.size(); ++i)
-        EqualChanced[i].CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event);
+        EqualChanced[i].template CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event);
 
     for (uint32 i = 0; i < ExplicitlyChanced.size(); ++i)
-        ExplicitlyChanced[i].CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event);
+        ExplicitlyChanced[i].template CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event);
 }
 
 template <class T>

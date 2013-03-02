@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,10 +32,6 @@ BattleGroundAV::BattleGroundAV()
     m_StartMessageIds[BG_STARTING_EVENT_SECOND] = LANG_BG_AV_START_ONE_MINUTE;
     m_StartMessageIds[BG_STARTING_EVENT_THIRD]  = LANG_BG_AV_START_HALF_MINUTE;
     m_StartMessageIds[BG_STARTING_EVENT_FOURTH] = LANG_BG_AV_HAS_BEGUN;
-}
-
-BattleGroundAV::~BattleGroundAV()
-{
 }
 
 void BattleGroundAV::HandleKillPlayer(Player* player, Player* killer)
@@ -274,11 +269,6 @@ void BattleGroundAV::Update(uint32 diff)
     }
 }
 
-void BattleGroundAV::StartingEventCloseDoors()
-{
-    DEBUG_LOG("BattleGroundAV: entering state STATUS_WAIT_JOIN ...");
-}
-
 void BattleGroundAV::StartingEventOpenDoors()
 {
     OpenDoorEvent(BG_EVENT_DOOR);
@@ -347,10 +337,6 @@ void BattleGroundAV::EndBattleGround(Team winner)
         RewardHonorToTeam(m_HonorMapComplete, HORDE);
     }
     BattleGround::EndBattleGround(winner);
-}
-
-void BattleGroundAV::RemovePlayer(Player* /*plr*/, ObjectGuid /*guid*/)
-{
 }
 
 void BattleGroundAV::HandleAreaTrigger(Player* source, uint32 trigger)

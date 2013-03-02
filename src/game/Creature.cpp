@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +51,7 @@
 #include "CreatureLinkingMgr.h"
 
 // apply implementation of the singletons
-#include "Policies/SingletonImp.h"
+#include "Policies/Singleton.h"
 
 
 TrainerSpell const* TrainerSpellData::Find(uint32 spell_id) const
@@ -88,8 +87,11 @@ size_t VendorItemData::FindItemSlot(uint32 item_id) const
 VendorItem const* VendorItemData::FindItem(uint32 item_id) const
 {
     for (VendorItemList::const_iterator i = m_items.begin(); i != m_items.end(); ++i)
+    {
+        // Skip checking for conditions, condition system is powerfull enough to not require additional entries only for the conditions
         if ((*i)->item == item_id)
             return *i;
+    }
     return NULL;
 }
 

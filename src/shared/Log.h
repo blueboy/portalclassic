@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,9 +53,11 @@ enum LogFilters
     LOG_FILTER_AHBOT_SELLER       = 0x004000,               // 14 Auction House Bot seller part
     LOG_FILTER_AHBOT_BUYER        = 0x008000,               // 15 Auction House Bot buyer part
     LOG_FILTER_PATHFINDING        = 0x010000,               // 16 Pathfinding
+    LOG_FILTER_MAP_LOADING        = 0x020000,               // 17 Map loading/unloading (MAP, VMAPS, MMAP)
+    LOG_FILTER_EVENT_AI_DEV       = 0x040000,               // 18 Event AI actions
 };
 
-#define LOG_FILTER_COUNT            17
+#define LOG_FILTER_COUNT            19
 
 struct LogFilterData
 {
@@ -111,6 +112,10 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
                 fclose(dberLogfile);
             dberLogfile = NULL;
 
+            if (eventAiErLogfile != NULL)
+                fclose(eventAiErLogfile);
+            eventAiErLogfile = NULL;
+
             if (scriptErrLogFile != NULL)
                 fclose(scriptErrLogFile);
             scriptErrLogFile = NULL;
@@ -145,7 +150,11 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         void outErrorDb(const char* str, ...)     ATTR_PRINTF(2, 3);
         // any log level
         void outChar(const char* str, ...)        ATTR_PRINTF(2, 3);
+
+        void outErrorEventAI();                             // any log level
         // any log level
+        void outErrorEventAI(const char* str, ...)      ATTR_PRINTF(2, 3);
+
         void outErrorScriptLib();                           // any log level
         // any log level
         void outErrorScriptLib(const char* str, ...)     ATTR_PRINTF(2, 3);
@@ -182,6 +191,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         FILE* gmLogfile;
         FILE* charLogfile;
         FILE* dberLogfile;
+        FILE* eventAiErLogfile;
         FILE* scriptErrLogFile;
         FILE* worldLogfile;
         ACE_Thread_Mutex m_worldLogMtx;

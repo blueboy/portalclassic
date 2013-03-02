@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -205,6 +204,7 @@ class SQLMultiStorage : public SQLStorageBase
                 T const* operator *() const { return getValue(); }
                 T const* operator ->() const { return getValue(); }
                 bool operator !=(const SQLMultiSIterator& r) const { return citerator != r.citerator; }
+                bool operator ==(const SQLMultiSIterator& r) const { return citerator == r.citerator; }
 
             private:
                 SQLMultiSIterator(RecordMultiMap::const_iterator _itr) : citerator(_itr) {}

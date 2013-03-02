@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +24,7 @@
 #include "RealmList.h"
 #include "AuthCodes.h"
 #include "Util.h"                                           // for Tokens typedef
-#include "Policies/SingletonImp.h"
+#include "Policies/Singleton.h"
 #include "Database/DatabaseEnv.h"
 
 INSTANTIATE_SINGLETON_1(RealmList);
@@ -170,7 +169,7 @@ void RealmList::UpdateRealms(bool init)
                 fields[8].GetFloat(), fields[9].GetCppString());
 
             if (init)
-                sLog.outString("Added realm \"%s\"", fields[1].GetString());
+                sLog.outString("Added realm id %u, name '%s'",  Id, name.c_str());
         }
         while (result->NextRow());
         delete result;

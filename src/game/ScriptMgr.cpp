@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +17,7 @@
  */
 
 #include "ScriptMgr.h"
-#include "Policies/SingletonImp.h"
+#include "Policies/Singleton.h"
 #include "Log.h"
 #include "ProgressBar.h"
 #include "ObjectMgr.h"
@@ -42,6 +41,7 @@ ScriptMapMapName sGameObjectScripts;
 ScriptMapMapName sGameObjectTemplateScripts;
 ScriptMapMapName sEventScripts;
 ScriptMapMapName sGossipScripts;
+ScriptMapMapName sCreatureDeathScripts;
 ScriptMapMapName sCreatureMovementScripts;
 
 INSTANTIATE_SINGLETON_1(ScriptMgr);
@@ -758,6 +758,18 @@ void ScriptMgr::LoadCreatureMovementScripts()
     // checks are done in WaypointManager::Load
 }
 
+void ScriptMgr::LoadCreatureDeathScripts()
+{
+    LoadScripts(sCreatureDeathScripts, "dbscripts_on_creature_death");
+
+    // check ids
+    for(ScriptMapMap::const_iterator itr = sCreatureDeathScripts.second.begin(); itr != sCreatureDeathScripts.second.end(); ++itr)
+    {
+        if (!sObjectMgr.GetCreatureTemplate(itr->first))
+            sLog.outErrorDb("Table `dbscripts_on_creature_death` has not existing creature (Entry: %u) as script id", itr->first);
+    }
+}
+
 void ScriptMgr::LoadDbScriptStrings()
 {
     sObjectMgr.LoadMangosStrings(WorldDatabase, "db_script_string", MIN_DB_SCRIPT_STRING_ID, MAX_DB_SCRIPT_STRING_ID);
@@ -775,6 +787,7 @@ void ScriptMgr::LoadDbScriptStrings()
     CheckScriptTexts(sGameObjectTemplateScripts, ids);
     CheckScriptTexts(sEventScripts, ids);
     CheckScriptTexts(sGossipScripts, ids);
+    CheckScriptTexts(sCreatureDeathScripts, ids);
     CheckScriptTexts(sCreatureMovementScripts, ids);
 
     sWaypointMgr.CheckTextsExistance(ids);
@@ -1272,7 +1285,7 @@ bool ScriptAction::HandleScriptStep()
             float z = m_script->z;
             float o = m_script->o;
 
-            Creature* pCreature = pSource->SummonCreature(m_script->summonCreature.creatureEntry, x, y, z, o, m_script->summonCreature.despawnDelay ? TEMPSUMMON_TIMED_OR_DEAD_DESPAWN : TEMPSUMMON_DEAD_DESPAWN, m_script->summonCreature.despawnDelay, (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL) ? true : false);
+            Creature* pCreature = pSource->SummonCreature(m_script->summonCreature.creatureEntry, x, y, z, o, m_script->summonCreature.despawnDelay ? TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN : TEMPSUMMON_DEAD_DESPAWN, m_script->summonCreature.despawnDelay, (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL) ? true : false);
             if (!pCreature)
             {
                 sLog.outError(" DB-SCRIPTS: Process table `%s` id %u, command %u failed for creature (entry: %u).", m_table, m_script->id, m_script->command, m_script->summonCreature.creatureEntry);

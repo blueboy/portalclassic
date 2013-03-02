@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -295,6 +294,7 @@ bool ChatHandler::HandleReloadAllScriptsCommand(char* /*args*/)
     }
 
     sLog.outString("Re-Loading Scripts...");
+    HandleReloadDBScriptsOnCreatureDeathCommand((char*)"a");
     HandleReloadDBScriptsOnGoUseCommand((char*)"a");
     HandleReloadDBScriptsOnGossipCommand((char*)"a");
     HandleReloadDBScriptsOnEventCommand((char*)"a");
@@ -910,6 +910,26 @@ bool ChatHandler::HandleReloadDBScriptsOnGoUseCommand(char* args)
 
     if (*args != 'a')
         SendGlobalSysMessage("DB table `dbscripts_on_go[_template]_use` reloaded.");
+
+    return true;
+}
+
+bool ChatHandler::HandleReloadDBScriptsOnCreatureDeathCommand(char* args)
+{
+    if (sScriptMgr.IsScriptScheduled())
+    {
+        SendSysMessage("DB scripts used currently, please attempt reload later.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (*args != 'a')
+        sLog.outString("Re-Loading Scripts from `dbscripts_on_creature_death`...");
+
+    sScriptMgr.LoadCreatureDeathScripts();
+
+    if (*args != 'a')
+        SendGlobalSysMessage("DB table `dbscripts_on_creature_death` reloaded.");
 
     return true;
 }

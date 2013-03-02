@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #include "Log.h"
 #include "SystemConfig.h"
-#include "Policies/SingletonImp.h"
+#include "Policies/Singleton.h"
 
 
 INSTANTIATE_SINGLETON_1(ModClass);

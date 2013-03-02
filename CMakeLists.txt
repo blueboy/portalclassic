@@ -1,5 +1,5 @@
-# Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
-# Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
+#
+# This file is part of the Continued-MaNGOS Project
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -128,7 +128,7 @@ if(PREFIX)
     string(REGEX REPLACE "^~" "$ENV{HOME}" PREFIX ${PREFIX})
   endif()
   get_filename_component(PREFIX_ABSOLUTE ${PREFIX} ABSOLUTE)
-  set(CMAKE_INSTALL_PREFIX ${PREFIX} CACHE PATH "Install path prefix." FORCE)
+  set(CMAKE_INSTALL_PREFIX ${PREFIX_ABSOLUTE} CACHE PATH "Install path prefix." FORCE)
 else()
   set(PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "Install path prefix.")
 endif()

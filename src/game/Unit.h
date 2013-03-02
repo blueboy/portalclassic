@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1504,6 +1503,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool SelectHostileTarget();
         void TauntApply(Unit* pVictim);
         void TauntFadeOut(Unit* taunter);
+        void FixateTarget(Unit* pVictim);
         ThreatManager& getThreatManager() { return m_ThreatManager; }
         ThreatManager const& getThreatManager() const { return m_ThreatManager; }
         void addHatedBy(HostileReference* pHostileReference) { m_HostileRefManager.insertFirst(pHostileReference); };
@@ -1782,6 +1782,8 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         ObjectGuid m_TotemSlot[MAX_TOTEM_SLOT];
 
+        ObjectGuid m_fixateTargetGuid;                      //< Stores the Guid of a fixated target
+
     private:                                                // Error traps for some wrong args using
         // this will catch and prevent build for any cases when all optional args skipped and instead triggered used non boolean type
         // no bodies expected for this declarations
@@ -1807,7 +1809,7 @@ void Unit::CallForAllControlledUnits(Func const& func, uint32 controlledMask)
             func(pet);
 
     if (controlledMask & CONTROLLED_MINIPET)
-        if (Unit* mini = GetMiniPet())
+        if (Pet* mini = GetMiniPet())
             func(mini);
 
     if (controlledMask & CONTROLLED_GUARDIANS)
@@ -1839,7 +1841,7 @@ bool Unit::CheckAllControlledUnits(Func const& func, uint32 controlledMask) cons
                 return true;
 
     if (controlledMask & CONTROLLED_MINIPET)
-        if (Unit* mini = GetMiniPet())
+        if (Pet* mini = GetMiniPet())
             if (func(mini))
                 return true;
 

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -272,7 +271,7 @@ namespace VMAP
 
     bool StaticMapTree::InitMap(const std::string& fname, VMapManager2* vm)
     {
-        DEBUG_LOG("Initializing StaticMapTree '%s'", fname.c_str());
+        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Initializing StaticMapTree '%s'", fname.c_str());
         bool success = true;
         std::string fullname = iBasePath + fname;
         FILE* rf = fopen(fullname.c_str(), "rb");
@@ -305,7 +304,7 @@ namespace VMAP
             if (!iIsTiled && ModelSpawn::readFromFile(rf, spawn))
             {
                 WorldModel* model = vm->acquireModelInstance(iBasePath, spawn.name);
-                DEBUG_LOG("StaticMapTree::InitMap(): loading %s", spawn.name.c_str());
+                DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "StaticMapTree::InitMap(): loading %s", spawn.name.c_str());
                 if (model)
                 {
                     // assume that global model always is the first and only tree value (could be improved...)

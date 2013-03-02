@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2011 MaNGOSZero <https:// github.com/mangos/zero>
+ * This file is part of the Continued-MaNGOS Project
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,11 +45,8 @@ void SqlConnection::FreePreparedStatements()
     m_holder.clear();
 }
 
-SqlPreparedStatement* SqlConnection::GetStmt(int nIndex)
+SqlPreparedStatement* SqlConnection::GetStmt(uint32 nIndex)
 {
-    if (nIndex < 0)
-        return NULL;
-
     // resize stmt container
     if (m_holder.size() <= nIndex)
         m_holder.resize(nIndex + 1, NULL);
