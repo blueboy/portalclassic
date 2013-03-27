@@ -1,5 +1,5 @@
 /*
- * This file is part of the Continued-MaNGOS Project
+ * This file is part of the CMaNGOS Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2933,22 +2933,22 @@ void SpellMgr::LoadSpellScriptTarget()
     // Check all spells
     if (!sLog.HasLogFilter(LOG_FILTER_DB_STRICTED_CHECK))
     {
-        for (uint32 i = 1; i < sSpellStore.GetFieldCount(); ++i)
+        for (uint32 i = 1; i < sSpellStore.GetNumRows(); ++i)
         {
             SpellEntry const* spellInfo = sSpellStore.LookupEntry(i);
-            if(!spellInfo)
+            if (!spellInfo)
                 continue;
 
-            bool found = false;
             for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
             {
-                if (spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT || spellInfo->EffectImplicitTargetA[j] != TARGET_SELF && spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT)
+                if (spellInfo->Effect[j] && (spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT ||
+                                             (spellInfo->EffectImplicitTargetA[j] != TARGET_SELF && spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT)))
                 {
                     SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(i);
                     if (bounds.first == bounds.second)
                     {
                         sLog.outErrorDb("Spell (ID: %u) has effect EffectImplicitTargetA/EffectImplicitTargetB = %u (TARGET_SCRIPT), but does not have record in `spell_script_target`", spellInfo->Id, TARGET_SCRIPT);
-                        break;                                  // effects of spell
+                        break;                              // effects of spell
                     }
                 }
             }
