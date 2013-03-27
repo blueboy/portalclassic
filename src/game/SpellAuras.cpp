@@ -1,5 +1,5 @@
 /*
- * This file is part of the Continued-MaNGOS Project
+ * This file is part of the CMaNGOS Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1324,7 +1324,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     if (apply)
                         target->m_AuraFlags |= UNIT_AURAFLAG_ALIVE_INVISIBLE;
                     else
-                        target->m_AuraFlags |= ~UNIT_AURAFLAG_ALIVE_INVISIBLE;
+                        target->m_AuraFlags &= ~UNIT_AURAFLAG_ALIVE_INVISIBLE;
                     return;
             }
             break;
@@ -4679,6 +4679,12 @@ void Aura::PeriodicDummyTick()
         }
         default:
             break;
+    }
+
+    if (Unit* caster = GetCaster())
+    {
+        if (target && target->GetTypeId() == TYPEID_UNIT)
+            sScriptMgr.OnEffectDummy(caster, GetId(), GetEffIndex(), (Creature*)target);
     }
 }
 

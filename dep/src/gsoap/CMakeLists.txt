@@ -1,5 +1,5 @@
 #
-# This file is part of the Continued-MaNGOS Project
+# This file is part of the CMaNGOS Project. See AUTHORS file for Copyright information
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,13 +15,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-file(GLOB gsoap_SRCS *.cpp)
+set(LIBRARY_NAME gsoap)
+
+set(LIBRARY_SRCS
+    stdsoap2.cpp
+   )
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/dep/include/gsoap
 )
 
-add_library(gsoap STATIC
-  ${gsoap_SRCS}
+add_library(${LIBRARY_NAME} STATIC
+  ${LIBRARY_SRCS}
 )
