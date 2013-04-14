@@ -103,7 +103,7 @@ void PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
 
     Player *m_bot = GetPlayerBot();
     Unit* pVictim = pTarget->getVictim();
-    float fTargetDist = m_bot->GetCombatDistance(pTarget);
+    float fTargetDist = m_bot->GetCombatDistance(pTarget, true);
 
     // TODO: make this work better...
     /*if (pVictim)

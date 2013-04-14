@@ -87,7 +87,7 @@ void PlayerbotMageAI::DoNextCombatManeuver(Unit *pTarget)
     // Damage Spells (primitive example)
     Player *m_bot = GetPlayerBot();
     Unit* pVictim = pTarget->getVictim();
-    float dist = m_bot->GetCombatDistance(pTarget);
+    float dist = m_bot->GetCombatDistance(pTarget, true);
 
     switch (SpellSequence)
     {
