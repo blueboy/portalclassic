@@ -7628,7 +7628,7 @@ static WorldStatePair SI_world_states[] =                   // Silithus
 {
     { 2313, 0 },                                            // WORLD_STATE_SI_GATHERED_A
     { 2314, 0 },                                            // WORLD_STATE_SI_GATHERED_H
-    { 2317, 0 },                                            // WORLD_STATE_SI_SILITHYST_MAX
+    { 2317, 0 }                                             // WORLD_STATE_SI_SILITHYST_MAX
 };
 
 static WorldStatePair EP_world_states[] =                   // Eastern Plaguelands
@@ -7736,15 +7736,15 @@ void Player::SendInitWorldStates(uint32 zoneid)
 
         switch (zoneid)
         {
-            case 1:
-            case 11:
-            case 12:
-            case 38:
-            case 40:
-            case 51:
-            case 1519:
-            case 1537:
-            case 2257:
+            case 1:                                         // Dun Morogh
+            case 11:                                        // Wetlands
+            case 12:                                        // Elwynn Forest
+            case 38:                                        // Loch Modan
+            case 40:                                        // Westfall
+            case 51:                                        // Searing Gorge
+            case 1519:                                      // Stormwind City
+            case 1537:                                      // Ironforge
+            case 2257:                                      // Deeprun Tram
                 break;
             case 139:                                       // Eastern Plaguelands
                 if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(zoneid))
@@ -7783,6 +7783,9 @@ void Player::SendInitWorldStates(uint32 zoneid)
                 FillInitialWorldState(data, count, 0x915, 0x0); // 2325 10
                 break;
         }
+
+        data.put<uint16>(count_pos, count);                 // set actual world state amount
+
         GetSession()->SendPacket(&data);
     }
 }
@@ -10286,7 +10289,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                 {
                     ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
                     pItem->SetCount(pItem->GetCount() - count + remcount);
-                    if (IsInWorld() & update)
+                    if (IsInWorld() && update)
                         pItem->SendCreateUpdateToPlayer(this);
                     pItem->SetState(ITEM_CHANGED, this);
                     return;
@@ -10314,7 +10317,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                 {
                     ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
                     pItem->SetCount(pItem->GetCount() - count + remcount);
-                    if (IsInWorld() & update)
+                    if (IsInWorld() && update)
                         pItem->SendCreateUpdateToPlayer(this);
                     pItem->SetState(ITEM_CHANGED, this);
                     return;
@@ -10380,7 +10383,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                 {
                     ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
                     pItem->SetCount(pItem->GetCount() - count + remcount);
-                    if (IsInWorld() & update)
+                    if (IsInWorld() && update)
                         pItem->SendCreateUpdateToPlayer(this);
                     pItem->SetState(ITEM_CHANGED, this);
                     return;
@@ -10464,7 +10467,7 @@ void Player::DestroyItemCount(Item* pItem, uint32& count, bool update)
         ItemRemovedQuestCheck(pItem->GetEntry(), count);
         pItem->SetCount(pItem->GetCount() - count);
         count = 0;
-        if (IsInWorld() & update)
+        if (IsInWorld() && update)
             pItem->SendCreateUpdateToPlayer(this);
         pItem->SetState(ITEM_CHANGED, this);
     }

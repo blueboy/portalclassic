@@ -737,6 +737,35 @@ void Aura::HandleAddModifier(bool apply, bool Real)
                 GetHolder()->SetAuraCharges(1);
                 break;
         }
+        
+        // In pre-TBC wrong spellmods in DBC
+        switch (GetSpellProto()->SpellIconID)
+        {
+            case 143:       // Permafrost Speed Decrease
+                if (GetEffIndex() == EFFECT_INDEX_1)
+                    m_modifier.m_miscvalue = SPELLMOD_EFFECT1;
+                break;
+            case 228:       // Improved Curse of Exhaustion Speed Decrease
+                if (GetEffIndex() == EFFECT_INDEX_0)
+                    m_modifier.m_miscvalue = SPELLMOD_EFFECT1;
+                break;
+            case 250:       // Camouflage Speed Decrease
+                if (GetEffIndex() == EFFECT_INDEX_0)
+                    m_modifier.m_miscvalue = SPELLMOD_EFFECT3;
+                break;
+            case 1181:       // Pathfinding Speed Increase
+                if (GetEffIndex() == EFFECT_INDEX_0)
+                    m_modifier.m_miscvalue = SPELLMOD_EFFECT1;
+                break;
+            case 1494:       // Amplify Curse Speed Decrease
+                if (GetEffIndex() == EFFECT_INDEX_1)
+                    m_modifier.m_miscvalue = SPELLMOD_EFFECT1;
+                break;
+            case 1563:       // Cheetah Sprint
+                if (GetEffIndex() == EFFECT_INDEX_0)
+                    m_modifier.m_miscvalue = SPELLMOD_EFFECT1;
+                break;
+        }
 
         m_spellmod = new SpellModifier(
             SpellModOp(m_modifier.m_miscvalue),
@@ -3441,6 +3470,15 @@ void Aura::HandleAuraModIncreaseHealth(bool apply, bool Real)
     {
         case 1178:                                          // Bear Form (Passive)
         case 9635:                                          // Dire Bear Form (Passive)
+        {
+            if(Real)
+            {
+                float pct = target->GetHealthPercent();
+                target->HandleStatModifier(UNIT_MOD_HEALTH, TOTAL_VALUE, float(m_modifier.m_amount), apply);
+                target->SetHealthPercent(pct);
+            }
+            return;
+        }
         case 12976:                                         // Warrior Last Stand triggered spell
         {
             if (Real)
