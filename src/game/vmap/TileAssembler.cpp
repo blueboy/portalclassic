@@ -352,7 +352,7 @@ namespace VMAP
 
             if (name_length >= sizeof(buff))
             {
-                std::cout << "\nFile 'temp_gameobject_models' seems to be corrupted" << std::endl;
+                std::cout << "\nFile '" << GAMEOBJECT_MODELS << "' seems to be corrupted" << std::endl;
                 break;
             }
 
@@ -534,5 +534,4 @@ namespace VMAP
     // drop of temporary use defines
 #undef READ_OR_RETURN
 #undef CMP_OR_RETURN
-
 }
