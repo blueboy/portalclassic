@@ -723,35 +723,34 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
             return;
         }
 
-            /*
-               case CMSG_NAME_QUERY:
-               case MSG_MOVE_START_FORWARD:
-               case MSG_MOVE_STOP:
-               case MSG_MOVE_SET_FACING:
-               case MSG_MOVE_START_STRAFE_LEFT:
-               case MSG_MOVE_START_STRAFE_RIGHT:
-               case MSG_MOVE_STOP_STRAFE:
-               case MSG_MOVE_START_BACKWARD:
-               case MSG_MOVE_HEARTBEAT:
-               case CMSG_STANDSTATECHANGE:
-               case CMSG_QUERY_TIME:
-               case CMSG_CREATURE_QUERY:
-               case CMSG_GAMEOBJECT_QUERY:
-               case MSG_MOVE_JUMP:
-               case MSG_MOVE_FALL_LAND:
-                return;
+        /*
+        case CMSG_NAME_QUERY:
+        case MSG_MOVE_START_FORWARD:
+        case MSG_MOVE_STOP:
+        case MSG_MOVE_SET_FACING:
+        case MSG_MOVE_START_STRAFE_LEFT:
+        case MSG_MOVE_START_STRAFE_RIGHT:
+        case MSG_MOVE_STOP_STRAFE:
+        case MSG_MOVE_START_BACKWARD:
+        case MSG_MOVE_HEARTBEAT:
+        case CMSG_STANDSTATECHANGE:
+        case CMSG_QUERY_TIME:
+        case CMSG_CREATURE_QUERY:
+        case CMSG_GAMEOBJECT_QUERY:
+        case MSG_MOVE_JUMP:
+        case MSG_MOVE_FALL_LAND:
+        return;*/
 
-               default:
-               {
-                const char* oc = LookupOpcodeName(packet.GetOpcode());
-                // ChatHandler ch(m_master);
-                // ch.SendSysMessage(oc);
+    default:
+        {
+            /*const char* oc = LookupOpcodeName(packet.GetOpcode());
+            // ChatHandler ch(m_master);
+            // ch.SendSysMessage(oc);
 
-                std::ostringstream out;
-                out << "masterin: " << oc;
-                sLog.outError(out.str().c_str());
-               }
-             */
+            std::ostringstream out;
+            out << "masterin: " << oc;
+            sLog.outError(out.str().c_str()); */
+        }
     }
 }
 

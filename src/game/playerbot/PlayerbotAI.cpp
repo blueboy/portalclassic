@@ -106,6 +106,63 @@ Player* PlayerbotAI::GetMaster() const
     return m_mgr->GetMaster();
 }
 
+bool PlayerbotAI::CanReachWithSpellAttack(Unit* target)
+{
+    bool inrange = false;
+    float dist = m_bot->GetCombatDistance(target,false);
+
+    for (SpellRanges::iterator itr = m_spellRangeMap.begin(); itr != m_spellRangeMap.end(); ++itr)
+    {
+        uint32 spellId = itr->first;
+
+        // ignore positive spells
+        if (IsPositiveSpell(spellId))
+            continue;
+
+        // ignore active auras
+        if (target->HasAura(spellId, EFFECT_INDEX_0))
+            continue;
+
+        const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
+        if (!spellInfo)
+            continue;
+
+        // ignore non-ranged spells
+        if (!spellInfo->HasAttribute(SPELL_ATTR_RANGED))
+            continue;
+
+        float maxrange = itr->second;
+
+        // DEBUG_LOG("[%s] spell (%s) : dist (%f) < maxrange (%f)",m_bot->GetName(), spellInfo->SpellName[0], dist, maxrange);
+
+        if (dist < maxrange)
+        {
+            inrange = true;
+            break;
+        }
+    }
+    return inrange;
+}
+
+bool PlayerbotAI::In_Reach(Unit* Target, uint32 spellId)
+{
+    if (!Target)
+        return false;
+
+    float range = 0;
+    float dist = m_bot->GetCombatDistance(Target,false);
+    SpellRanges::iterator it;
+    it = m_spellRangeMap.find(spellId);
+    (it != m_spellRangeMap.end()) ? range = it->second : range = 0;
+
+    // DEBUG_LOG("spell (%u) : range (%f)", spellId, range);
+
+    if (dist > range)
+        return false;
+
+    return true;
+}
+
 // finds spell ID for matching substring args
 // in priority of full text match, spells not taking reagents, and highest rank
 uint32 PlayerbotAI::getSpellId(const char* args, bool master) const
@@ -269,7 +326,8 @@ uint32 PlayerbotAI::initSpell(uint32 spellId)
         Spell *spell = new Spell(m_bot, pSpellInfo, false);
         SpellRangeEntry const* srange = sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex);
         float range = GetSpellMaxRange(srange);
-        m_bot->ApplySpellMod(spellId, SPELLMOD_RANGE, range, spell);
+        if (Player* modOwner = m_bot->GetSpellModOwner())
+            modOwner->ApplySpellMod(pSpellInfo->Id, SPELLMOD_RANGE, range, spell);
         m_spellRangeMap.insert(std::pair<uint32, float>(spellId, range));
         delete spell;
     }
@@ -900,16 +958,20 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
             p >> spellId >> result;
             p.resize(5);
+            
+            SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+            if (!spellInfo)
+                return;
 
             if (result != SPELL_CAST_OK)
             {
                 switch (result)
                 {
                     case SPELL_FAILED_INTERRUPTED:
-                        //DEBUG_LOG("spell interrupted (%u)",result);
-
+                    {
+                        DEBUG_LOG("spell %s interrupted (%u)",spellInfo->SpellName[0], result);
                         return;
-
+                    }
                     case SPELL_FAILED_BAD_TARGETS:
                     {
                         // DEBUG_LOG("[%s]bad target (%u) for spellId (%u) & m_CurrentlyCastingSpellId (%u)",m_bot->GetName(),result,spellId,m_CurrentlyCastingSpellId);
@@ -919,7 +981,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                         return;
                     }
                     default:
-                        //DEBUG_LOG ("[%s] SMSG_CAST_FAIL: unknown (%u)",m_bot->GetName(),result);
+                        //DEBUG_LOG ("[%s] SMSG_CAST_FAIL: %s err (%u)", m_bot->GetName(), spellInfo->SpellName[0],result);
                         return;
                 }
             }
@@ -1413,36 +1475,35 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             return;
         }
 
-            /* uncomment this and your bots will tell you all their outgoing packet opcode names
-               case SMSG_MONSTER_MOVE:
-               case SMSG_UPDATE_WORLD_STATE:
-               case SMSG_COMPRESSED_UPDATE_OBJECT:
-               case MSG_MOVE_SET_FACING:
-               case MSG_MOVE_STOP:
-               case MSG_MOVE_HEARTBEAT:
-               case MSG_MOVE_STOP_STRAFE:
-               case MSG_MOVE_START_STRAFE_LEFT:
-               case SMSG_UPDATE_OBJECT:
-               case MSG_MOVE_START_FORWARD:
-               case MSG_MOVE_START_STRAFE_RIGHT:
-               case SMSG_DESTROY_OBJECT:
-               case MSG_MOVE_START_BACKWARD:
-               case SMSG_AURA_UPDATE_ALL:
-               case MSG_MOVE_FALL_LAND:
-               case MSG_MOVE_JUMP:
-                return;
+        /* uncomment this and your bots will tell you all their outgoing packet opcode names
+           case SMSG_MONSTER_MOVE:
+           case SMSG_UPDATE_WORLD_STATE:
+           case SMSG_COMPRESSED_UPDATE_OBJECT:
+           case MSG_MOVE_SET_FACING:
+           case MSG_MOVE_STOP:
+           case MSG_MOVE_HEARTBEAT:
+           case MSG_MOVE_STOP_STRAFE:
+           case MSG_MOVE_START_STRAFE_LEFT:
+           case SMSG_UPDATE_OBJECT:
+           case MSG_MOVE_START_FORWARD:
+           case MSG_MOVE_START_STRAFE_RIGHT:
+           case SMSG_DESTROY_OBJECT:
+           case MSG_MOVE_START_BACKWARD:
+           case SMSG_AURA_UPDATE_ALL:
+           case MSG_MOVE_FALL_LAND:
+           case MSG_MOVE_JUMP:
+            return;*/
 
-               default:
-               {
-                const char* oc = LookupOpcodeName(packet.GetOpcode());
+        default:
+        {
+            /*const char* oc = LookupOpcodeName(packet.GetOpcode());
 
-                std::ostringstream out;
-                out << "botout: " << oc;
-                sLog.outError(out.str().c_str());
+            std::ostringstream out;
+            out << "botout: " << oc;
+            sLog.outError(out.str().c_str());
 
-                //TellMaster(oc);
-               }
-             */
+            TellMaster(oc);*/
+        }
     }
 }
 
@@ -1793,6 +1854,45 @@ Item* PlayerbotAI::FindConsumable(uint32 displayId) const
     return NULL;
 }
 
+bool PlayerbotAI::FindAmmo() const
+{
+    for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
+        Item* pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i);
+        if (pItem)
+        {
+           const ItemPrototype* const pItemProto = pItem->GetProto();
+
+           if (pItemProto->Class == ITEM_CLASS_PROJECTILE && m_bot->CheckAmmoCompatibility(pItemProto))
+           {
+                m_bot->SetAmmo(pItem->GetEntry());
+                return true;
+           }
+        }
+    }
+    for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
+        if (Bag* pBag = (Bag*)m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
+                Item* pItem = m_bot->GetItemByPos(i, j);
+                if (pItem)
+                {
+                    const ItemPrototype* const pItemProto = pItem->GetProto();
+
+                    if (pItemProto->Class == ITEM_CLASS_PROJECTILE && m_bot->CheckAmmoCompatibility(pItemProto))
+                    {
+                        m_bot->SetAmmo(pItem->GetEntry());
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 void PlayerbotAI::InterruptCurrentCastingSpell()
 {
     //TellMaster("I'm interrupting my current spell!");
@@ -2047,14 +2147,15 @@ void PlayerbotAI::DoCombatMovement()
 {
     if (!m_targetCombat) return;
 
-    float targetDist = m_bot->GetCombatDistance(m_targetCombat, true);
+    bool meleeReach = m_bot->CanReachWithMeleeAttack(m_targetCombat);
 
     if (m_combatStyle == COMBAT_MELEE
         && !m_bot->hasUnitState(UNIT_STAT_CHASE)
-        && (targetDist <= ATTACK_DISTANCE || m_movementOrder != MOVEMENT_STAY)
+        && ((m_movementOrder == MOVEMENT_STAY && meleeReach) || m_movementOrder != MOVEMENT_STAY)
         && GetClassAI()->GetWaitUntil() == 0 ) // Not waiting
     {
         // melee combat - chase target if in range or if we are not forced to stay
+        m_bot->GetMotionMaster()->Clear(false);
         m_bot->GetMotionMaster()->MoveChase(m_targetCombat);
     }
     else if (m_combatStyle == COMBAT_RANGED
@@ -2062,9 +2163,11 @@ void PlayerbotAI::DoCombatMovement()
              && GetClassAI()->GetWaitUntil() == 0 ) // Not waiting
     {
         // ranged combat - just move within spell range
-        // TODO: just follow in spell range! how to determine bots spell range?
-        if (targetDist > 25.0f)
+        if (!CanReachWithSpellAttack(m_targetCombat))
+        {
+            m_bot->GetMotionMaster()->Clear(false);
             m_bot->GetMotionMaster()->MoveChase(m_targetCombat);
+        }
         else
             MovementClear();
     }
@@ -3335,9 +3438,8 @@ void PlayerbotAI::MovementReset()
 void PlayerbotAI::MovementClear()
 {
     // stop...
-    m_bot->GetMotionMaster()->Clear(true);
-    m_bot->clearUnitState(UNIT_STAT_CHASE);
     m_bot->clearUnitState(UNIT_STAT_FOLLOW);
+    m_bot->GetMotionMaster()->Initialize();
 
     // stand up...
     if (!m_bot->IsStandState())
@@ -3484,9 +3586,10 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
             // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - Teleport %s to corpse...", m_bot->GetName());
             DoTeleport(*corpse);
             // check if we are allowed to resurrect now
-            if ((corpse->GetGhostTime() + m_bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP)) > CurrentTime())
+            time_t resurrect_time = corpse->GetGhostTime() + m_bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP);
+            if (resurrect_time > CurrentTime())
             {
-                SetIgnoreUpdateTime( corpse->GetGhostTime() + m_bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP) );
+                SetIgnoreUpdateTime( resurrect_time );
                 // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - %s has to wait for %d seconds to revive...", m_bot->GetName(), m_ignoreAIUpdatesUntilTime-CurrentTime() );
                 return;
             }
@@ -3675,7 +3778,7 @@ bool PlayerbotAI::canObeyCommandFrom(const Player& player) const
     return player.GetSession()->GetAccountId() == GetMaster()->GetSession()->GetAccountId();
 }
 
-bool PlayerbotAI::IsInRange(Unit* Target, uint32 spellId)
+bool PlayerbotAI::In_Range(Unit* Target, uint32 spellId)
 {
     const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
     if (!pSpellInfo)
@@ -3825,7 +3928,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
     else
     {
         // Check spell range
-        if (!IsInRange(pTarget, spellId))
+        if (!In_Range(pTarget, spellId))
             return false;
 
         // Check line of sight
@@ -6011,7 +6114,7 @@ void PlayerbotAI::_HandleCommandOrders(std::string &text, Player &fromPlayer)
 
         if (text == "")
         {
-            SendWhisper("|cffff0000Syntax error:|cffffffff orders combat <botName> <reset | tank | assist | heal | protect> [targetPlayer]", fromPlayer);
+            SendWhisper("|cffff0000Syntax error:|cffffffff orders combat <botName> <reset | tank | heal | passive><assist | protect [targetPlayer]>", fromPlayer);
             return;
         }
 
