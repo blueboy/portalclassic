@@ -499,7 +499,7 @@ void PlayerbotPaladinAI::DoNonCombatActions()
     }
 
     // buff group
-    if (Buff(&PlayerbotPaladinAI::BuffHelper, 1)) // Paladin's BuffHelper takes care of choosing the specific Blessing so just pass along a non-zero value
+    if (Buff(&PlayerbotPaladinAI::BuffHelper, 1) & RETURN_CONTINUE) // Paladin's BuffHelper takes care of choosing the specific Blessing so just pass along a non-zero value
         return;
 
     // hp/mana check
@@ -508,6 +508,7 @@ void PlayerbotPaladinAI::DoNonCombatActions()
 
     if (EatDrinkBandage())
         return;
+    // m_ai->TellMaster("DoNonCombatActions() - 10. past EatDrinkBandage()"); // debug
 }
 
 /**
