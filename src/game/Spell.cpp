@@ -42,7 +42,6 @@
 #include "LootMgr.h"
 #include "VMapFactory.h"
 #include "BattleGround/BattleGround.h"
-#include "extras/Mod.h"
 #include "Util.h"
 #include "Chat.h"
 #include "SQLStorages.h"
@@ -2526,8 +2525,6 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
         m_caster->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
-    sMod.spellPrepare(this, m_caster);  // extra for prepare
-
     // add non-triggered (with cast time and without)
     if (!m_IsTriggeredSpell)
     {
@@ -3427,7 +3424,7 @@ void Spell::SendInterrupted(uint8 result)
     m_caster->SendMessageToSet(&data, true);
 
     data.Initialize(SMSG_SPELL_FAILED_OTHER, (8 + 4));
-    data << m_caster->GetPackGUID();
+    data << m_caster->GetObjectGuid();
     data << m_spellInfo->Id;
     m_caster->SendMessageToSet(&data, true);
 }
@@ -3802,7 +3799,6 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOT
     if (eff < TOTAL_SPELL_EFFECTS)
     {
         (*this.*SpellEffects[eff])(i);
-        sMod.spellEffect(this, eff , i);  // extra for prepare
     }
     else
     {
