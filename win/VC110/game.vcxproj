@@ -441,7 +441,6 @@
     <ClCompile Include="..\..\src\game\Player.cpp" />
     <ClCompile Include="..\..\src\game\playerbot\PlayerbotAI.cpp" />
     <ClCompile Include="..\..\src\game\playerbot\PlayerbotClassAI.cpp" />
-    <ClCompile Include="..\..\src\game\playerbot\PlayerbotDeathKnightAI.cpp" />
     <ClCompile Include="..\..\src\game\playerbot\PlayerbotDruidAI.cpp" />
     <ClCompile Include="..\..\src\game\playerbot\PlayerbotHunterAI.cpp" />
     <ClCompile Include="..\..\src\game\playerbot\PlayerbotMageAI.cpp" />
@@ -602,7 +601,6 @@
     <ClInclude Include="..\..\src\game\Player.h" />
     <ClInclude Include="..\..\src\game\playerbot\PlayerbotAI.h" />
     <ClInclude Include="..\..\src\game\playerbot\PlayerbotClassAI.h" />
-    <ClInclude Include="..\..\src\game\playerbot\PlayerbotDeathKnightAI.h" />
     <ClInclude Include="..\..\src\game\playerbot\PlayerbotDruidAI.h" />
     <ClInclude Include="..\..\src\game\playerbot\PlayerbotHunterAI.h" />
     <ClInclude Include="..\..\src\game\playerbot\PlayerbotMageAI.h" />
