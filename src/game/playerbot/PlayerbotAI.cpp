@@ -3115,7 +3115,9 @@ void PlayerbotAI::TellMaster(const char *fmt, ...) const
 void PlayerbotAI::SendWhisper(const std::string& text, Player& player) const
 {
     WorldPacket data(SMSG_MESSAGECHAT, 200);
-    m_bot->BuildPlayerChat(&data, CHAT_MSG_WHISPER, text, LANG_UNIVERSAL);
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_WHISPER, text.c_str(),
+        LANG_UNIVERSAL, m_bot->GetChatTag(), m_bot->GetObjectGuid(),
+        m_bot->GetName(), player.GetObjectGuid());
     player.GetSession()->SendPacket(&data);
 }
 
