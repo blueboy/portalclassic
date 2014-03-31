@@ -251,6 +251,7 @@ Unit::Unit() :
 
     m_isCreatureLinkingTrigger = false;
     m_isSpawningLinked = false;
+    m_dummyCombatState = false;
 }
 
 Unit::~Unit()
@@ -304,7 +305,7 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
     }
 
     // update combat timer only for players and pets
-    if (isInCombat() && GetCharmerOrOwnerPlayerOrPlayerItself())
+    if (isInCombat() && GetCharmerOrOwnerPlayerOrPlayerItself() && !m_dummyCombatState)
     {
         // Check UNIT_STAT_MELEE_ATTACKING or UNIT_STAT_CHASE (without UNIT_STAT_FOLLOW in this case) so pets can reach far away
         // targets without stopping half way there and running off.
@@ -6229,8 +6230,6 @@ void Unit::Mount(uint32 mount, uint32 spellId)
 
     SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, mount);
 
-    SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_MOUNT);
-
     if (GetTypeId() == TYPEID_PLAYER)
     {
         // Called by Taxi system / GM command
@@ -6262,7 +6261,6 @@ void Unit::Unmount(bool from_aura)
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_MOUNTED);
 
     SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, 0);
-    RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_MOUNT);
 
     // Called NOT by Taxi system / GM command
     if (from_aura)
@@ -6307,6 +6305,17 @@ void Unit::SetInCombatWith(Unit* enemy)
     }
 
     SetInCombatState(false, enemy);
+}
+
+void Unit::SetInDummyCombatState(bool state)
+{
+    if (state)
+    {
+        m_dummyCombatState = true;
+        SetInCombatState(false);
+    }
+    else
+        m_dummyCombatState = false;
 }
 
 void Unit::SetInCombatState(bool PvP, Unit* enemy)
@@ -6929,7 +6938,7 @@ void Unit::SetDeathState(DeathState s)
         RemoveGuardians();
         UnsummonAllTotems();
 
-        StopMoving();
+        StopMoving(true);
         i_motionMaster.Clear(false, true);
         i_motionMaster.MoveIdle();
 

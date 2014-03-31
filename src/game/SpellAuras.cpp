@@ -149,7 +149,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS] =
     &Aura::HandleNoImmediateEffect,                         // 91 SPELL_AURA_MOD_DETECT_RANGE implemented in Creature::GetAttackDistance
     &Aura::HandlePreventFleeing,                            // 92 SPELL_AURA_PREVENTS_FLEEING
     &Aura::HandleModUnattackable,                           // 93 SPELL_AURA_MOD_UNATTACKABLE
-    &Aura::HandleNoImmediateEffect,                         // 94 SPELL_AURA_INTERRUPT_REGEN implemented in Player::RegenerateAll
+    &Aura::HandleInterruptRegen,                            // 94 SPELL_AURA_INTERRUPT_REGEN implemented in Player::RegenerateAll
     &Aura::HandleAuraGhost,                                 // 95 SPELL_AURA_GHOST
     &Aura::HandleNoImmediateEffect,                         // 96 SPELL_AURA_SPELL_MAGNET implemented in Unit::SelectMagnetTarget
     &Aura::HandleManaShield,                                // 97 SPELL_AURA_MANA_SHIELD implemented in Unit::CalculateAbsorbAndResist
@@ -1617,7 +1617,10 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
         target->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT, GetHolder());
 
         if (modelid > 0)
+        {
+            target->SetObjectScale(DEFAULT_OBJECT_SCALE);
             target->SetDisplayId(modelid);
+        }
 
         if (PowerType != POWER_MANA)
         {
@@ -1695,7 +1698,18 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
     else
     {
         if (modelid > 0)
+        {
+            // workaround for tauren scale appear too big
+            if (target->getRace() == RACE_TAUREN)
+            {
+                if (target->getGender() == GENDER_MALE)
+                    target->SetObjectScale(DEFAULT_TAUREN_MALE_SCALE);
+                else
+                    target->SetObjectScale(DEFAULT_TAUREN_FEMALE_SCALE);
+            }
+
             target->SetDisplayId(target->GetNativeDisplayId());
+        }
 
         if (target->getClass() == CLASS_DRUID)
             target->setPowerType(POWER_MANA);
@@ -4398,6 +4412,10 @@ void Aura::PeriodicTick()
             if (!pCaster)
                 return;
 
+            // Don't heal target if it is already at max health
+            if (target->GetHealth() == target->GetMaxHealth())
+                return;
+
             // heal for caster damage (must be alive)
             if (target != pCaster && spellProto->SpellVisual == 163 && !pCaster->isAlive())
                 return;
@@ -4788,6 +4806,17 @@ bool Aura::IsLastAuraOnHolder()
         if (i != GetEffIndex() && GetHolder()->m_auras[i])
             return false;
     return true;
+}
+
+void Aura::HandleInterruptRegen(bool apply, bool Real)
+{
+    if (!Real)
+        return;
+
+    if (GetSpellProto()->Id != 5229 && GetSpellProto()->Id != 29131)
+        return;
+
+    GetTarget()->SetInDummyCombatState(apply);
 }
 
 SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, WorldObject* caster, Item* castItem) :
@@ -5486,14 +5515,6 @@ void SpellAuraHolder::UpdateAuraDuration()
         data << uint8(GetAuraSlot());
         data << uint32(GetAuraDuration());
         ((Player*)m_target)->SendDirectMessage(&data);
-
-        data.Initialize(SMSG_SET_EXTRA_AURA_INFO, (8 + 1 + 4 + 4 + 4));
-        data << m_target->GetPackGUID();
-        data << uint8(GetAuraSlot());
-        data << uint32(GetId());
-        data << uint32(GetAuraMaxDuration());
-        data << uint32(GetAuraDuration());
-        ((Player*)m_target)->SendDirectMessage(&data);
     }
 
     // not send in case player loading (will not work anyway until player not added to map), sent in visibility change code
@@ -5508,11 +5529,5 @@ void SpellAuraHolder::UpdateAuraDuration()
 
 void SpellAuraHolder::SendAuraDurationForCaster(Player* caster)
 {
-    WorldPacket data(SMSG_SET_EXTRA_AURA_INFO_NEED_UPDATE, (8 + 1 + 4 + 4 + 4));
-    data << m_target->GetPackGUID();
-    data << uint8(GetAuraSlot());
-    data << uint32(GetId());
-    data << uint32(GetAuraMaxDuration());                   // full
-    data << uint32(GetAuraDuration());                      // remain
-    caster->GetSession()->SendPacket(&data);
+    // [-ZERO] Feature doesn't exist in 1.x.
 }
