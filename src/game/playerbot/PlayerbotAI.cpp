@@ -1270,7 +1270,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             {
                 Creature *c = m_bot->GetMap()->GetCreature(m_lootCurrent);
 
-                if (c && c->GetCreatureInfo()->SkinLootId && !c->lootForSkin)
+                if (c && c->GetCreatureInfo()->SkinningLootId && !c->lootForSkin)
                 {
                     uint32 reqSkill = c->GetCreatureInfo()->GetRequiredLootSkill();
                     // check if it is a leather skin and if it is to be collected (could be ore or herb)
