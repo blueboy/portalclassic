@@ -1451,7 +1451,7 @@ bool Player::BuildEnumData(QueryResult* result, WorldPacket* p_data)
             {
                 petDisplayId = fields[17].GetUInt32();
                 petLevel     = fields[18].GetUInt32();
-                petFamily    = cInfo->family;
+                petFamily    = cInfo->Family;
             }
         }
 
@@ -6987,7 +6987,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 
             // not check distance for GO in case owned GO (fishing bobber case, for example)
             // And permit out of range GO with no owner in case fishing hole
-            if (!go || (loot_type != LOOT_FISHINGHOLE && (loot_type != LOOT_FISHING && loot_type != LOOT_FISHING_FAIL || go->GetOwnerGuid() != GetObjectGuid()) && !go->IsWithinDistInMap(this, INTERACTION_DISTANCE)))
+            if (!go || (loot_type != LOOT_FISHINGHOLE && ((loot_type != LOOT_FISHING && loot_type != LOOT_FISHING_FAIL) || go->GetOwnerGuid() != GetObjectGuid()) && !go->IsWithinDistInMap(this, INTERACTION_DISTANCE)))
             {
                 SendLootRelease(guid);
                 return;
@@ -7189,7 +7189,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                     creature->lootForPickPocketed = true;
                     loot->clear();
 
-                    if (uint32 lootid = creature->GetCreatureInfo()->pickpocketLootId)
+                    if (uint32 lootid = creature->GetCreatureInfo()->PickpocketLootId)
                         loot->FillLoot(lootid, LootTemplates_Pickpocketing, this, false);
 
                     // Generate extra money for pick pocket loot
@@ -7220,10 +7220,10 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                     creature->lootForBody = true;
                     loot->clear();
 
-                    if (uint32 lootid = creature->GetCreatureInfo()->lootid)
+                    if (uint32 lootid = creature->GetCreatureInfo()->LootId)
                         loot->FillLoot(lootid, LootTemplates_Creature, recipient, false);
 
-                    loot->generateMoneyLoot(creature->GetCreatureInfo()->mingold, creature->GetCreatureInfo()->maxgold);
+                    loot->generateMoneyLoot(creature->GetCreatureInfo()->MinLootGold, creature->GetCreatureInfo()->MaxLootGold);
 
                     if (Group* group = creature->GetGroupLootRecipient())
                     {
@@ -7254,7 +7254,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                     {
                         creature->lootForSkin = true;
                         loot->clear();
-                        loot->FillLoot(creature->GetCreatureInfo()->SkinLootId, LootTemplates_Skinning, this, false);
+                        loot->FillLoot(creature->GetCreatureInfo()->SkinningLootId, LootTemplates_Skinning, this, false);
 
                         // let reopen skinning loot if will closed.
                         if (!loot->empty())
@@ -11037,7 +11037,7 @@ void Player::PrepareGossipMenu(WorldObject* pSource, uint32 menuId)
                         hasMenuItem = false;
                     break;
                 case GOSSIP_OPTION_UNLEARNPETSKILLS:
-                    if (!GetPet() || GetPet()->getPetType() != HUNTER_PET || GetPet()->m_spells.size() <= 1 || pCreature->GetCreatureInfo()->trainer_type != TRAINER_TYPE_PETS || pCreature->GetCreatureInfo()->trainer_class != CLASS_HUNTER)
+                    if (!GetPet() || GetPet()->getPetType() != HUNTER_PET || GetPet()->m_spells.size() <= 1 || pCreature->GetCreatureInfo()->TrainerType != TRAINER_TYPE_PETS || pCreature->GetCreatureInfo()->TrainerClass != CLASS_HUNTER)
                         hasMenuItem = false;
                     break;
                 case GOSSIP_OPTION_TAXIVENDOR:
@@ -14533,7 +14533,7 @@ DungeonPersistentState* Player::GetBoundInstanceSaveForSelfOrGroup(uint32 mapid)
     {
         InstanceGroupBind* groupBind = NULL;
         if (Group* group = GetGroup())
-            if (groupBind = group->GetBoundInstance(mapid))
+            if ((groupBind = group->GetBoundInstance(mapid)))
                 state = groupBind->state;
     }
 
@@ -15851,7 +15851,7 @@ void Player::CharmSpellInitialize()
     {
         CreatureInfo const* cinfo = ((Creature*)charm)->GetCreatureInfo();
 
-        if (cinfo && cinfo->type == CREATURE_TYPE_DEMON && getClass() == CLASS_WARLOCK)
+        if (cinfo && cinfo->CreatureType == CREATURE_TYPE_DEMON && getClass() == CLASS_WARLOCK)
         {
             for (uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
             {
@@ -17862,7 +17862,7 @@ bool Player::isHonorOrXPTarget(Unit* pVictim) const
     {
         if (((Creature*)pVictim)->IsTotem() ||
                 ((Creature*)pVictim)->IsPet() ||
-                ((Creature*)pVictim)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL)
+                ((Creature*)pVictim)->GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NO_XP_AT_KILL)
             return false;
     }
     return true;

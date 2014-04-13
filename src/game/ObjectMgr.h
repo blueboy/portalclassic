@@ -98,7 +98,7 @@ typedef UNORDERED_MAP < uint32/*mapid*/, CellObjectGuidsMap > MapObjectGuids;
 #define MIN_MANGOS_STRING_ID           1                    // 'mangos_string'
 #define MAX_MANGOS_STRING_ID           2000000000
 #define MIN_DB_SCRIPT_STRING_ID        MAX_MANGOS_STRING_ID // 'db_script_string'
-#define MAX_DB_SCRIPT_STRING_ID        2000010000
+#define MAX_DB_SCRIPT_STRING_ID        2001000000
 #define MIN_CREATURE_AI_TEXT_STRING_ID (-1)                 // 'creature_ai_texts'
 #define MAX_CREATURE_AI_TEXT_STRING_ID (-1000000)
 // Anything below MAX_CREATURE_AI_TEXT_STRING_ID is handled by the external script lib
@@ -641,6 +641,7 @@ class ObjectMgr
         void LoadCreatureTemplates();
         void LoadCreatures();
         void LoadCreatureAddons();
+        void LoadCreatureClassLvlStats();
         void LoadCreatureModelInfo();
         void LoadEquipmentTemplates();
         void LoadGameObjectLocales();
@@ -1026,6 +1027,19 @@ class ObjectMgr
         }
 
         QuestRelationsMap& GetCreatureQuestRelationsMap() { return m_CreatureQuestRelations; }
+
+        /**
+        * \brief: Data returned is used to compute health, mana, armor, damage of creatures. May be NULL.
+        * \param uint32 level               creature level
+        * \param uint32 unitClass           creature class, related to CLASSMASK_ALL_CREATURES
+        * \return: CreatureClassLvlStats const* or NULL
+        *
+        * Description: GetCreatureClassLvlStats give fast access to creature stats data.
+        * FullName: ObjectMgr::GetCreatureClassLvlStats
+        * Access: public
+        * Qualifier: const
+        **/
+        CreatureClassLvlStats const* GetCreatureClassLvlStats(uint32 level, uint32 unitClass) const;
     protected:
 
         // first free id for selected id type
@@ -1136,6 +1150,9 @@ class ObjectMgr
         typedef std::map<uint32, std::vector<std::string> > HalfNameMap;
         HalfNameMap PetHalfName0;
         HalfNameMap PetHalfName1;
+
+        // Array to store creature stats, Max creature level + 1 (for data alignement with in game level)
+        CreatureClassLvlStats m_creatureClassLvlStats[DEFAULT_MAX_CREATURE_LEVEL + 1][MAX_CREATURE_CLASS];
 
         MapObjectGuids mMapObjectGuids;
         CreatureDataMap mCreatureDataMap;
