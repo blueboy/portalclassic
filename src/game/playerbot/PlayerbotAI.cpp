@@ -5170,6 +5170,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         text.find("GathX") == 0) // Gatherer
         return;
 
+    // TODO: because of helper functions (to be improved soon)
+    std::string input = text.c_str();
+
     // if message is not from a player in the masters account auto reply and ignore
     if (!canObeyCommandFrom(fromPlayer))
     {
@@ -5216,1169 +5219,1294 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     // Handle general commands
 
     else if (text == "reset")
-    {
-        SetState(BOTSTATE_NORMAL);
-        MovementReset();
-        SetQuestNeedItems();
-        SetQuestNeedCreatures();
-        UpdateAttackerInfo();
-        m_lootTargets.clear();
-        m_lootCurrent = ObjectGuid();
-        m_targetCombat = 0;
-    }
+        _HandleCommandReset(input, fromPlayer);
     else if (text == "report")
-        SendQuestNeedList();
+        _HandleCommandReport(input, fromPlayer);
     else if (text == "orders")
-        SendOrders(*GetMaster());
+        _HandleCommandOrders(input, fromPlayer);
     else if (text == "follow" || text == "come")
-        SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
+        _HandleCommandFollow(input, fromPlayer);
     else if (text == "stay" || text == "stop")
-        SetMovementOrder(MOVEMENT_STAY);
+        _HandleCommandStay(input, fromPlayer);
     else if (text == "attack")
+        _HandleCommandAttack(input, fromPlayer);
+
+    else if ((text.size() > 2 && text.substr(0, 2) == "c ") || (text.size() > 5 && text.substr(0, 5) == "cast "))
+        _HandleCommandCast(input, fromPlayer);
+
+    else if (text.size() > 5 && text.substr(0, 5) == "sell ")
+        _HandleCommandSell(input, fromPlayer);
+
+    else if (text.size() >= 6 && text.substr(0, 6) == "repair")
+        _HandleCommandRepair(input, fromPlayer);
+
+    else if (text.size() >= 7 && text.substr(0, 7) == "auction")
+        _HandleCommandAuction(input, fromPlayer);
+
+    else if (text.size() >= 4 && text.substr(0, 4) == "bank")
+        _HandleCommandBank(input, fromPlayer);
+
+    else if ((text.size() > 2 && text.substr(0, 2) == "u ") || (text.size() > 4 && text.substr(0, 4) == "use "))
+        _HandleCommandUse(input, fromPlayer);
+
+    else if ((text.size() > 2 && text.substr(0, 2) == "e ") || (text.size() > 6 && text.substr(0, 6) == "equip "))
+        _HandleCommandEquip(input, fromPlayer);
+
+    // find project: 20:50 02/12/10 rev.4 item in world and wait until ordered to follow
+    else if ((text.size() > 2 && text.substr(0, 2) == "f ") || (text.size() > 5 && text.substr(0, 5) == "find "))
+        _HandleCommandFind(input, fromPlayer);
+
+    // TODO: merge this "g " with "g"
+    else if ((text.size() > 2 && text.substr(0, 2) == "g ") || (text.size() > 4 && text.substr(0, 4) == "get "))
     {
-        ObjectGuid attackOnGuid = fromPlayer.GetSelectionGuid();
-        if (attackOnGuid)
-        {
-            if (Unit * thingToAttack = ObjectAccessor::GetUnit(*m_bot, attackOnGuid))
-                if (!m_bot->IsFriendlyTo(thingToAttack) && m_bot->IsWithinLOSInMap(thingToAttack))
-                    GetCombatTarget(thingToAttack);
+        extractGOinfo(text, m_lootTargets);
+        SetState(BOTSTATE_LOOTING);
+    }
+    // get project: 20:50 02/12/10 rev.4 compact edition, handles multiple linked gameobject & improves visuals
+    else if (text == "g" || text == "get") // get a selected lootable corpse
+        _HandleCommandGet(input, fromPlayer);
+
+    // Handle all collection related commands here
+    else if (text.size() >= 7 && text.substr(0, 7) == "collect")
+        _HandleCommandCollect(input, fromPlayer);
+
+    else if (text.size() >= 5 && text.substr(0, 5) == "quest")
+        _HandleCommandQuest(input, fromPlayer);
+
+    else if (text.size() > 4 && text.substr(0, 4) == "pet ")
+        _HandleCommandPet(input, fromPlayer);
+
+    else if (text == "spells")
+        _HandleCommandSpells(input, fromPlayer);
+
+    // survey project: 20:50 02/12/10 rev.4 compact edition
+    else if (text == "survey")
+        _HandleCommandSurvey(input, fromPlayer);
+
+    // Handle class & professions training:
+    else if (text.size() >= 5 && text.substr(0, 5) == "skill")
+        _HandleCommandStats(input, fromPlayer);
+
+    // stats project: 11:30 15/12/10 rev.2 display bot statistics
+    else if (text == "stats")
+        _HandleCommandStats(input, fromPlayer);
+
+    else
+    {
+        // if this looks like an item link, reward item it completed quest and talking to NPC
+        std::list<uint32> itemIds;
+        extractItemIds(text, itemIds);
+        if (!itemIds.empty()) {
+            uint32 itemId = itemIds.front();
+            bool wasRewarded = false;
+            ObjectGuid questRewarderGUID = m_bot->GetSelectionGuid();
+            Object* const pNpc = (WorldObject *) m_bot->GetObjectByTypeMask(questRewarderGUID, TYPEMASK_CREATURE_OR_GAMEOBJECT);
+            if (!pNpc)
+                return;
+
+            QuestMenu& questMenu = m_bot->PlayerTalkClass->GetQuestMenu();
+            for (uint32 iI = 0; !wasRewarded && iI < questMenu.MenuItemCount(); ++iI)
+            {
+                QuestMenuItem const& qItem = questMenu.GetItem(iI);
+
+                uint32 questID = qItem.m_qId;
+                Quest const* pQuest = sObjectMgr.GetQuestTemplate(questID);
+                QuestStatus status = m_bot->GetQuestStatus(questID);
+
+                // if quest is complete, turn it in
+                if (status == QUEST_STATUS_COMPLETE &&
+                    !m_bot->GetQuestRewardStatus(questID) &&
+                    pQuest->GetRewChoiceItemsCount() > 1 &&
+                    m_bot->CanRewardQuest(pQuest, false))
+                    for (uint8 rewardIdx = 0; !wasRewarded && rewardIdx < pQuest->GetRewChoiceItemsCount(); ++rewardIdx)
+                    {
+                        ItemPrototype const * const pRewardItem = sObjectMgr.GetItemPrototype(pQuest->RewChoiceItemId[rewardIdx]);
+                        if (itemId == pRewardItem->ItemId)
+                        {
+                            m_bot->RewardQuest(pQuest, rewardIdx, pNpc, false);
+
+                            std::string questTitle  = pQuest->GetTitle();
+                            m_bot->GetPlayerbotAI()->QuestLocalization(questTitle, questID);
+                            std::string itemName = pRewardItem->Name1;
+                            m_bot->GetPlayerbotAI()->ItemLocalization(itemName, pRewardItem->ItemId);
+
+                            std::ostringstream out;
+                            out << "|cffffffff|Hitem:" << pRewardItem->ItemId << ":0:0:0:0:0:0:0" << "|h[" << itemName << "]|h|r rewarded";
+                            SendWhisper(out.str(), fromPlayer);
+                            wasRewarded = true;
+                        }
+                    }
+            }
+
         }
         else
         {
-            TellMaster("No target is selected.");
+            std::string msg = "What? follow, stay, (c)ast <spellname>, spells, (e)quip <itemlink>, (u)se <itemlink>, drop <questlink>, report, quests, stats, collect";
+            SendWhisper(msg, fromPlayer);
             m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
         }
     }
-    // handle cast command
-    else if ((text.size() >= 2 && (text.substr(0, 2) == "c " || text.substr(0, 2) == "c|")) || (text.size() >= 4 && text.substr(0, 4) == "cast"))
+}
+
+void PlayerbotAI::_HandleCommandReset(std::string &text, Player &fromPlayer)
+{
+    SetState(BOTSTATE_NORMAL);
+    MovementReset();
+    SetQuestNeedItems();
+    SetQuestNeedCreatures();
+    UpdateAttackerInfo();
+    m_lootTargets.clear();
+    m_lootCurrent = ObjectGuid();
+    m_targetCombat = 0;
+}
+
+void PlayerbotAI::_HandleCommandReport(std::string &text, Player &fromPlayer)
+{
+    SendQuestNeedList();
+}
+
+void PlayerbotAI::_HandleCommandOrders(std::string &text, Player &fromPlayer)
+{
+    SendOrders(*GetMaster());
+}
+
+void PlayerbotAI::_HandleCommandFollow(std::string &text, Player &fromPlayer)
+{
+    SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
+}
+
+void PlayerbotAI::_HandleCommandStay(std::string &text, Player &fromPlayer)
+{
+    SetMovementOrder(MOVEMENT_STAY);
+}
+
+void PlayerbotAI::_HandleCommandAttack(std::string &text, Player &fromPlayer)
+{
+    ObjectGuid attackOnGuid = fromPlayer.GetSelectionGuid();
+    if (attackOnGuid)
     {
-        std::string part = "";
+        if (Unit * thingToAttack = ObjectAccessor::GetUnit(*m_bot, attackOnGuid))
+            if (!m_bot->IsFriendlyTo(thingToAttack) && m_bot->IsWithinLOSInMap(thingToAttack))
+                GetCombatTarget(thingToAttack);
+    }
+    else
+    {
+        SendWhisper("No target is selected.", fromPlayer);
+        m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+    }
+}
 
-        if(text.find("|") != std::string::npos)
-            part = text.substr(text.find("|"));
+void PlayerbotAI::_HandleCommandCast(std::string &text, Player &fromPlayer)
+{
+    // DEBUG_LOG("Selected link : %s", text.c_str());
 
-        std::string spellStr = text.substr(text.find(" ") + 1);
+    std::string spellStr = text.substr(text.find(" ") + 1);
+    uint32 spellId = (uint32) atol(spellStr.c_str());
 
-        uint32 spellId = (uint32) atol(spellStr.c_str());
-
-        // try and get spell ID by name
+    // try and get spell ID by name
+    if (spellId == 0)
+    {
+        spellId = getSpellId(spellStr.c_str(), true);
+ 
+        // try link if text NOT (spellid OR spellname)
         if (spellId == 0)
-        {
-            spellId = getSpellId(spellStr.c_str(), true);
-
-            // try link if text NOT (spellid OR spellname)
-            if (spellId == 0)
-                extractSpellId(part, spellId);
-        }
-
-        if (m_bot->HasAura(spellId))
-        {
-            m_bot->RemoveAurasByCasterSpell(spellId, m_bot->GetObjectGuid());
-            return;
-        }
-
-        ObjectGuid castOnGuid = fromPlayer.GetSelectionGuid();
-        if (spellId != 0 && castOnGuid && m_bot->HasSpell(spellId))
-        {
-            m_spellIdCommand = spellId;
-            m_targetGuidCommand = castOnGuid;
-        }
-
+            extractSpellId(text, spellId);
     }
-    // Handle selling items
-    // sell [Item Link][Item Link] .. -- Sells bot(s) items from inventory
-    else if ((text.size() >= 2 && (text.substr(0, 2) == "s " || text.substr(0, 2) == "s|")) || (text.size() >= 4 && text.substr(0, 4) == "sell"))
-    {
-        std::list<uint32> itemIds;
-        extractItemIds(text, itemIds);
-        for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
-            m_tasks.push_back(std::pair<enum TaskFlags, uint32>(SELL, *it));
-        m_findNPC.push_back(UNIT_NPC_FLAG_VENDOR);
+
+    if (m_bot->HasAura(spellId))
+    {            
+        m_bot->RemoveAurasByCasterSpell(spellId, m_bot->GetObjectGuid());
+        return;
     }
-    // Handle repair items
-    // repair  all                      -- repair all bot(s) items
-    // repair [Item Link][Item Link] .. -- repair select bot(s) items
-    else if (text.size() >= 6 && text.substr(0, 6) == "repair")
+
+    ObjectGuid castOnGuid = fromPlayer.GetSelectionGuid();
+    if (spellId != 0 && castOnGuid && m_bot->HasSpell(spellId))
     {
-        std::string part = "";
-        std::string subcommand = "";
+        m_spellIdCommand = spellId;
+        m_targetGuidCommand = castOnGuid;
+     }
+}
 
-        part = text.substr(6);  // Truncate 'repair' part
+// _HandleCommandSell: Handle selling items
+// sell [Item Link][Item Link] .. -- Sells bot(s) items from inventory
+void PlayerbotAI::_HandleCommandSell(std::string &text, Player &fromPlayer)
+{
+/*    enum NPCFlags VENDOR_MASK = (enum NPCFlags) (UNIT_NPC_FLAG_VENDOR
+                                                    | UNIT_NPC_FLAG_VENDOR_AMMO
+                                                    | UNIT_NPC_FLAG_VENDOR_FOOD
+                                                    | UNIT_NPC_FLAG_VENDOR_POISON
+                                                    | UNIT_NPC_FLAG_VENDOR_REAGENT);
+*/
+    std::list<uint32> itemIds;
+    extractItemIds(text, itemIds);
+    for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(SELL, *it));
+    m_findNPC.push_back(UNIT_NPC_FLAG_VENDOR);
+}
 
-        if (part.find("|") == std::string::npos)
-            subcommand = "all";
 
-        std::list<uint32> itemIds;
-        extractItemIds(part, itemIds);
-        for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
-            m_tasks.push_back(std::pair<enum TaskFlags, uint32>(REPAIR, *it));
-        if (itemIds.empty() && subcommand == "all")
-            m_tasks.push_back(std::pair<enum TaskFlags, uint32>(REPAIR, 0));
+// _HandleCommandRepair: Handle repair items
+// repair  all                      -- repair all bot(s) items
+// repair [Item Link][Item Link] .. -- repair select bot(s) items
+void PlayerbotAI::_HandleCommandRepair(std::string &text, Player &fromPlayer)
+{
+    std::string part = "";
+    std::string subcommand = "";
+
+    if (text.size() >= 6 && text.substr(0, 7) == "repair ")
+        part = text.substr(7);  // Truncate 'repair ' part
+
+    if (part.find(" ") > 0)
+        subcommand = part.substr(0, part.find(" "));
+
+    std::list<uint32> itemIds;
+    extractItemIds(part, itemIds);
+    for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
+    {
+        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR, *it));
         m_findNPC.push_back(UNIT_NPC_FLAG_REPAIR);
     }
-    // Handle auctions:
-    // auction                                        -- Lists bot(s) active auctions.
-    // auction add [Item Link][Item Link] ..          -- Create bot(s) active auction.
-    // auction remove [Auction Link][Auction Link] .. -- Cancel bot(s) active auction. ([Auction Link] from auction)
-    else if (text.size() >= 7 && text.substr(0, 7) == "auction")
+    if (itemIds.empty() && subcommand == "all")
     {
-        std::string part = "";
-        std::string subcommand = "";
+        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR, 0));
+        m_findNPC.push_back(UNIT_NPC_FLAG_REPAIR);
+    }
+}
 
-        part = text.substr(7);  // Truncate 'auction' part
 
-        if (part.find("|") != std::string::npos)
-        {
-            subcommand = part.substr(0, part.find("|"));
-            if (subcommand.find(" ") != std::string::npos)
-                subcommand = subcommand.substr(0, subcommand.find(" "));
-        }
-        else
-            subcommand = part;
-
-        if (subcommand == "a" || subcommand == "add")
-        {
+// _HandleCommandAuction: Handle auctions:
+// auction                                        -- Lists bot(s) active auctions.
+// auction add [Item Link][Item Link] ..          -- Create bot(s) active auction.
+// auction remove [Auction Link][Auction Link] .. -- Cancel bot(s) active auction. ([Auction Link] from auction)
+void PlayerbotAI::_HandleCommandAuction(std::string &text, Player &fromPlayer)
+{
+    std::string part = "";
+    std::string subcommand = "";
+    if (text.size() > 7 && text.substr(0, 8) == "auction ")
+        part = text.substr(8);  // Truncate 'auction ' part
+    if (part.find(" ") > 0)
+    {
+        subcommand = part.substr(0, part.find(" "));
+        if (part.size() > subcommand.size())
+            part = part.substr(subcommand.size() + 1);
+    }
+    else
+        subcommand = part;
+        
+    if (subcommand == "add" || subcommand == "remove")
+    {
+        if (subcommand == "add")
+         {
             std::list<uint32> itemIds;
             extractItemIds(part, itemIds);
-            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
-                m_tasks.push_back(std::pair<enum TaskFlags, uint32>(ADD, *it));
+            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(ADD, *it));
             m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
-        }
-        else if (subcommand == "r" || subcommand == "remove")
+         }
+
+        if (subcommand == "remove")
         {
             std::list<uint32> auctionIds;
             extractAuctionIds(part, auctionIds);
-            for (std::list<uint32>::iterator it = auctionIds.begin(); it != auctionIds.end(); it++)
-                m_tasks.push_back(std::pair<enum TaskFlags, uint32>(REMOVE, *it));
+            for (std::list<uint32>::iterator it = auctionIds.begin(); it != auctionIds.end(); ++it)
+                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REMOVE, *it));
             m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
         }
-        else // list all bot auctions
-            m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
-    }
-    // Handle bank:
-    // bank                                        -- Lists bot(s) bank balance.
-    // bank deposit [Item Link][Item Link] ..      -- Deposit item(s) in bank.
-    // bank withdraw [Item Link][Item Link] ..     -- Withdraw item(s) from bank. ([Item Link] from bank)
-    else if (text.size() >= 4 && text.substr(0, 4) == "bank")
+     }
+    else // list all bot auctions
+        m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
+}
+
+// _HandleCommandBank: Handle bank:
+// bank                                        -- Lists bot(s) bank balance.
+// bank deposit [Item Link][Item Link] ..      -- Deposit item(s) in bank.
+// bank withdraw [Item Link][Item Link] ..     -- Withdraw item(s) from bank. ([Item Link] from bank)
+void PlayerbotAI::_HandleCommandBank(std::string &text, Player &fromPlayer)
+{
+    std::string part = "";
+    std::string subcommand = "";
+    if (text.size() > 4 && text.substr(0, 5) == "bank ")
+        part = text.substr(5);  // Truncate 'bank ' part
+    if (part.find(" ") > 0)
     {
-        std::string part = "";
-        std::string subcommand = "";
+        subcommand = part.substr(0, part.find(" "));
+        if (part.size() > subcommand.size())
+            part = part.substr(subcommand.size() + 1);
+    }
+    else
+        subcommand = part;
 
-        part = text.substr(4);  // Truncate 'bank ' part
+    if (subcommand == "deposit" || subcommand == "withdraw")
+    {
+        if (subcommand == "deposit")
+         {
+            std::list<uint32> itemIds;
+            extractItemIds(part, itemIds);
+            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(DEPOSIT, *it));
+            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
+         }
+        if (subcommand == "withdraw")
+         {
+            std::list<uint32> itemIds;
+            extractItemIds(part, itemIds);
+            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
+                m_tasks.push_back(std::pair<enum TaskFlags,uint32>(WITHDRAW, *it));
+            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
+         }
+     }
+    else // list all bot balance
+        m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
+}
 
-        if (part.find("|") != std::string::npos)
-        {
-            subcommand = part.substr(0, part.find("|"));
-            if (subcommand.find(" ") != std::string::npos)
-                subcommand = subcommand.substr(0, subcommand.find(" "));
-        }
+void PlayerbotAI::_HandleCommandUse(std::string &text, Player &fromPlayer)
+{
+    std::list<uint32> itemIds;
+    std::list<Item*> itemList;
+    extractItemIds(text, itemIds);
+    findItemsInInv(itemIds, itemList);
+    // set target
+    Unit* unit = ObjectAccessor::GetUnit(*m_bot, fromPlayer.GetSelectionGuid());
+
+    for (std::list<Item*>::iterator it = itemList.begin(); it != itemList.end(); ++it)
+     {
+        if (unit)
+            UseItem(*it, unit);
         else
-            subcommand = part;
+            UseItem(*it);
+     }
+}
 
-        if (subcommand == "d" || subcommand == "deposit")
-        {
-            std::list<uint32> itemIds;
-            extractItemIds(part, itemIds);
-            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
-                m_tasks.push_back(std::pair<enum TaskFlags, uint32>(DEPOSIT, *it));
-            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
-        }
-        else if (subcommand == "w" || subcommand == "withdraw")
-        {
-            std::list<uint32> itemIds;
-            extractItemIds(part, itemIds);
-            for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); it++)
-                m_tasks.push_back(std::pair<enum TaskFlags, uint32>(WITHDRAW, *it));
-            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
-        }
-        else // list all bot balance
-            m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
-    }
-    // Handle use of items
-    else if (text.size() > 3 && text.substr(0, 3) == "use")
+void PlayerbotAI::_HandleCommandEquip(std::string &text, Player &fromPlayer)
+{
+    std::list<uint32> itemIds;
+    std::list<Item*> itemList;
+    extractItemIds(text, itemIds);
+    findItemsInInv(itemIds, itemList);
+    for (std::list<Item*>::iterator it = itemList.begin(); it != itemList.end(); ++it)
+        EquipItem(*it);
+    SendNotEquipList(*m_bot);
+}
+
+void PlayerbotAI::_HandleCommandFind(std::string &text, Player &fromPlayer)
+{
+    extractGOinfo(text, m_lootTargets);
+ 
+    m_lootCurrent = m_lootTargets.front();
+    m_lootTargets.pop_front();
+ 
+    GameObject *go = m_bot->GetMap()->GetGameObject(m_lootCurrent);
+    if (!go)
     {
-        std::string part = "";
-        part = text.substr(text.find("|"));
-        std::list<uint32> itemIds;
-        std::list<Item*> itemList;
-        extractItemIds(part, itemIds);
-        findItemsInInv(itemIds, itemList);
-
-        // set target
-        Unit* unit = ObjectAccessor::GetUnit(*m_bot, fromPlayer.GetSelectionGuid());
-
-        for (std::list<Item*>::iterator it = itemList.begin(); it != itemList.end(); ++it)
-        {
-            if (unit)
-                UseItem(*it, unit);
-            else
-                UseItem(*it);
-        }
-    }
-    // Handle equipement of items, for bot
-    else if ((text.size() > 2 && (text.substr(0, 2) == "e|" || text.substr(0, 2) == "e ")) || (text.size() > 5 && text.substr(0, 5) == "equip"))
+         m_lootTargets.clear();
+         m_lootCurrent = ObjectGuid();
+         return;
+     }
+ 
+    SetMovementOrder(MOVEMENT_STAY);
+    m_bot->GetMotionMaster()->MovePoint(go->GetMapId(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ());
+    m_lootTargets.clear();
+    m_lootCurrent = ObjectGuid();
+}
+ 
+void PlayerbotAI::_HandleCommandGet(std::string &text, Player &fromPlayer)
+{
+    ObjectGuid getOnGuid = fromPlayer.GetSelectionGuid();
+    if (getOnGuid)
     {
-        std::string part = "";
-
-        part = text.substr(text.find("|"));
-
-        std::list<uint32> itemIds;
-        std::list<Item*> itemList;
-        extractItemIds(part, itemIds);
-        findItemsInInv(itemIds, itemList);
-        for (std::list<Item*>::iterator it = itemList.begin(); it != itemList.end(); ++it)
-            EquipItem(*it);
-        SendNotEquipList(*m_bot);
-    }
-    // Handle find GO objects project: 20:50 02/12/10 rev.4 item in world and wait until ordered to follow
-    else if ((text.size() >= 1 && text.substr(0, 1) == "f") || (text.size() >= 4 && text.substr(0, 4) == "find"))
-    {
-        if (text.find("|") != std::string::npos)
+        Creature *c = m_bot->GetMap()->GetCreature(getOnGuid);
+        if (!c)
+            return;
+ 
+        uint32 skillId = 0;
+        if (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
+            skillId = c->GetCreatureInfo()->GetRequiredLootSkill();
+ 
+        if (c->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE) ||
+            (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE) && m_bot->HasSkill(skillId)))
         {
-            extractGOinfo(text, m_lootTargets);
-
-            m_lootCurrent = m_lootTargets.front();
-            m_lootTargets.pop_front();
-
-            GameObject *go = m_bot->GetMap()->GetGameObject(m_lootCurrent);
-            if (!go)
-            {
-                m_lootTargets.clear();
-                m_lootCurrent = ObjectGuid();
-                return;
-            }
-
-            SetMovementOrder(MOVEMENT_STAY);
-            m_bot->GetMotionMaster()->MovePoint(go->GetMapId(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ());
-            m_lootTargets.clear();
-            m_lootCurrent = ObjectGuid();
-        }
-    }
-    // Handle get GO objects project: 20:50 02/12/10 rev.4 compact edition, handles multiple linked gameobject & improves visuals
-    else if ((text.size() >= 1 && text.substr(0, 1) == "g") || (text.size() >= 3 && text.substr(0, 3) == "get"))
-    {
-        if (text.find("|") != std::string::npos)
-        {
-            extractGOinfo(text, m_lootTargets);
+            m_lootTargets.push_back(getOnGuid);
             SetState(BOTSTATE_LOOTING);
         }
         else
+            SendWhisper("Target is not lootable by me.", fromPlayer);
+    }
+    else
+    {
+        SendWhisper("No target is selected.", fromPlayer);
+        m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+    }
+}
+
+void PlayerbotAI::_HandleCommandCollect(std::string &text, Player &fromPlayer)
+{
+    std::string part = "";
+    std::string subcommand = "";
+ 
+    if (text.size() > 7 && text.substr(0, 8) == "collect ")
+        part = text.substr(8);  // Truncate 'collect ' part
+ 
+    // TODO: possible infinite loop; usage looks rather suspicious - check this out
+    while (true)
+    {
+        if (part.find(" ") > 0)
         {
-            ObjectGuid getOnGuid = fromPlayer.GetSelectionGuid();
-            if (getOnGuid)
+             subcommand = part.substr(0, part.find(" "));
+             if (part.size() > subcommand.size())
+                 part = part.substr(subcommand.size() + 1);
+        }
+        else
+             subcommand = part;
+ 
+        if (subcommand == "all")
+        {
+            SetCollectFlag(COLLECT_FLAG_COMBAT);
+            SetCollectFlag(COLLECT_FLAG_LOOT);
+            SetCollectFlag(COLLECT_FLAG_QUEST);
+            SetCollectFlag(COLLECT_FLAG_PROFESSION);
+            SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
+            if (m_bot->HasSkill(SKILL_SKINNING))
+                SetCollectFlag(COLLECT_FLAG_SKIN);
+        }
+        else if (subcommand == "combat")
+            SetCollectFlag(COLLECT_FLAG_COMBAT);
+        else if (subcommand == "loot")
+            SetCollectFlag(COLLECT_FLAG_LOOT);
+        else if (subcommand == "quest")
+            SetCollectFlag(COLLECT_FLAG_QUEST);
+        else if (subcommand == "profession" || subcommand == "skill")
+            SetCollectFlag(COLLECT_FLAG_PROFESSION);
+        else if (subcommand == "skin" && m_bot->HasSkill(SKILL_SKINNING))
+            SetCollectFlag(COLLECT_FLAG_SKIN);
+        else if (subcommand == "objects" || subcommand == "nearby")
+        {
+            SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
+            if (!HasCollectFlag(COLLECT_FLAG_NEAROBJECT))
+                m_collectObjects.clear();
+        }
+        else if (subcommand == "none" || subcommand == "nothing")
+        {
+            m_collectionFlags = 0;
+            m_collectObjects.clear();
+        }
+        else
+        {
+            std::string collout = "";
+            if (m_bot->HasSkill(SKILL_SKINNING))
+                collout += ", skin";
+            // TODO: perhaps change the command syntax, this way may be lacking in ease of use
+            SendWhisper("Collect <what>?: none, combat, loot, quest, profession, objects" + collout, fromPlayer);
+            break;
+        }
+        if (part == subcommand)
+            break;
+    }
+
+    std::string collset = "";
+    if (HasCollectFlag(COLLECT_FLAG_LOOT))
+        collset += ", all loot";
+    if (HasCollectFlag(COLLECT_FLAG_PROFESSION))
+        collset += ", profession";
+    if (HasCollectFlag(COLLECT_FLAG_QUEST))
+        collset += ", quest";
+    if (HasCollectFlag(COLLECT_FLAG_SKIN))
+        collset += ", skin";
+    if (collset.length() > 1)
+    {
+        if (HasCollectFlag(COLLECT_FLAG_COMBAT))
+            collset += " items after combat";
+        else
+            collset += " items";
+    }
+
+    if (HasCollectFlag(COLLECT_FLAG_NEAROBJECT))
+    {
+        if (collset.length() > 1)
+            collset += " and ";
+        else
+            collset += "  ";    // padding for substr
+        collset += "nearby objects (";
+        if (!m_collectObjects.empty())
+        {
+            std::string strobjects = "";
+            for (BotLootEntry::iterator itr = m_collectObjects.begin(); itr != m_collectObjects.end(); ++itr)
             {
-                Creature *c = m_bot->GetMap()->GetCreature(getOnGuid);
-                if (!c)
-                    return;
-
-                uint32 skillId = 0;
-                if (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
-                    skillId = c->GetCreatureInfo()->GetRequiredLootSkill();
-
-                if (c->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE) ||
-                   (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE) && m_bot->HasSkill(skillId)))
-                {
-                    m_lootTargets.push_back(getOnGuid);
-                    SetState(BOTSTATE_LOOTING);
-                }
-                else
-                    SendWhisper("Target is not lootable by me.", fromPlayer);
+                uint32 objectentry = *(itr);
+                GameObjectInfo const * gInfo = ObjectMgr::GetGameObjectInfo(objectentry);
+                strobjects += ", ";
+                strobjects += gInfo->name;
             }
+            collset += strobjects.substr(2);
+        }
+        else
+            collset += "use survey and get to set";
+        collset += ")";
+    }
+
+    if (collset.length() > 1)
+        SendWhisper("I'm collecting " + collset.substr(2), fromPlayer);
+    else
+        SendWhisper("I'm collecting nothing.", fromPlayer);
+}
+
+void PlayerbotAI::_HandleCommandQuest(std::string &text, Player &fromPlayer)
+{
+    std::ostringstream msg;
+
+    std::string part = "";
+    std::string subcommand = "";
+
+    if (text.size() > 5 && text.substr(0, 6) == "quest ")
+        part = text.substr(6);  // Truncate 'quest ' part
+
+    if (part.find(" ") != std::string::npos)
+    {
+        subcommand = part.substr(0, part.find(" "));
+        if (part.size() > subcommand.size())
+            part = part.substr(subcommand.size() + 1);
+
+    }
+    else
+        subcommand = part;
+
+    if (subcommand == "a" || subcommand == "add")
+    {
+        std::list<uint32> questIds;
+        extractQuestIds(part, questIds);
+        for (std::list<uint32>::iterator it = questIds.begin(); it != questIds.end(); it++)
+        {
+            m_tasks.push_back(std::pair<enum TaskFlags, uint32>(TAKE, *it));
+            DEBUG_LOG(" questid (%u)",*it);
+        }
+        m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
+    }
+    else if (subcommand == "d" || subcommand == "drop")
+    {
+        fromPlayer.SetSelectionGuid(m_bot->GetObjectGuid());
+        PlayerbotChatHandler ch(GetMaster());
+        int8 linkStart = part.find("|");
+        if (part.find("|") != std::string::npos)
+            if (!ch.dropQuest((char *) part.substr(linkStart).c_str()))
+                ch.sysmessage("ERROR: could not drop quest");
             else
             {
-                SendWhisper("No target is selected.", fromPlayer);
-                m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+                SetQuestNeedItems();
+                SetQuestNeedCreatures();
+            }
+    }
+    else if (subcommand == "l" || subcommand == "list")
+    {
+        m_tasks.push_back(std::pair<enum TaskFlags, uint32>(LIST, 0));
+        m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
+    }
+    else if (subcommand == "e" || subcommand == "end")
+    {
+        m_tasks.push_back(std::pair<enum TaskFlags, uint32>(END, 0));
+        m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
+    }
+    else
+    {
+        bool hasIncompleteQuests = false;
+        std::ostringstream incomout;
+        incomout << "my incomplete quests are:";
+        bool hasCompleteQuests = false;
+        std::ostringstream comout;
+        comout << "my complete quests are:";
+        for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
+        {
+            if (uint32 questId = m_bot->GetQuestSlotQuestId(slot))
+            {
+                Quest const* pQuest = sObjectMgr.GetQuestTemplate(questId);
+
+                std::string questTitle  = pQuest->GetTitle();
+                m_bot->GetPlayerbotAI()->QuestLocalization(questTitle, questId);
+
+                if (m_bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
+                {
+                    hasCompleteQuests = true;
+                    comout << " |cFFFFFF00|Hquest:" << questId << ':' << pQuest->GetQuestLevel() << "|h[" << questTitle << "]|h|r";
+                }
+                else
+                {
+                    Item* qitem = FindItem(pQuest->GetSrcItemId());
+                    if (qitem)
+                        incomout << " use " << "|cffffffff|Hitem:" << qitem->GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << qitem->GetProto()->Name1 << "]|h|r" << " on ";
+                    hasIncompleteQuests = true;
+                    incomout << " |cFFFFFF00|Hquest:" << questId << ':' << pQuest->GetQuestLevel() << "|h[" <<  questTitle << "]|h|r";
+                }
             }
         }
+        if (hasCompleteQuests)
+            SendWhisper(comout.str(), fromPlayer);
+        if (hasIncompleteQuests)
+            SendWhisper(incomout.str(), fromPlayer);
+        if (!hasCompleteQuests && !hasIncompleteQuests)
+            SendWhisper("I have no quests!", fromPlayer);
+    }
+}
+
+void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
+{
+    Pet * pet = m_bot->GetPet();
+    if (!pet)
+     {
+        SendWhisper("I have no pet.", fromPlayer);
         return;
     }
-    // Handle all collection related commands here
-    else if (text.size() >= 7 && text.substr(0, 7) == "collect")
+ 
+    std::string part = text.substr(4); // Truncate `pet` part
+    std::string subcommand = part.substr(0, part.find(" "));
+    std::string argument;
+    bool argumentFound = false;
+ 
+    if (part.find(" ") != std::string::npos)
     {
-        std::string part = "";
-        std::string subcommand = "";
+        argument = part.substr(part.find(" ") + 1);
+        if (argument.length() > 0)
+            argumentFound = true;
+    }
 
-        if (text.size() > 7 && text.substr(0, 8) == "collect ")
-            part = text.substr(8);  // Truncate 'collect ' part
-
-        while (true)
+    if (subcommand == "react" && argumentFound)
+    {
+        if (argument == "a" || argument == "aggressive")
+            pet->GetCharmInfo()->SetReactState(REACT_AGGRESSIVE);
+        else if (argument == "d" || argument == "defensive")
+            pet->GetCharmInfo()->SetReactState(REACT_DEFENSIVE);
+        else if (argument == "p" || argument == "passive")
+            pet->GetCharmInfo()->SetReactState(REACT_PASSIVE);
+    }
+    else if (subcommand == "state" && !argumentFound)
+    {
+        std::string state;
+        switch (pet->GetCharmInfo()->GetReactState())
         {
-            if (part.find(" ") > 0)
-            {
-                subcommand = part.substr(0, part.find(" "));
-                if (part.size() > subcommand.size())
-                    part = part.substr(subcommand.size() + 1);
-            }
-            else
-                subcommand = part;
-
-            if (subcommand == "all")
-            {
-                SetCollectFlag(COLLECT_FLAG_COMBAT);
-                SetCollectFlag(COLLECT_FLAG_LOOT);
-                SetCollectFlag(COLLECT_FLAG_QUEST);
-                SetCollectFlag(COLLECT_FLAG_PROFESSION);
-                SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
-                if (m_bot->HasSkill(SKILL_SKINNING))
-                    SetCollectFlag(COLLECT_FLAG_SKIN);
-            }
-            else if (subcommand == "combat")
-                SetCollectFlag(COLLECT_FLAG_COMBAT);
-            else if (subcommand == "loot")
-                SetCollectFlag(COLLECT_FLAG_LOOT);
-            else if (subcommand == "quest")
-                SetCollectFlag(COLLECT_FLAG_QUEST);
-            else if (subcommand == "profession" || subcommand == "skill")
-                SetCollectFlag(COLLECT_FLAG_PROFESSION);
-            else if (subcommand == "skin" && m_bot->HasSkill(SKILL_SKINNING))
-                SetCollectFlag(COLLECT_FLAG_SKIN);
-            else if (subcommand == "objects" || subcommand == "nearby")
-            {
-                SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
-                if (!HasCollectFlag(COLLECT_FLAG_NEAROBJECT))
-                    m_collectObjects.clear();
-            }
-            else if (subcommand == "none" || subcommand == "nothing")
-            {
-                m_collectionFlags = 0;
-                m_collectObjects.clear();
-            }
-            else
-            {
-                std::string collout = "";
-                if (m_bot->HasSkill(SKILL_SKINNING))
-                    collout += ", skin";
-                // TODO: perhaps change the command syntax, this way may be lacking in ease of use
-                SendWhisper("Collect <what>?: all, none, combat, loot, quest, profession, objects" + collout, fromPlayer);
+            case REACT_AGGRESSIVE:
+                SendWhisper("My pet is aggressive.", fromPlayer);
                 break;
-            }
-            if (part == subcommand)
+            case REACT_DEFENSIVE:
+                SendWhisper("My pet is defensive.", fromPlayer);
                 break;
+            case REACT_PASSIVE:
+                SendWhisper("My pet is passive.", fromPlayer);
         }
-
-        std::string collset = "";
-        if (HasCollectFlag(COLLECT_FLAG_LOOT))
-            collset += ", all loot";
-        if (HasCollectFlag(COLLECT_FLAG_PROFESSION))
-            collset += ", profession";
-        if (HasCollectFlag(COLLECT_FLAG_QUEST))
-            collset += ", quest";
-        if (HasCollectFlag(COLLECT_FLAG_SKIN))
-            collset += ", skin";
-        if (collset.length() > 1)
-        {
-            if (HasCollectFlag(COLLECT_FLAG_COMBAT))
-                collset += " items after combat";
-            else
-                collset += " items";
-        }
-
-        if (HasCollectFlag(COLLECT_FLAG_NEAROBJECT))
-        {
-            if (collset.length() > 1)
-                collset += " and ";
-            else
-                collset += "  ";    // padding for substr
-            collset += "nearby objects (";
-            if (!m_collectObjects.empty())
-            {
-                std::string strobjects = "";
-                for (BotLootEntry::iterator itr = m_collectObjects.begin(); itr != m_collectObjects.end(); ++itr)
-                {
-                    uint32 objectentry = *(itr);
-                    GameObjectInfo const * gInfo = ObjectMgr::GetGameObjectInfo(objectentry);
-                    strobjects += ", ";
-                    strobjects += gInfo->name;
-                }
-                collset += strobjects.substr(2);
-            }
-            else
-                collset += "use survey and get to set";
-            collset += ")";
-        }
-
-        if (collset.length() > 1)
-            SendWhisper("I'm collecting " + collset.substr(2), fromPlayer);
-        else
-            SendWhisper("I'm collecting nothing.", fromPlayer);
     }
-    // Handle bot quests
-    else if (text.size() >= 5 && text.substr(0, 5) == "quest")
+    else if (subcommand == "cast" && argumentFound)
     {
-        std::ostringstream msg;
+        uint32 spellId = (uint32) atol(argument.c_str());
 
-        std::string part = "";
-        std::string subcommand = "";
-
-        if (text.size() > 5 && text.substr(0, 6) == "quest ")
-            part = text.substr(6);  // Truncate 'quest ' part
-        else
-            part = text;
-
-        if (part.find("|") != std::string::npos)
+        if (spellId == 0)
         {
-            subcommand = part.substr(0, part.find("|"));
-            if (subcommand.find(" ") != std::string::npos)
-                subcommand = subcommand.substr(0, subcommand.find(" "));
+            spellId = getPetSpellId(argument.c_str());
+            if (spellId == 0)
+                extractSpellId(argument, spellId);
         }
-        else
-            subcommand = part;
 
-        if (subcommand == "a" || subcommand == "add")
+        if (spellId != 0 && pet->HasSpell(spellId))
         {
-            std::list<uint32> questIds;
-            extractQuestIds(part, questIds);
-            for (std::list<uint32>::iterator it = questIds.begin(); it != questIds.end(); it++)
+            if (pet->HasAura(spellId))
             {
-                DEBUG_LOG(" questid (%u)",*it);
-                m_tasks.push_back(std::pair<enum TaskFlags, uint32>(TAKE, *it));
+                pet->RemoveAurasByCasterSpell(spellId, pet->GetObjectGuid());
+                return;
             }
-            m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
-        }
-        else if (subcommand == "d" || subcommand == "drop")
-        {
-            fromPlayer.SetSelectionGuid(m_bot->GetObjectGuid());
-            PlayerbotChatHandler ch(GetMaster());
-            int linkStart = part.find("|");
-            if (linkStart != -1)
-            {
-                if (!ch.dropQuest((char *) part.substr(linkStart).c_str()))
-                    ch.sysmessage("ERROR: could not drop quest");
-                else
-                {
-                    SetQuestNeedItems();
-                    SetQuestNeedCreatures();
-                }
-            }
-        }
-        else if (subcommand == "l" || subcommand == "list")
-        {
-            m_tasks.push_back(std::pair<enum TaskFlags, uint32>(LIST, 0));
-            m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
-        }
-        else if (subcommand == "e" || subcommand == "end")
-        {
-            m_tasks.push_back(std::pair<enum TaskFlags, uint32>(END, 0));
-            m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
-        }
-        else
-        {
-            bool hasIncompleteQuests = false;
-            std::ostringstream incomout;
-            incomout << "my incomplete quests are:";
-            bool hasCompleteQuests = false;
-            std::ostringstream comout;
-            comout << "my complete quests are:";
-            for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
-            {
-                if (uint32 questId = m_bot->GetQuestSlotQuestId(slot))
-                {
-                    Quest const* pQuest = sObjectMgr.GetQuestTemplate(questId);
 
-                    std::string questTitle  = pQuest->GetTitle();
-                    m_bot->GetPlayerbotAI()->QuestLocalization(questTitle, questId);
-
-                    if (m_bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
-                    {
-                        hasCompleteQuests = true;
-                        comout << " |cFFFFFF00|Hquest:" << questId << ':' << pQuest->GetQuestLevel() << "|h[" << questTitle << "]|h|r";
-                    }
-                    else
-                    {
-                        Item* qitem = FindItem(pQuest->GetSrcItemId());
-                        if (qitem)
-                            incomout << " use " << "|cffffffff|Hitem:" << qitem->GetProto()->ItemId << ":0:0:0:0:0:0:0" << "|h[" << qitem->GetProto()->Name1 << "]|h|r" << " on ";
-                        hasIncompleteQuests = true;
-                        incomout << " |cFFFFFF00|Hquest:" << questId << ':' << pQuest->GetQuestLevel() << "|h[" <<  questTitle << "]|h|r";
-                    }
-                }
-            }
-            if (hasCompleteQuests)
-                SendWhisper(comout.str(), fromPlayer);
-            if (hasIncompleteQuests)
-                SendWhisper(incomout.str(), fromPlayer);
-            if (!hasCompleteQuests && !hasIncompleteQuests)
-                SendWhisper("I have no quests!", fromPlayer);
+            ObjectGuid castOnGuid = fromPlayer.GetSelectionGuid();
+            Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, castOnGuid);
+            CastPetSpell(spellId, pTarget);
         }
     }
-    // Handle all pet related commands here
-    else if (text.size() > 3 && text.substr(0, 3) == "pet")
+    else if (subcommand == "toggle" && argumentFound)
     {
-        Pet * pet = m_bot->GetPet();
-        if (!pet)
+        uint32 spellId = (uint32) atol(argument.c_str());
+ 
+        if (spellId == 0)
         {
-            SendWhisper("I have no pet.", fromPlayer);
-            return;
-        }
-
-        std::string part = text.substr(0, text.find(" "));
-        std::string subcommand = "";
-        std::string argument;
-        bool argumentFound = false;
-
-        if (part.find(" ") != std::string::npos)
-        {
-            subcommand = part.substr(0, part.find(" "));
-            argument = part.substr(part.find(" ") + 1);
-            if (argument.length() > 0)
-                argumentFound = true;
-        }
-        else if (part.find("|") != std::string::npos)
-        {
-            subcommand = part.substr(0, part.find("|"));
-            argument = part.substr(part.find("|"));
-            if (argument.length() > 0)
-                argumentFound = true;
-        }
-        else
-            subcommand = part;
-
-        if (subcommand == "react" && argumentFound)
-        {
-            if (argument == "a" || argument == "aggressive")
-                pet->GetCharmInfo()->SetReactState(REACT_AGGRESSIVE);
-            else if (argument == "d" || argument == "defensive")
-                pet->GetCharmInfo()->SetReactState(REACT_DEFENSIVE);
-            else if (argument == "p" || argument == "passive")
-                pet->GetCharmInfo()->SetReactState(REACT_PASSIVE);
-        }
-        else if (subcommand == "state" && !argumentFound)
-        {
-            std::string state;
-            switch (pet->GetCharmInfo()->GetReactState())
-            {
-                case REACT_AGGRESSIVE:
-                    SendWhisper("My pet is aggressive.", fromPlayer);
-                    break;
-                case REACT_DEFENSIVE:
-                    SendWhisper("My pet is defensive.", fromPlayer);
-                    break;
-                case REACT_PASSIVE:
-                    SendWhisper("My pet is passive.", fromPlayer);
-            }
-        }
-        else if (subcommand == "cast" && argumentFound)
-        {
-            uint32 spellId = (uint32) atol(argument.c_str());
-
+            spellId = getPetSpellId(argument.c_str());
             if (spellId == 0)
-            {
-                spellId = getPetSpellId(argument.c_str());
-                if (spellId == 0)
-                    extractSpellId(argument, spellId);
-            }
-
-            if (spellId != 0 && pet->HasSpell(spellId))
-            {
-                if (pet->HasAura(spellId))
-                {
-                    pet->RemoveAurasByCasterSpell(spellId, pet->GetObjectGuid());
-                    return;
-                }
-
-                ObjectGuid castOnGuid = fromPlayer.GetSelectionGuid();
-                Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, castOnGuid);
-                CastPetSpell(spellId, pTarget);
-            }
+                extractSpellId(argument, spellId);
         }
-        else if (subcommand == "toggle" && argumentFound)
+
+        if (spellId != 0 && pet->HasSpell(spellId))
         {
-            uint32 spellId = (uint32) atol(argument.c_str());
-
-            if (spellId == 0)
+            PetSpellMap::iterator itr = pet->m_spells.find(spellId);
+            if (itr != pet->m_spells.end())
             {
-                spellId = getPetSpellId(argument.c_str());
-                if (spellId == 0)
-                    extractSpellId(argument, spellId);
-            }
-
-            if (spellId != 0 && pet->HasSpell(spellId))
-            {
-                PetSpellMap::iterator itr = pet->m_spells.find(spellId);
-                if (itr != pet->m_spells.end())
+                if (itr->second.active == ACT_ENABLED)
                 {
-                    if (itr->second.active == ACT_ENABLED)
-                    {
-                        pet->ToggleAutocast(spellId, false);
-                        if (pet->HasAura(spellId))
-                            pet->RemoveAurasByCasterSpell(spellId, pet->GetObjectGuid());
-                    }
-                    else
-                        pet->ToggleAutocast(spellId, true);
+                    pet->ToggleAutocast(spellId, false);
+                    if (pet->HasAura(spellId))
+                        pet->RemoveAurasByCasterSpell(spellId, pet->GetObjectGuid());
                 }
-            }
-        }
-        else if (subcommand == "spells" && !argumentFound)
-        {
-            int loc = GetMaster()->GetSession()->GetSessionDbcLocale();
-
-            std::ostringstream posOut;
-            std::ostringstream negOut;
-
-            for (PetSpellMap::iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
-            {
-                const uint32 spellId = itr->first;
-
-                if (itr->second.state == PETSPELL_REMOVED || IsPassiveSpell(spellId))
-                    continue;
-
-                const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
-                if (!pSpellInfo)
-                    continue;
-
-                std::string color;
-                switch (itr->second.active)
-                {
-                    case ACT_ENABLED:
-                        color = "cff35d22d"; // Some flavor of green
-                        break;
-                    default:
-                        color = "cffffffff";
-                }
-
-                if (IsPositiveSpell(spellId))
-                    posOut << " |" << color << "|Hspell:" << spellId << "|h["
-                           << pSpellInfo->SpellName[loc] << "]|h|r";
                 else
-                    negOut << " |" << color << "|Hspell:" << spellId << "|h["
-                           << pSpellInfo->SpellName[loc] << "]|h|r";
+                    pet->ToggleAutocast(spellId, true);
             }
-
-            ChatHandler ch(&fromPlayer);
-            SendWhisper("Here's my pet's non-attack spells:", fromPlayer);
-            ch.SendSysMessage(posOut.str().c_str());
-            SendWhisper("and here's my pet's attack spells:", fromPlayer);
-            ch.SendSysMessage(negOut.str().c_str());
         }
     }
-    // Handle listing of all spells, known to bot
-    else if (text == "spells")
+    else if (subcommand == "spells" && !argumentFound)
     {
         int loc = GetMaster()->GetSession()->GetSessionDbcLocale();
 
         std::ostringstream posOut;
         std::ostringstream negOut;
 
-        typedef std::map<std::string, uint32> spellMap;
-
-        spellMap posSpells, negSpells;
-        std::string spellName;
-
-        uint32 ignoredSpells[] = {1843, 5019, 2479, 6603, 3365, 8386, 21651, 21652, 6233, 6246, 6247,
-                                  61437, 22810, 22027, 45927, 7266, 7267, 6477, 6478, 7355, 68398};
-        uint32 ignoredSpellsCount = sizeof(ignoredSpells) / sizeof(uint32);
-
-        for (PlayerSpellMap::iterator itr = m_bot->GetSpellMap().begin(); itr != m_bot->GetSpellMap().end(); ++itr)
+        for (PetSpellMap::iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
         {
             const uint32 spellId = itr->first;
-
-            if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+ 
+            if (itr->second.state == PETSPELL_REMOVED || IsPassiveSpell(spellId))
                 continue;
 
             const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
             if (!pSpellInfo)
                 continue;
 
-            spellName = pSpellInfo->SpellName[loc];
-
-            SkillLineAbilityMapBounds const bounds = sSpellMgr.GetSkillLineAbilityMapBounds(spellId);
-
-            bool isProfessionOrRidingSpell = false;
-            for (SkillLineAbilityMap::const_iterator skillIter = bounds.first; skillIter != bounds.second; ++skillIter)
+            std::string color;
+            switch (itr->second.active)
             {
-                if (IsProfessionOrRidingSkill(skillIter->second->skillId) && skillIter->first == spellId) {
-                    isProfessionOrRidingSpell = true;
+                case ACT_ENABLED:
+                    color = "cff35d22d"; // Some flavor of green
                     break;
-                }
+                default:
+                    color = "cffffffff";
             }
-            if (isProfessionOrRidingSpell)
-                continue;
 
-            bool isIgnoredSpell = false;
-            for (uint8 i = 0; i < ignoredSpellsCount; ++i)
-            {
-                if (spellId == ignoredSpells[i]) {
-                    isIgnoredSpell = true;
-                    break;
-                }
-            }
-            if (isIgnoredSpell)
-                continue;
-
-            if (IsPositiveSpell(spellId)) {
-                if (posSpells.find(spellName) == posSpells.end())
-                    posSpells[spellName] = spellId;
-                else
-                if (posSpells[spellName] < spellId)
-                    posSpells[spellName] = spellId;
-            }
+            if (IsPositiveSpell(spellId))
+                posOut << " |" << color << "|Hspell:" << spellId << "|h["
+                        << pSpellInfo->SpellName[loc] << "]|h|r";
             else
-            {
-                if (negSpells.find(spellName) == negSpells.end())
-                    negSpells[spellName] = spellId;
-                else
-                if (negSpells[spellName] < spellId)
-                    negSpells[spellName] = spellId;
-            }
-        }
-
-        for (spellMap::const_iterator iter = posSpells.begin(); iter != posSpells.end(); ++iter)
-        {
-            posOut << " |cffffffff|Hspell:" << iter->second << "|h["
-                   << iter->first << "]|h|r";
-        }
-
-        for (spellMap::const_iterator iter = negSpells.begin(); iter != negSpells.end(); ++iter)
-        {
-            negOut << " |cffffffff|Hspell:" << iter->second << "|h["
-                   << iter->first << "]|h|r";
+                negOut << " |" << color << "|Hspell:" << spellId << "|h["
+                        << pSpellInfo->SpellName[loc] << "]|h|r";
         }
 
         ChatHandler ch(&fromPlayer);
-        SendWhisper("here's my non-attack spells:", fromPlayer);
+        SendWhisper("Here's my pet's non-attack spells:", fromPlayer);
         ch.SendSysMessage(posOut.str().c_str());
-        SendWhisper("and here's my attack spells:", fromPlayer);
+        SendWhisper("and here's my pet's attack spells:", fromPlayer);
         ch.SendSysMessage(negOut.str().c_str());
     }
-    // Handle survey GO objects project: 20:50 02/12/10 rev.4 compact edition
-    else if (text == "survey")
+}
+
+void PlayerbotAI::_HandleCommandSpells(std::string &text, Player &fromPlayer)
+{
+    int loc = GetMaster()->GetSession()->GetSessionDbcLocale();
+
+    std::ostringstream posOut;
+    std::ostringstream negOut;
+
+    typedef std::map<std::string, uint32> spellMap;
+    spellMap posSpells, negSpells;
+    std::string spellName;
+ 
+    uint32 ignoredSpells[] = {1843, 5019, 2479, 6603, 3365, 8386, 21651, 21652, 6233, 6246, 6247,
+                                61437, 22810, 22027, 45927, 7266, 7267, 6477, 6478, 7355, 68398};
+    uint32 ignoredSpellsCount = sizeof(ignoredSpells) / sizeof(uint32);
+ 
+    for (PlayerSpellMap::iterator itr = m_bot->GetSpellMap().begin(); itr != m_bot->GetSpellMap().end(); ++itr)
     {
-        uint32 count = 0;
-        std::ostringstream detectout;
-        QueryResult *result;
-        GameEventMgr::ActiveEvents const& activeEventsList = sGameEventMgr.GetActiveEventList();
-        std::ostringstream eventFilter;
-        eventFilter << " AND (event IS NULL ";
-        bool initString = true;
+        const uint32 spellId = itr->first;
+ 
+        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+            continue;
+ 
+        const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+        if (!pSpellInfo)
+            continue;
 
-        for (GameEventMgr::ActiveEvents::const_iterator itr = activeEventsList.begin(); itr != activeEventsList.end(); ++itr)
+        spellName = pSpellInfo->SpellName[loc];
+
+        SkillLineAbilityMapBounds const bounds = sSpellMgr.GetSkillLineAbilityMapBounds(spellId);
+
+        bool isProfessionOrRidingSpell = false;
+        for (SkillLineAbilityMap::const_iterator skillIter = bounds.first; skillIter != bounds.second; ++skillIter)
         {
-            if (initString)
-            {
-                eventFilter <<  "OR event IN (" << *itr;
-                initString = false;
+            if (IsProfessionOrRidingSkill(skillIter->second->skillId) && skillIter->first == spellId) {
+                isProfessionOrRidingSpell = true;
+                break;
             }
-            else
-                eventFilter << "," << *itr;
         }
+        if (isProfessionOrRidingSpell)
+            continue;
+ 
+        bool isIgnoredSpell = false;
+        for (uint8 i = 0; i < ignoredSpellsCount; ++i)
+         {
+            if (spellId == ignoredSpells[i]) {
+                isIgnoredSpell = true;
+                break;
+            }
+        }
+        if (isIgnoredSpell)
+            continue;
 
-        if (!initString)
-            eventFilter << "))";
+        if (IsPositiveSpell(spellId)) {
+            if (posSpells.find(spellName) == posSpells.end())
+                posSpells[spellName] = spellId;
+            else if (posSpells[spellName] < spellId)
+                posSpells[spellName] = spellId;
+        }
         else
-            eventFilter << ")";
-
-        result = WorldDatabase.PQuery("SELECT gameobject.guid, id, position_x, position_y, position_z, map, "
-                                      "(POW(position_x - %f, 2) + POW(position_y - %f, 2) + POW(position_z - %f, 2)) AS order_ FROM gameobject "
-                                      "LEFT OUTER JOIN game_event_gameobject on gameobject.guid=game_event_gameobject.guid WHERE map = '%i' %s ORDER BY order_ ASC LIMIT 10",
-                                      m_bot->GetPositionX(), m_bot->GetPositionY(), m_bot->GetPositionZ(), m_bot->GetMapId(), eventFilter.str().c_str());
-
-        if (result)
         {
-            do
-            {
-                Field *fields = result->Fetch();
-                uint32 guid = fields[0].GetUInt32();
-                uint32 entry = fields[1].GetUInt32();
-
-                GameObject *go = m_bot->GetMap()->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, entry, guid));
-                if (!go)
-                    continue;
-
-                if (!go->isSpawned())
-                    continue;
-
-                detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry  << ":" <<  "|h[" << go->GetGOInfo()->name << "]|h|r";
-                ++count;
-            } while (result->NextRow());
-
-            delete result;
+            if (negSpells.find(spellName) == negSpells.end())
+                negSpells[spellName] = spellId;
+            else if (negSpells[spellName] < spellId)
+                negSpells[spellName] = spellId;
         }
-        SendWhisper(detectout.str().c_str(), fromPlayer);
     }
-    // Handle class & professions training:
-    // skill                           -- Lists bot(s) Primary profession skills & weapon skills
-    // skill train                     -- List available class or profession (Primary or Secondary) skills & spells, from selected trainer.
-    // skill learn [HLINK][HLINK] ..   -- Learn selected skill and spells, from selected trainer ([HLINK] from skill train).
-    // skill unlearn [HLINK][HLINK] .. -- Unlearn selected primary profession skill(s) and all associated spells ([HLINK] from skill)
-    else if (text.size() >= 5 && text.substr(0, 5) == "skill")
+
+    for (spellMap::const_iterator iter = posSpells.begin(); iter != posSpells.end(); ++iter)
     {
-        uint32 rank[8] = {0, 75, 150, 225, 300, 375, 450, 525};
+        posOut << " |cffffffff|Hspell:" << iter->second << "|h[" << iter->first << "]|h|r";
+    }
+ 
+    for (spellMap::const_iterator iter = negSpells.begin(); iter != negSpells.end(); ++iter)
+    {
+        negOut << " |cffffffff|Hspell:" << iter->second << "|h[" << iter->first << "]|h|r";
+    }
 
-        std::ostringstream msg;
+    ChatHandler ch(&fromPlayer);
+    SendWhisper("here's my non-attack spells:", fromPlayer);
+    ch.SendSysMessage(posOut.str().c_str());
+    SendWhisper("and here's my attack spells:", fromPlayer);
+    ch.SendSysMessage(negOut.str().c_str());
+}
 
-        std::string part = "";
-        std::string subcommand = "";
+void PlayerbotAI::_HandleCommandSurvey(std::string &text, Player &fromPlayer)
+{
+    uint32 count = 0;
+    std::ostringstream detectout;
+    QueryResult *result;
+    GameEventMgr::ActiveEvents const& activeEventsList = sGameEventMgr.GetActiveEventList();
+    std::ostringstream eventFilter;
+    eventFilter << " AND (event IS NULL ";
+    bool initString = true;
 
-        if (text.size() > 5 && text.substr(0, 6) == "skill ")
-            part = text.substr(6);  // Truncate 'skill ' part
-
-        if (part.find("|") != std::string::npos)
+    for (GameEventMgr::ActiveEvents::const_iterator itr = activeEventsList.begin(); itr != activeEventsList.end(); ++itr)
+    {
+        if (initString)
         {
-            subcommand = part.substr(0, part.find("|"));
-            if (part.size() > subcommand.size())
-                part = part.substr(subcommand.size() + 1);
-            if(subcommand.find(" ") > 0)
-                subcommand = subcommand.substr(0,subcommand.find(" "));
+            eventFilter <<  "OR event IN (" << *itr;
+            initString = false;
         }
         else
-            subcommand = part;
+            eventFilter << "," << *itr;
+    }
 
-        if (subcommand == "train" || subcommand == "t" ||subcommand == "learn" || subcommand == "l")
+    if (!initString)
+        eventFilter << "))";
+    else
+        eventFilter << ")";
+
+    result = WorldDatabase.PQuery("SELECT gameobject.guid, id, position_x, position_y, position_z, map, "
+                                    "(POW(position_x - %f, 2) + POW(position_y - %f, 2) + POW(position_z - %f, 2)) AS order_ FROM gameobject "
+                                    "LEFT OUTER JOIN game_event_gameobject on gameobject.guid=game_event_gameobject.guid WHERE map = '%i' %s ORDER BY order_ ASC LIMIT 10",
+                                    m_bot->GetPositionX(), m_bot->GetPositionY(), m_bot->GetPositionZ(), m_bot->GetMapId(), eventFilter.str().c_str());
+
+    if (result)
+    {
+        do
         {
-            uint32 totalCost = 0;
+            Field *fields = result->Fetch();
+            uint32 guid = fields[0].GetUInt32();
+            uint32 entry = fields[1].GetUInt32();
 
-            Unit* unit = ObjectAccessor::GetUnit(*m_bot, fromPlayer.GetSelectionGuid());
-            if (!unit)
+            GameObject *go = m_bot->GetMap()->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, entry, guid));
+            if (!go)
+                continue;
+
+            if (!go->isSpawned())
+                continue;
+
+            detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry  << ":" <<  "|h[" << go->GetGOInfo()->name << "]|h|r";
+            ++count;
+        } while (result->NextRow());
+ 
+        delete result;
+    }
+    SendWhisper(detectout.str().c_str(), fromPlayer);
+}
+
+// _HandleCommandSkill: Handle class & professions training:
+// skill                           -- Lists bot(s) Primary profession skills & weapon skills
+// skill train                     -- List available class or profession (Primary or Secondary) skills & spells, from selected trainer.
+// skill learn [HLINK][HLINK] ..   -- Learn selected skill and spells, from selected trainer ([HLINK] from skill train).
+// skill unlearn [HLINK][HLINK] .. -- Unlearn selected primary profession skill(s) and all associated spells ([HLINK] from skill)
+void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
+{
+    uint32 rank[8] = {0, 75, 150, 225, 300, 375, 450, 525};
+
+    std::ostringstream msg;
+ 
+    std::string part = "";
+    std::string subcommand = "";
+ 
+    if (text.size() > 5 && text.substr(0, 6) == "skill ")
+        part = text.substr(6);  // Truncate 'skill ' part
+ 
+    if (part.find(" ") > 0)
+    {
+        subcommand = part.substr(0, part.find(" "));
+        if (part.size() > subcommand.size())
+            part = part.substr(subcommand.size() + 1);
+    }
+    else
+        subcommand = part;
+
+    if (subcommand == "train" || subcommand == "learn")
+    {
+        uint32 totalCost = 0;
+
+        Unit* unit = ObjectAccessor::GetUnit(*m_bot, fromPlayer.GetSelectionGuid());
+        if (!unit)
+        {
+            SendWhisper("Please select the trainer!", fromPlayer);
+            return;
+        }
+ 
+        if (!unit->isTrainer())
+        {
+            SendWhisper("This is not a trainer!", fromPlayer);
+            return;
+        }
+
+        Creature *creature =  m_bot->GetMap()->GetCreature(fromPlayer.GetSelectionGuid());
+        if (!creature)
+            return;
+ 
+        if (!creature->IsTrainerOf(m_bot, false))
+        {
+            SendWhisper("This trainer can not teach me anything!", fromPlayer);
+            return;
+        }
+ 
+        // check present spell in trainer spell list
+        TrainerSpellData const* cSpells = creature->GetTrainerSpells();
+        TrainerSpellData const* tSpells = creature->GetTrainerTemplateSpells();
+        if (!cSpells && !tSpells)
+        {
+            SendWhisper("No spells can be learnt from this trainer", fromPlayer);
+            return;
+        }
+ 
+        // reputation discount
+        float fDiscountMod =  m_bot->GetReputationPriceDiscount(creature);
+ 
+        // Handle: Learning class or profession (primary or secondary) skill & spell(s) for selected trainer, skill learn [HLINK][HLINK][HLINK].. ([HLINK] from skill train)
+        if (subcommand == "learn")
+        {
+            msg << "I have learnt the following spells:\r";
+            uint32 totalSpellLearnt = 0;
+            bool visuals = true;
+            m_spellsToLearn.clear();
+            extractSpellIdList(part, m_spellsToLearn);
+            for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); it++)
             {
-                SendWhisper("Please select the trainer!", fromPlayer);
-                return;
-            }
+                uint32 spellId = *it;
 
-            if (!unit->isTrainer())
-            {
-                SendWhisper("This is not a trainer!", fromPlayer);
-                return;
-            }
-
-            Creature *creature =  m_bot->GetMap()->GetCreature(fromPlayer.GetSelectionGuid());
-            if (!creature)
-                return;
-
-            if (!creature->IsTrainerOf(m_bot, false))
-            {
-                SendWhisper("This trainer can not teach me anything!", fromPlayer);
-                return;
-            }
-
-            // check present spell in trainer spell list
-            TrainerSpellData const* cSpells = creature->GetTrainerSpells();
-            TrainerSpellData const* tSpells = creature->GetTrainerTemplateSpells();
-            if (!cSpells && !tSpells)
-            {
-                SendWhisper("No spells can be learnt from this trainer", fromPlayer);
-                return;
-            }
-
-            // reputation discount
-            float fDiscountMod =  m_bot->GetReputationPriceDiscount(creature);
-
-            // Handle: Learning class or profession (primary or secondary) skill & spell(s) for selected trainer, skill learn [HLINK][HLINK][HLINK].. ([HLINK] from skill train)
-            if (subcommand == "learn" || subcommand == "l")
-            {
-                msg << "I have learnt the following spells:\r";
-                uint32 totalSpellLearnt = 0;
-                bool visuals = true;
-                m_spellsToLearn.clear();
-                extractSpellIdList(part, m_spellsToLearn);
-                for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); it++)
+                if (!spellId)
+                    break;
+ 
+                TrainerSpell const* trainer_spell = cSpells->Find(spellId);
+                if (!trainer_spell)
+                    trainer_spell = tSpells->Find(spellId);
+ 
+                if (!trainer_spell || !trainer_spell->learnedSpell)
+                    continue;
+ 
+                // apply reputation discount
+                uint32 cost = uint32(floor(trainer_spell->spellCost * fDiscountMod));
+                // check money requirement
+                if (m_bot->GetMoney() < cost)
                 {
-                    uint32 spellId = *it;
-
-                    if (!spellId)
-                        break;
-
-                    TrainerSpell const* trainer_spell = cSpells->Find(spellId);
-                    if (!trainer_spell)
-                        trainer_spell = tSpells->Find(spellId);
-
-                    if (!trainer_spell)
-                        continue;
-
-                    // apply reputation discount
-                    uint32 cost = uint32(floor(trainer_spell->spellCost * fDiscountMod));
-                    // check money requirement
-                    if (m_bot->GetMoney() < cost)
-                    {
-                        Announce(CANT_AFFORD);
-                        continue;
-                    }
-
-                    m_bot->ModifyMoney(-int32(cost));
-                    // learn explicitly or cast explicitly
-                    if (trainer_spell->IsCastable())
-                        m_bot->CastSpell(m_bot, trainer_spell->spell, true);
-                    else
-                        m_bot->learnSpell(spellId, false);
-                    ++totalSpellLearnt;
-                    totalCost += cost;
-                    const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
-                    if (!pSpellInfo)
-                        continue;
-
-                    if (visuals)
-                    {
-                        visuals = false;
-                        WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 12);           // visual effect on trainer
-                        data << ObjectGuid(fromPlayer.GetSelectionGuid());
-                        data << uint32(0xB3);                                   // index from SpellVisualKit.dbc
-                        GetMaster()->GetSession()->SendPacket(&data);
-/*
-                        data.Initialize(SMSG_PLAY_SPELL_IMPACT, 12);            // visual effect on player
-                        data << m_bot->GetObjectGuid();
-                        data << uint32(0x016A);                                 // index from SpellVisualKit.dbc
-                        GetMaster()->GetSession()->SendPacket(&data);
-*/                  }
-/*
-                    WorldPacket data(SMSG_TRAINER_BUY_SUCCEEDED, 12);
-                    data << ObjectGuid(fromPlayer.GetSelectionGuid());
-                    data << uint32(spellId);                                // should be same as in packet from client
-                    GetMaster()->GetSession()->SendPacket(&data);
-*/
-                    MakeSpellLink(pSpellInfo, msg);
-                    uint32 gold = uint32(cost / 10000);
-                    cost -= (gold * 10000);
-                    uint32 silver = uint32(cost / 100);
-                    cost -= (silver * 100);
-                    msg << " ";
-                    if (gold > 0)
-                        msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
-                    if (silver > 0)
-                        msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-                    msg << cost <<  "|r|cff95524Cc|r|cff00ff00\r";
+                    Announce(CANT_AFFORD);
+                    continue;
                 }
-                ReloadAI();
-                uint32 gold = uint32(totalCost / 10000);
-                totalCost -= (gold * 10000);
-                uint32 silver = uint32(totalCost / 100);
-                totalCost -= (silver * 100);
-                msg << "Total of " << totalSpellLearnt << " spell";
-                if (totalSpellLearnt != 1) msg << "s";
-                msg << " learnt, ";
+ 
+                m_bot->ModifyMoney(-int32(cost));
+                // learn explicitly or cast explicitly
+                if (trainer_spell->IsCastable())
+                    m_bot->CastSpell(m_bot, trainer_spell->spell, true);
+                else
+                    m_bot->learnSpell(spellId, false);
+                ++totalSpellLearnt;
+                totalCost += cost;
+                const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
+                if (!pSpellInfo)
+                    continue;
+ 
+                if (visuals)
+                {
+                    visuals = false;
+                    WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 12);           // visual effect on trainer
+                    data << ObjectGuid(fromPlayer.GetSelectionGuid());
+                    data << uint32(0xB3);                                   // index from SpellVisualKit.dbc
+                    GetMaster()->GetSession()->SendPacket(&data);
+/*
+                    data.Initialize(SMSG_PLAY_SPELL_IMPACT, 12);            // visual effect on player
+                    data << m_bot->GetObjectGuid();
+                    data << uint32(0x016A);                                 // index from SpellVisualKit.dbc
+                    GetMaster()->GetSession()->SendPacket(&data);
+*/                 }
+/*
+                WorldPacket data(SMSG_TRAINER_BUY_SUCCEEDED, 12);
+                data << ObjectGuid(fromPlayer.GetSelectionGuid());
+                data << uint32(spellId);                                // should be same as in packet from client
+                GetMaster()->GetSession()->SendPacket(&data);
+*/
+                MakeSpellLink(pSpellInfo, msg);
+                uint32 gold = uint32(cost / 10000);
+                cost -= (gold * 10000);
+                uint32 silver = uint32(cost / 100);
+                cost -= (silver * 100);
+                msg << " ";
                 if (gold > 0)
                     msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
                 if (silver > 0)
                     msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-                msg << totalCost <<  "|r|cff95524Cc|r|cff00ff00 spent.";
+                msg << cost <<  "|r|cff95524Cc|r|cff00ff00\r";
             }
-            // Handle: List class or profession skill & spells for selected trainer, skill train
-            else
-            if (subcommand == "train" || subcommand == "t")
+            ReloadAI();
+            uint32 gold = uint32(totalCost / 10000);
+            totalCost -= (gold * 10000);
+            uint32 silver = uint32(totalCost / 100);
+            totalCost -= (silver * 100);
+            msg << "Total of " << totalSpellLearnt << " spell";
+            if (totalSpellLearnt != 1) msg << "s";
+            msg << " learnt, ";
+            if (gold > 0)
+                msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
+            if (silver > 0)
+                msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
+            msg << totalCost <<  "|r|cff95524Cc|r|cff00ff00 spent.";
+        }
+        // Handle: List class or profession skill & spells for selected trainer, skill train
+        else
+        if (subcommand == "train")
+        {
+            msg << "The spells I can learn and their cost:\r";
+
+            TrainerSpellData const* trainer_spells = cSpells;
+            if (!trainer_spells)
+                trainer_spells = tSpells;
+ 
+            for (TrainerSpellMap::const_iterator itr =  trainer_spells->spellList.begin(); itr !=  trainer_spells->spellList.end(); ++itr)
             {
-                msg << "The spells I can learn and their cost:\r";
+                TrainerSpell const* tSpell = &itr->second;
+ 
+                if (!tSpell)
+                    break;
+ 
+                uint32 reqLevel = 0;
+                if (!tSpell->learnedSpell && !m_bot->IsSpellFitByClassAndRace(tSpell->learnedSpell, &reqLevel))
+                    continue;
+ 
+                if  (sSpellMgr.IsPrimaryProfessionFirstRankSpell(tSpell->learnedSpell) && m_bot->HasSpell(tSpell->learnedSpell))
+                    continue;
+ 
+                reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
 
-                TrainerSpellData const* trainer_spells = cSpells;
-                if (!trainer_spells)
-                    trainer_spells = tSpells;
-
-                for (TrainerSpellMap::const_iterator itr =  trainer_spells->spellList.begin(); itr !=  trainer_spells->spellList.end(); ++itr)
-                {
-                    TrainerSpell const* tSpell = &itr->second;
-
-                    if (!tSpell)
-                        break;
-
-                    uint32 reqLevel = 0;
-                    if (!tSpell->learnedSpell && !m_bot->IsSpellFitByClassAndRace(tSpell->learnedSpell, &reqLevel))
-                        continue;
-
-                    if (sSpellMgr.IsPrimaryProfessionFirstRankSpell(tSpell->learnedSpell) && m_bot->HasSpell(tSpell->learnedSpell))
-                        continue;
-
-                    reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
-
-                    TrainerSpellState state =  m_bot->GetTrainerSpellState(tSpell,reqLevel);
-                    if (state != TRAINER_SPELL_GREEN)
-                        continue;
-
-                    uint32 spellId = tSpell->spell;
-                    const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
-                    if (!pSpellInfo)
-                        continue;
-                    uint32 cost = uint32(floor(tSpell->spellCost *  fDiscountMod));
-                    totalCost += cost;
-
-                    uint32 gold = uint32(cost / 10000);
-                    cost -= (gold * 10000);
-                    uint32 silver = uint32(cost / 100);
-                    cost -= (silver * 100);
-                    MakeSpellLink(pSpellInfo, msg);
-                    msg << " ";
-                    if (gold > 0)
-                        msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
-                    if (silver > 0)
-                        msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-                    msg << cost <<  "|r|cff95524Cc|r|cff00ff00\r";
-                }
-                int32 moneyDiff = m_bot->GetMoney() - totalCost;
-                if (moneyDiff >= 0)
-                {
-                    // calculate how much money bot has
-                    uint32 gold = uint32(moneyDiff / 10000);
-                    moneyDiff -= (gold * 10000);
-                    uint32 silver = uint32(moneyDiff / 100);
-                    moneyDiff -= (silver * 100);
-                    msg << " ";
-                    if (gold > 0)
-                        msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
-                    if (silver > 0)
-                        msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-                    msg << moneyDiff <<  "|r|cff95524Cc|r|cff00ff00 left.";
-                }
+                TrainerSpellState state =  m_bot->GetTrainerSpellState(tSpell,reqLevel);
+                if (state != TRAINER_SPELL_GREEN)
+                    continue;
+ 
+                uint32 spellId = tSpell->spell;
+                const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
+                if (!pSpellInfo)
+                    continue;
+                uint32 cost = uint32(floor(tSpell->spellCost *  fDiscountMod));
+                totalCost += cost;
+ 
+                uint32 gold = uint32(cost / 10000);
+                cost -= (gold * 10000);
+                uint32 silver = uint32(cost / 100);
+                cost -= (silver * 100);
+                MakeSpellLink(pSpellInfo, msg);
+                msg << " ";
+                if (gold > 0)
+                    msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
+                if (silver > 0)
+                    msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
+                msg << cost <<  "|r|cff95524Cc|r|cff00ff00\r";
+            }
+            int32 moneyDiff = m_bot->GetMoney() - totalCost;
+            if (moneyDiff >= 0)
+            {
+                // calculate how much money bot has
+                uint32 gold = uint32(moneyDiff / 10000);
+                moneyDiff -= (gold * 10000);
+                uint32 silver = uint32(moneyDiff / 100);
+                moneyDiff -= (silver * 100);
+                msg << " ";
+                if (gold > 0)
+                    msg << gold <<  "|r|cfffffc00g|r|cff00ff00";
+                if (silver > 0)
+                    msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
+                msg << moneyDiff <<  "|r|cff95524Cc|r|cff00ff00 left.";
+            }
+            else
+            {
+                Announce(CANT_AFFORD);
+                moneyDiff *= -1;
+                uint32 gold = uint32(moneyDiff / 10000);
+                moneyDiff -= (gold * 10000);
+                uint32 silver = uint32(moneyDiff / 100);
+                moneyDiff -= (silver * 100);
+                msg << "I need ";
+                if (gold > 0)
+                    msg << " " << gold <<  "|r|cfffffc00g|r|cff00ff00";
+                if (silver > 0)
+                    msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
+                msg << moneyDiff <<  "|r|cff95524Cc|r|cff00ff00 more to learn all the spells!";
+            }
+        }
+    }
+    // Handle: Unlearning selected primary profession skill(s) and all associated spells, skill unlearn [HLINK][HLINK].. ([HLINK] from skill)
+    else
+    if (subcommand == "unlearn")
+    {
+        m_spellsToLearn.clear();
+        extractSpellIdList(part, m_spellsToLearn);
+        for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
+        {
+            if (sSpellMgr.IsPrimaryProfessionSpell(*it) && subcommand != "learn")
+            {
+                SpellLearnSkillNode const* spellLearnSkill = sSpellMgr.GetSpellLearnSkill(*it);
+                uint32 prev_spell = sSpellMgr.GetPrevSpellInChain(*it);
+                if (!prev_spell)                                    // first rank, remove skill
+                    GetPlayer()->SetSkill(spellLearnSkill->skill, 0, 0);
                 else
                 {
-                    Announce(CANT_AFFORD);
-                    moneyDiff *= -1;
-                    uint32 gold = uint32(moneyDiff / 10000);
-                    moneyDiff -= (gold * 10000);
-                    uint32 silver = uint32(moneyDiff / 100);
-                    moneyDiff -= (silver * 100);
-                    msg << "I need ";
-                    if (gold > 0)
-                        msg << " " << gold <<  "|r|cfffffc00g|r|cff00ff00";
-                    if (silver > 0)
-                        msg << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-                    msg << moneyDiff <<  "|r|cff95524Cc|r|cff00ff00 more to learn all the spells!";
-                }
-            }
-        }
-        // Handle: Unlearning selected primary profession skill(s) and all associated spells, skill unlearn [HLINK][HLINK].. ([HLINK] from skill)
-        else
-        if (subcommand == "unlearn" || subcommand == "u")
-        {
-            m_spellsToLearn.clear();
-            extractSpellIdList(part, m_spellsToLearn);
-            for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
-            {
-                if (sSpellMgr.IsPrimaryProfessionSpell(*it) && subcommand != "learn")
-                {
-                    SpellLearnSkillNode const* spellLearnSkill = sSpellMgr.GetSpellLearnSkill(*it);
-
-                    uint32 prev_spell = sSpellMgr.GetPrevSpellInChain(*it);
-                    if (!prev_spell)                                    // first rank, remove skill
+                    // search prev. skill setting by spell ranks chain
+                    SpellLearnSkillNode const* prevSkill = sSpellMgr.GetSpellLearnSkill(prev_spell);
+                    while (!prevSkill && prev_spell)
+                    {
+                        prev_spell = sSpellMgr.GetPrevSpellInChain(prev_spell);
+                        prevSkill = sSpellMgr.GetSpellLearnSkill(sSpellMgr.GetFirstSpellInChain(prev_spell));
+                    }
+                    if (!prevSkill)                                 // not found prev skill setting, remove skill
                         GetPlayer()->SetSkill(spellLearnSkill->skill, 0, 0);
-                    else
-                    {
-                        // search prev. skill setting by spell ranks chain
-                        SpellLearnSkillNode const* prevSkill = sSpellMgr.GetSpellLearnSkill(prev_spell);
-                        while (!prevSkill && prev_spell)
-                        {
-                            prev_spell = sSpellMgr.GetPrevSpellInChain(prev_spell);
-                            prevSkill = sSpellMgr.GetSpellLearnSkill(sSpellMgr.GetFirstSpellInChain(prev_spell));
-                        }
-                        if (!prevSkill)                                 // not found prev skill setting, remove skill
-                            GetPlayer()->SetSkill(spellLearnSkill->skill, 0, 0);
-                    }
                 }
             }
         }
-        // Handle: Lists bot(s) primary profession skills & weapon skills.
-        else
+    }
+    // Handle: Lists bot(s) primary profession skills & weapon skills.
+    else
+    {
+        m_spellsToLearn.clear();
+        m_bot->skill(m_spellsToLearn);
+        msg << "My Primary Professions: ";
+        for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
         {
-            m_spellsToLearn.clear();
-            m_bot->skill(m_spellsToLearn);
-            msg << "My Primary Professions: ";
-            for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
-            {
-                if (IsPrimaryProfessionSkill(*it))
-                    for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
-                    {
-                        SkillLineAbilityEntry const *skillLine = sSkillLineAbilityStore.LookupEntry(j);
-                        if (!skillLine)
-                            continue;
-
-                        // has skill
-                        if (skillLine->skillId == *it && skillLine->learnOnGetSkill == 0)
-                        {
-                            SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
-                            if (!spellInfo)
-                                continue;
-
-                            if (m_bot->GetSkillValue(*it) <= rank[sSpellMgr.GetSpellRank(skillLine->spellId)] && m_bot->HasSpell(skillLine->spellId))
-                            {
-                                // DEBUG_LOG ("[PlayerbotAI]: HandleCommand - skill (%u)(%u)(%u):",skillLine->spellId, rank[sSpellMgr.GetSpellRank(skillLine->spellId)], m_bot->GetSkillValue(*it));
-                                MakeSpellLink(spellInfo, msg);
-                                break;
-                            }
-                        }
-                    }
-            }
-
-            msg << "\nMy Weapon skills: ";
-            for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
-            {
-                SkillLineEntry const *SkillLine = sSkillLineStore.LookupEntry(*it);
-                // has weapon skill
-                if (SkillLine->categoryId == SKILL_CATEGORY_WEAPON)
+            if (IsPrimaryProfessionSkill(*it))
+                for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
                 {
-                    for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
-                    {
-                        SkillLineAbilityEntry const *skillLine = sSkillLineAbilityStore.LookupEntry(j);
-                        if (!skillLine)
-                            continue;
+                    SkillLineAbilityEntry const *skillLine = sSkillLineAbilityStore.LookupEntry(j);
+                    if (!skillLine)
+                        continue;
 
+                    // has skill
+                    if (skillLine->skillId == *it && skillLine->learnOnGetSkill == 0)
+                    {
                         SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
                         if (!spellInfo)
                             continue;
-
-                        if (skillLine->skillId == *it && spellInfo->Effect[0] == SPELL_EFFECT_WEAPON)
-                            MakeWeaponSkillLink(spellInfo,msg,*it);
+ 
+                        if (m_bot->GetSkillValue(*it) <= rank[sSpellMgr.GetSpellRank(skillLine->spellId)] && m_bot->HasSpell(skillLine->spellId))
+                        {
+                            // DEBUG_LOG ("[PlayerbotAI]: HandleCommand - skill (%u)(%u)(%u):",skillLine->spellId, rank[sSpellMgr.GetSpellRank(skillLine->spellId)], m_bot->GetSkillValue(*it));
+                            MakeSpellLink(spellInfo, msg);
+                            break;
+                         }
                     }
+                }
+        }
+ 
+        msg << "\nMy Weapon skills: ";
+        for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
+        {
+            SkillLineEntry const *SkillLine = sSkillLineStore.LookupEntry(*it);
+            // has weapon skill
+            if (SkillLine->categoryId == SKILL_CATEGORY_WEAPON)
+            {
+                for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+                {
+                    SkillLineAbilityEntry const *skillLine = sSkillLineAbilityStore.LookupEntry(j);
+                    if (!skillLine)
+                        continue;
+
+                    SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+                    if (!spellInfo)
+                        continue;
+
+                    if (skillLine->skillId == *it && spellInfo->Effect[0] == SPELL_EFFECT_WEAPON)
+                        MakeWeaponSkillLink(spellInfo,msg,*it);
                 }
             }
         }
-        SendWhisper(msg.str(), fromPlayer);
-        m_spellsToLearn.clear();
-        m_bot->GetPlayerbotAI()->GetClassAI();
     }
-    // Handle bot stats project: 11:30 15/12/10 rev.2 display bot statistics
-    else if (text == "stats")
+    SendWhisper(msg.str(), fromPlayer);
+    m_spellsToLearn.clear();
+    m_bot->GetPlayerbotAI()->GetClassAI();
+}
+
+void PlayerbotAI::_HandleCommandStats(std::string &text, Player &fromPlayer)
+{
+    std::ostringstream out;
+
+    uint32 totalused = 0;
+    // list out items in main backpack
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; slot++)
     {
-        std::ostringstream out;
-
-        uint32 totalused = 0;
-        // list out items in main backpack
-        for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; slot++)
-        {
-            const Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
-            if (pItem)
-                totalused++;
-        }
-        uint32 totalfree = 16 - totalused;
-        // list out items in other removable backpacks
-        for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
-        {
-            const Bag* const pBag = (Bag *) m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, bag);
-            if (pBag)
-            {
-                ItemPrototype const* pBagProto = pBag->GetProto();
-                if (pBagProto->Class == ITEM_CLASS_CONTAINER && pBagProto->SubClass == ITEM_SUBCLASS_CONTAINER)
-                    totalfree =  totalfree + pBag->GetFreeSlots();
-            }
-
-        }
-
-        // estimate how much item damage the bot has
-        uint32 copper = EstRepairAll();
-        uint32 gold = uint32(copper / 10000);
-        copper -= (gold * 10000);
-        uint32 silver = uint32(copper / 100);
-        copper -= (silver * 100);
-
-        out << "|cffffffff[|h|cff00ffff" << m_bot->GetName() << "|h|cffffffff] has |cff00ff00";
-        out << totalfree << " |h|cffffffff bag slots,|h" << " |cff00ff00";
-        if (gold > 0)
-            out << "|r|cff00ff00" << gold <<  "|r|cfffffc00g|r|cff00ff00";
-        if (silver > 0)
-            out << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-        out << copper <<  "|r|cff95524Cc|r|cff00ff00";
-
-        // calculate how much money bot has
-        copper = m_bot->GetMoney();
-        gold = uint32(copper / 10000);
-        copper -= (gold * 10000);
-        silver = uint32(copper / 100);
-        copper -= (silver * 100);
-
-        out << "|h|cffffffff item damage & has " << "|r|cff00ff00";
-        if (gold > 0)
-            out << gold <<  "|r|cfffffc00g|r|cff00ff00";
-        if (silver > 0)
-            out << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
-        out << copper <<  "|r|cff95524Cc|r|cff00ff00";
-        ChatHandler ch(&fromPlayer);
-        ch.SendSysMessage(out.str().c_str());
+        const Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        if (pItem)
+            totalused++;
     }
-    else
+    uint32 totalfree = 16 - totalused;
+    // list out items in other removable backpacks
+    for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
+    {
+        const Bag* const pBag = (Bag *) m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, bag);
+        if (pBag)
+        {
+            ItemPrototype const* pBagProto = pBag->GetProto();
+            if (pBagProto->Class == ITEM_CLASS_CONTAINER && pBagProto->SubClass == ITEM_SUBCLASS_CONTAINER)
+                totalfree =  totalfree + pBag->GetFreeSlots();
+        }
+
+    }
+
+    // estimate how much item damage the bot has
+    uint32 copper = EstRepairAll();
+    uint32 gold = uint32(copper / 10000);
+    copper -= (gold * 10000);
+    uint32 silver = uint32(copper / 100);
+    copper -= (silver * 100);
+
+    out << "|cffffffff[|h|cff00ffff" << m_bot->GetName() << "|h|cffffffff] has |cff00ff00";
+    out << totalfree << " |h|cffffffff bag slots,|h" << " |cff00ff00";
+    if (gold > 0)
+        out << "|r|cff00ff00" << gold <<  "|r|cfffffc00g|r|cff00ff00";
+    if (silver > 0)
+        out << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
+    out << copper <<  "|r|cff95524Cc|r|cff00ff00";
+
+    // calculate how much money bot has
+    copper = m_bot->GetMoney();
+    gold = uint32(copper / 10000);
+    copper -= (gold * 10000);
+    silver = uint32(copper / 100);
+    copper -= (silver * 100);
+
+    out << "|h|cffffffff item damage & has " << "|r|cff00ff00";
+    if (gold > 0)
+        out << gold <<  "|r|cfffffc00g|r|cff00ff00";
+    if (silver > 0)
+        out << silver <<  "|r|cffc0c0c0s|r|cff00ff00";
+    out << copper <<  "|r|cff95524Cc|r|cff00ff00";
+    ChatHandler ch(&fromPlayer);
+    ch.SendSysMessage(out.str().c_str());
+}
+
+
+/*    else
     {
         // if this looks like an item link, reward item it completed quest and talking to NPC
         std::list<uint32> itemIds;
@@ -6438,4 +6566,4 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
         }
     }
-}
+}*/
