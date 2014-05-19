@@ -5407,7 +5407,6 @@ void PlayerbotAI::_HandleCommandReset(std::string &text, Player &fromPlayer)
     m_lootTargets.clear();
     m_lootCurrent = ObjectGuid();
     m_targetCombat = 0;
-    ClearActiveTalentSpec();
 }
 
 void PlayerbotAI::_HandleCommandReport(std::string &text, Player &fromPlayer)
@@ -5542,7 +5541,7 @@ void PlayerbotAI::_HandleCommandRepair(std::string &text, Player &fromPlayer)
             SendWhisper("Invalid subcommand for 'repair all'", fromPlayer);
             return;
         }
-        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR_ITEMS, 0));
+        m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REPAIR, 0));
         m_findNPC.push_back(UNIT_NPC_FLAG_REPAIR);
         return;
     }
@@ -5573,7 +5572,7 @@ void PlayerbotAI::_HandleCommandAuction(std::string &text, Player &fromPlayer)
         std::list<uint32> itemIds;
         extractItemIds(text, itemIds);
         for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
-            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(ADD_AUCTION, *it));
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(ADD, *it));
         m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
     }
     else if (ExtractCommand("remove",text))
@@ -5581,7 +5580,7 @@ void PlayerbotAI::_HandleCommandAuction(std::string &text, Player &fromPlayer)
         std::list<uint32> auctionIds;
         extractAuctionIds(text, auctionIds);
         for (std::list<uint32>::iterator it = auctionIds.begin(); it != auctionIds.end(); ++it)
-            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REMOVE_AUCTION, *it));
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(REMOVE, *it));
         m_findNPC.push_back(UNIT_NPC_FLAG_AUCTIONEER);
     }
     else
@@ -5605,7 +5604,7 @@ void PlayerbotAI::_HandleCommandBank(std::string &text, Player &fromPlayer)
         std::list<uint32> itemIds;
         extractItemIds(text, itemIds);
         for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
-            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(BANK_DEPOSIT, *it));
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(DEPOSIT, *it));
         m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
     }
     else if (ExtractCommand("withdraw", text))
@@ -5613,7 +5612,7 @@ void PlayerbotAI::_HandleCommandBank(std::string &text, Player &fromPlayer)
         std::list<uint32> itemIds;
         extractItemIds(text, itemIds);
         for (std::list<uint32>::iterator it = itemIds.begin(); it != itemIds.end(); ++it)
-            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(BANK_WITHDRAW, *it));
+            m_tasks.push_back(std::pair<enum TaskFlags,uint32>(WITHDRAW, *it));
         m_findNPC.push_back(UNIT_NPC_FLAG_BANKER);
     }
     else

@@ -469,7 +469,7 @@ void PlayerbotDruidAI::_DoNextPVECombatManeuverMeleeDPS(Unit* pTarget)
             ai->CastSpell(RIP, *pTarget);
         else if (FEROCIOUS_BITE > 0 && ai->GetEnergyAmount() >= 35 &&
                     (pTarget->getClass() == CLASS_HUNTER || pTarget->getClass() == CLASS_WARRIOR ||
-                    pTarget->getClass() == CLASS_PALADIN || pTarget->getClass() == CLASS_DEATH_KNIGHT) )
+                    pTarget->getClass() == CLASS_PALADIN) )
             ai->CastSpell(FEROCIOUS_BITE, *pTarget);
         else if (ai->GetEnergyAmount() >= 35)
         {
