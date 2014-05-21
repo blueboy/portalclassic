@@ -115,6 +115,7 @@ enum WarlockSpells
     SHADOWBURN_1                    = 17877,
     SHADOWFLAME_1                   = 47897,
     SHADOWFURY_1                    = 30283,
+    SHOOT_3                         = 5019,
     SOUL_FIRE_1                     = 6353,
     SOUL_LINK_1                     = 19028,
     SOULSHATTER_1                   = 29858,
@@ -153,6 +154,9 @@ private:
            CURSE_OF_TONGUES,
            CURSE_OF_THE_ELEMENTS,
            CURSE_OF_DOOM;
+           
+    // RANGED
+    uint32 SHOOT;
 
     // AFFLICTION
     uint32 CORRUPTION,

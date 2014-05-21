@@ -61,7 +61,7 @@ PlayerbotWarlockAI::PlayerbotWarlockAI(Player* const master, Player* const bot, 
     CONSUME_SHADOWS       = 0; // voidwalker skill
     FEL_INTELLIGENCE      = 0; // felhunter skill
     // RANGED COMBAT
-    SHOOT                            = ai->initSpell(SHOOT_3);
+    SHOOT                 = ai->initSpell(SHOOT_3);
 
 
     RECENTLY_BANDAGED     = 11196; // first aid check
@@ -125,7 +125,7 @@ void PlayerbotWarlockAI::DoNextCombatManeuver(Unit *pTarget)
         if (healthStone)
             ai->UseItem(healthStone);
     }
-    float dist = m_bot->GetCombatDistance(pTarget);
+    float dist = m_bot->GetCombatDistance(pTarget, true);
     if (dist > ATTACK_DISTANCE && ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED)
     {
         // switch to ranged combat

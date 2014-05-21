@@ -551,12 +551,6 @@ bool PlayerbotAI::IsItemUseful(uint32 itemid)
                 break;
         case ITEM_CLASS_KEY:
             return true;
-        case ITEM_CLASS_GEM:
-            if ((m_bot->HasSkill(SKILL_BLACKSMITHING) ||
-                 m_bot->HasSkill(SKILL_ENGINEERING) ||
-                 m_bot->HasSkill(SKILL_JEWELCRAFTING)))
-                return true;
-                break;
         case ITEM_CLASS_TRADE_GOODS:
             if (!HasCollectFlag(COLLECT_FLAG_PROFESSION))
                 break;
