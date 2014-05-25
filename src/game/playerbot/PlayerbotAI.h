@@ -364,6 +364,12 @@ public:
     //void Stay();
     //bool Follow(Player& player);
     void SendNotEquipList(Player& player);
+    Unit *gPrimtarget;
+    Unit *gSectarget;
+    uint32 gQuestFetch;
+    uint8 gPrimOrder;
+    uint8 gSecOrder;
+    void CombatOrderRestore(uint8 Prim, uint8 Sec);
     void Feast();
     void InterruptCurrentCastingSpell();
     void GetCombatTarget(Unit* forcedTarged = 0);

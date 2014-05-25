@@ -88,6 +88,7 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
         SetCollectFlag(COLLECT_FLAG_NEAROBJECT);
 
     // start following master (will also teleport bot to master)
+    //CombatOrderRestore(gPrimOrder, gSecOrder); //set orders from save if any before setting follow orders
     SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
 
     // get class specific ai
@@ -2795,8 +2796,77 @@ Unit* PlayerbotAI::FindAttacker(ATTACKERINFOTYPE ait, Unit *victim)
     return a;
 }
 
+void PlayerbotAI::CombatOrderRestore(uint8 Prim, uint8 Sec)
+{
+    QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname FROM playerbot_saved_data WHERE guid = '%li'", m_bot->GetGUIDLow());
+
+    if (!result)
+    {
+        sLog.outString();
+        sLog.outString(">> Loaded `playerbot_saved_data`, found no match for guid %li.", m_bot->GetGUIDLow());
+        TellMaster("I have no orders");
+        return;
+    }
+    else
+    {
+        Field* fields = result->Fetch();
+        gPrimOrder = fields[0].GetUInt8();
+        gSecOrder = fields[1].GetUInt8();
+        ObjectGuid PrimtargetGUID = ObjectGuid(fields[2].GetUInt64());
+        ObjectGuid SectargetGUID = ObjectGuid(fields[3].GetUInt64());
+        std::string pname = fields[4].GetString();
+        std::string sname = fields[5].GetString();
+        //if (gPrimtarget > 0)
+            gPrimtarget = ObjectAccessor::GetUnit(*m_bot->GetMap()->GetWorldObject(PrimtargetGUID), PrimtargetGUID);
+        //if (gSectarget > 0)
+            gSectarget = ObjectAccessor::GetUnit(*m_bot->GetMap()->GetWorldObject(SectargetGUID), SectargetGUID);
+        delete result;
+    }
+    Unit *gtarget = NULL;
+    ObjectGuid NotargetGUID = m_bot->GetObjectGuid();
+    gtarget = ObjectAccessor::GetUnit(*m_bot, NotargetGUID);
+    CombatOrderType co;
+    if (gPrimOrder > 0)
+    {
+        if (gPrimOrder == 1) co = ORDERS_TANK;
+        else if (gPrimOrder == 2) co = ORDERS_ASSIST;
+        else if (gPrimOrder == 3) co = ORDERS_HEAL;
+        SetCombatOrder(co, gPrimtarget);
+    }
+    if (gSecOrder > 0)
+    {
+        if (gSecOrder == 1) co = ORDERS_PROTECT;
+        else if (gSecOrder == 2) co = ORDERS_NODISPEL;
+        else if (gSecOrder == 3) {
+            co = ORDERS_RESIST;
+            m_resistType = SCHOOL_FROST;
+            gSecOrder = 3;
+        }
+        else if (gSecOrder == 4) {
+            co = ORDERS_RESIST;
+            m_resistType = SCHOOL_NATURE;
+            gSecOrder = 4;
+        }
+        else if (gSecOrder == 5) {
+            co = ORDERS_RESIST;
+            m_resistType = SCHOOL_FIRE;
+            gSecOrder = 5;
+        }
+        else if (gSecOrder == 6) {
+            co = ORDERS_RESIST;
+            m_resistType = SCHOOL_SHADOW;
+            gSecOrder = 6;
+        }
+        SetCombatOrder(co, gSectarget);
+    }
+    if (gPrimOrder == 0 && gSecOrder == 0)
+        SetCombatOrder(co, gtarget);
+}
+
 void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
 {
+    // uint32 gTempTarget = target->GetGUIDLow();
+    // std::string gname = target->GetName();
     CombatOrderType co;
     if (str == "tank") co = ORDERS_TANK;
     else if (str == "assist") co = ORDERS_ASSIST;
@@ -2807,18 +2877,26 @@ void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
     else if (str == "resistfrost") {
         co = ORDERS_RESIST; 
         m_resistType = SCHOOL_FROST;
+        gSecOrder = 3;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
     }
     else if (str == "resistnature") {
         co = ORDERS_RESIST;
         m_resistType = SCHOOL_NATURE;
+        gSecOrder = 4;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
     }
     else if (str == "resistfire") {
         co = ORDERS_RESIST;
         m_resistType = SCHOOL_FIRE;
+        gSecOrder = 5;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
     }
     else if (str == "resistshadow") {
         co = ORDERS_RESIST;
         m_resistType = SCHOOL_SHADOW;
+        gSecOrder = 6;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
     }
     else
         co = ORDERS_RESET;
@@ -2827,6 +2905,13 @@ void PlayerbotAI::SetCombatOrderByStr(std::string str, Unit *target)
 
 void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
 {
+    uint32 gTempTarget;
+    std::string gname;
+    if (target)
+    {
+        gTempTarget = target->GetGUIDLow();
+        gname = target->GetName();
+    }
     // reset m_combatOrder after ORDERS_PASSIVE
     if (m_combatOrder == ORDERS_PASSIVE)
     {
@@ -2845,6 +2930,9 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
         m_targetProtect = 0;
         m_resistType = SCHOOL_NONE;
         TellMaster("Orders are cleaned!");
+        gPrimOrder = 0;
+        gSecOrder = 0;
+        CharacterDatabase.PExecute("DELETE FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
         return;
     }
     if (co == ORDERS_PASSIVE)
@@ -2853,10 +2941,33 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit *target)
         SendOrders(*GetMaster());
         return;
     }
+    if (co == ORDERS_TANK)
+    {
+        gPrimOrder = 1;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_primary_order = '%u' WHERE guid = '%u'", gPrimOrder, m_bot->GetGUIDLow());
+    }
+    else if (co == ORDERS_HEAL)
+    {
+        gPrimOrder = 3;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_primary_order = '%u' WHERE guid = '%u'", gPrimOrder, m_bot->GetGUIDLow());
+    }
+    else if (co == ORDERS_NODISPEL)
+    {
+        gSecOrder = 2;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u' WHERE guid = '%u'", gSecOrder, m_bot->GetGUIDLow());
+    }
     if (co == ORDERS_PROTECT)
+    {
+        gSecOrder = 1;
         m_targetProtect = target;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_secondary_order = '%u', secondary_target = '%u', sname = '%s' WHERE guid = '%u'", gSecOrder, gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
+    }
     else if (co == ORDERS_ASSIST)
+    {
+        gPrimOrder = 2;
         m_targetAssist = target;
+        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET bot_primary_order = '%u', primary_target = '%u', pname = '%s' WHERE guid = '%u'", gPrimOrder, gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
+    }
     if ((co & ORDERS_PRIMARY))
         m_combatOrder = (CombatOrderType) (((uint32) m_combatOrder & (uint32) ORDERS_SECONDARY) | (uint32) co);
     else
@@ -4947,7 +5058,17 @@ void PlayerbotAI::ListQuests(WorldObject * questgiver)
         QuestLocalization(questTitle, questID);
 
         if (m_bot->SatisfyQuestStatus(pQuest, false))
-            out << "|cff808080|Hquest:" << questID << ':' << pQuest->GetQuestLevel() << "|h[" << questTitle << "]|h|r";
+        {
+            if (gQuestFetch != 1)
+            {
+                out << "|cff808080|Hquest:" << questID << ':' << pQuest->GetQuestLevel() << "|h[" << questTitle << "]|h|r";
+            }
+            else
+            {
+                if (!AddQuest(questID, questgiver))
+                    continue;
+            }
+        }    
     }
     if (!out.str().empty())
         TellMaster(out.str());
@@ -5359,6 +5480,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
 
     else if (ExtractCommand("equip", input, true)) // true -> "equip" OR "e"
         _HandleCommandEquip(input, fromPlayer);
+        
+    else if (ExtractCommand("resumeorders", input)) // restore previous combat orders if any
+        CombatOrderRestore(gPrimOrder, gSecOrder);
 
     // find project: 20:50 02/12/10 rev.4 item in world and wait until ordered to follow
     else if (ExtractCommand("find", input, true)) // true -> "find" OR "f"
@@ -5933,6 +6057,12 @@ void PlayerbotAI::_HandleCommandQuest(std::string &text, Player &fromPlayer)
                 SetQuestNeedItems();
                 SetQuestNeedCreatures();
             }
+    }
+    else if (ExtractCommand("fetch", text, true)) // true -> "quest fetch"
+    {
+        gQuestFetch = 1;
+        m_tasks.push_back(std::pair<enum TaskFlags, uint32>(LIST, 0));
+        m_findNPC.push_back(UNIT_NPC_FLAG_QUESTGIVER);
     }
     else if (ExtractCommand("list", text, true)) // true -> "quest list" OR "quest l"
     {
