@@ -111,13 +111,16 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
             m_classAI = (PlayerbotClassAI *) new PlayerbotWarriorAI(GetMaster(), m_bot, this);
             break;
         case CLASS_SHAMAN:
-            if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
+        {
+            if (m_bot->GetSpec() == 263)
+            {
                 m_combatStyle = COMBAT_MELEE;
-                }
+            }
             else
                 m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotShamanAI(GetMaster(), m_bot, this);
             break;
+        }
         case CLASS_PALADIN:
             m_combatStyle = COMBAT_MELEE;
             m_classAI = (PlayerbotClassAI *) new PlayerbotPaladinAI(GetMaster(), m_bot, this);
@@ -127,13 +130,16 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
             m_classAI = (PlayerbotClassAI *) new PlayerbotRogueAI(GetMaster(), m_bot, this);
             break;
         case CLASS_DRUID:
-            if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
+        {
+            if (m_bot->GetSpec() == 281)
+            {
                 m_combatStyle = COMBAT_MELEE;
-                }
+            }
             else
                 m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotDruidAI(GetMaster(), m_bot, this);
             break;
+        }
         case CLASS_HUNTER:
             m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotHunterAI(GetMaster(), m_bot, this);
@@ -681,9 +687,10 @@ void PlayerbotAI::ReloadAI()
             break;
         case CLASS_SHAMAN:
             if (m_classAI) delete m_classAI;
-            if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
+            if (m_bot->GetSpec() == 263)
+            {
                 m_combatStyle = COMBAT_MELEE;
-                }
+            }
             else
                 m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotShamanAI(GetMaster(), m_bot, this);
@@ -700,9 +707,10 @@ void PlayerbotAI::ReloadAI()
             break;
         case CLASS_DRUID:
             if (m_classAI) delete m_classAI;
-            if (m_bot->GetStat(STAT_AGILITY) > m_bot->GetStat(STAT_INTELLECT) || m_bot->GetStat(STAT_STRENGTH) > m_bot->GetStat(STAT_INTELLECT)) {
+            if (m_bot->GetSpec() == 281)
+            {
                 m_combatStyle = COMBAT_MELEE;
-                }
+            }
             else
                 m_combatStyle = COMBAT_RANGED;
             m_classAI = (PlayerbotClassAI *) new PlayerbotDruidAI(GetMaster(), m_bot, this);
