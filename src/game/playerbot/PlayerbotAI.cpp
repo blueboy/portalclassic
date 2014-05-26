@@ -112,7 +112,7 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
             break;
         case CLASS_SHAMAN:
         {
-            if (m_bot->GetSpec() == 263)
+            if (m_bot->GetSpec() == SHAMAN_SPEC_ENHANCEMENT)
             {
                 m_combatStyle = COMBAT_MELEE;
             }
@@ -131,7 +131,7 @@ PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
             break;
         case CLASS_DRUID:
         {
-            if (m_bot->GetSpec() == 281)
+            if (m_bot->GetSpec() == DRUID_SPEC_FERAL)
             {
                 m_combatStyle = COMBAT_MELEE;
             }
@@ -687,7 +687,7 @@ void PlayerbotAI::ReloadAI()
             break;
         case CLASS_SHAMAN:
             if (m_classAI) delete m_classAI;
-            if (m_bot->GetSpec() == 263)
+            if (m_bot->GetSpec() == SHAMAN_SPEC_ENHANCEMENT)
             {
                 m_combatStyle = COMBAT_MELEE;
             }
@@ -707,7 +707,7 @@ void PlayerbotAI::ReloadAI()
             break;
         case CLASS_DRUID:
             if (m_classAI) delete m_classAI;
-            if (m_bot->GetSpec() == 281)
+            if (m_bot->GetSpec() == DRUID_SPEC_FERAL)
             {
                 m_combatStyle = COMBAT_MELEE;
             }
@@ -7324,17 +7324,7 @@ std::string PlayerbotAI::_HandleCommandHelpHelper(std::string sCommand, std::str
     return oss.str();
 }
 
-//Class Spec numbers for testing/whatever (temporary, will update each class with enums or something)
-//WARRIOR: 161 ARMS, 163 PROTECTION, 164 FURY
-//PRIEST: 201 DISCIPLINE, 202 HOLY, 203 SHADOW
-//SHAMAN: 261 ELEMENTAL, 262 RESTORATION, 263 ENHANCEMENT
-//DRUID: 281 FERAL, 282 RESTORATION, 283 BALANCE
-//MAGE: 41 FIRE, 61 FROST, 81 ARCANE
-//DEATH KNIGHT: 398 BLOOD, 399 FROST, 400 UNHOLY
-//HUNTER: 361 BEASTMASTERY, 362 SURVIVAL, 363 MARKSMANSHIP
-//WARLOCK: 301 DESTRUCTION, 302 AFFLICTION, 303 DEMONOLOGY
-//PALADIN: 381 RETRIBUTION, 382 HOLY, 383 PROTECTION
-//ROGUE 181 COMBAT, 182 ASSASSINATION, 183 SUBTELTY
+//See MainSpec enum in PlayerbotAI.h for details on class return values
 uint32 Player::GetSpec()
 {
     uint32 row = 0, spec = 0;
