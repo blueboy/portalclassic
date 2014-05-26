@@ -7315,3 +7315,50 @@ std::string PlayerbotAI::_HandleCommandHelpHelper(std::string sCommand, std::str
 
     return oss.str();
 }
+
+//Class Spec numbers for testing/whatever (temporary, will update each class with enums or something)
+//WARRIOR: 161 ARMS, 163 PROTECTION, 164 FURY
+//PRIEST: 201 DISCIPLINE, 202 HOLY, 203 SHADOW
+//SHAMAN: 261 ELEMENTAL, 262 RESTORATION, 263 ENHANCEMENT
+//DRUID: 281 FERAL, 282 RESTORATION, 283 BALANCE
+//MAGE: 41 FIRE, 61 FROST, 81 ARCANE
+//DEATH KNIGHT: 398 BLOOD, 399 FROST, 400 UNHOLY
+//HUNTER: 361 BEASTMASTERY, 362 SURVIVAL, 363 MARKSMANSHIP
+//WARLOCK: 301 DESTRUCTION, 302 AFFLICTION, 303 DEMONOLOGY
+//PALADIN: 381 RETRIBUTION, 382 HOLY, 383 PROTECTION
+//ROGUE 181 COMBAT, 182 ASSASSINATION, 183 SUBTELTY
+uint32 Player::GetSpec()
+{
+    uint32 row = 0, spec = 0;
+    Player* player = m_session->GetPlayer();
+    uint32 classMask = player->getClassMask();
+
+    for (unsigned int i = 0; i < sTalentStore.GetNumRows(); ++i)
+    {
+        TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
+
+        if (!talentInfo)
+            continue;
+
+        TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+
+        if (!talentTabInfo)
+            continue;
+            
+        if ((classMask & talentTabInfo->ClassMask) == 0)
+            continue;
+
+        uint32 curtalent_maxrank = 0;
+        for (int32 k = MAX_TALENT_RANK - 1; k > -1; --k)
+        {
+            if (talentInfo->RankID[k] && HasSpell(talentInfo->RankID[k]) && (talentInfo->Row > row))
+            {
+                row = talentInfo->Row;
+                spec = talentInfo->TalentTab;
+            }
+        }
+    }
+
+	//Return the tree with the deepest talent
+	return spec;
+}

@@ -1237,6 +1237,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool getNextQuestId(const std::string& pString, unsigned int& pStartPos, unsigned int& pId);
         void skill(std::list<uint32>& m_spellsToLearn);
         bool requiredQuests(const char* pQuestIdString);
+        uint32 GetSpec();
 
         /*********************************************************/
         /***                   LOAD SYSTEM                     ***/
