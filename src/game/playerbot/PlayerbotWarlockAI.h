@@ -146,7 +146,7 @@ public:
     //void BuffPlayer(Player *target);
 
 private:
-	void CheckDemon();
+    void CheckDemon();
 
     // CURSES
     uint32 CURSE_OF_WEAKNESS,
@@ -200,7 +200,7 @@ private:
            CREATE_FIRESTONE,
            CREATE_SOULSTONE,
            CREATE_HEALTHSTONE,
-		   CREATE_SPELLSTONE;
+           CREATE_SPELLSTONE;
 
     // DEMON SUMMON
     uint32 SUMMON_IMP,

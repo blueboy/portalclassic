@@ -37,8 +37,8 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     PRAYER_OF_SHADOW_PROTECTION   = ai->initSpell(PRAYER_OF_SHADOW_PROTECTION_1);
     SHADOWFIEND                   = ai->initSpell(SHADOWFIEND_1);
     MIND_SEAR                     = ai->initSpell(MIND_SEAR_1);
-	SHADOWFORM					  = ai->initSpell(SHADOWFORM_1);
-	VAMPIRIC_EMBRACE			  = ai->initSpell(VAMPIRIC_EMBRACE_1);<<<<<<< HEAD
+    SHADOWFORM                    = ai->initSpell(SHADOWFORM_1);
+    VAMPIRIC_EMBRACE              = ai->initSpell(VAMPIRIC_EMBRACE_1);<<<<<<< HEAD
     
     //RANGED COMBAT
     SHOOT                         = ai->initSpell(SHOOT_1);
@@ -89,7 +89,7 @@ bool PlayerbotPriestAI::HealTarget(Unit* target)
         {
             SpellAuraHolder *holder = itr->second;
             if ((1<<holder->GetSpellProto()->Dispel) & dispelMask)
-            {	
+            {   
                 if(holder->GetSpellProto()->Dispel == DISPEL_DISEASE)
                     ai->CastSpell(CURE_DISEASE, *target);
                     return false;
@@ -139,7 +139,7 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
 
     Player *m_bot = GetPlayerBot();
     Group *m_group = m_bot->GetGroup();
-	uint32 spec = m_bot->GetSpec();
+    uint32 spec = m_bot->GetSpec();
     
     float dist = m_bot->GetCombatDistance(pTarget, true);
     if (dist > ATTACK_DISTANCE && ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED)
@@ -183,11 +183,11 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
         else if (masterHP < 25 || ((GetAI()->GetCombatOrder() & PlayerbotAI::ORDERS_HEAL) && masterHP < 80))
             HealTarget(GetMaster());
     }
-	
-	//Not sure where this should go
-	if (PRAYER_OF_MENDING > 0 && pVictim == GetMaster() && GetMaster()->GetHealth() <= GetMaster()->GetMaxHealth() * 0.7 && !GetMaster()->HasAura(PRAYER_OF_MENDING, EFFECT_INDEX_0) && ai->GetManaPercent() >= 15)
+    
+    //Not sure where this should go
+    if (PRAYER_OF_MENDING > 0 && pVictim == GetMaster() && GetMaster()->GetHealth() <= GetMaster()->GetMaxHealth() * 0.7 && !GetMaster()->HasAura(PRAYER_OF_MENDING, EFFECT_INDEX_0) && ai->GetManaPercent() >= 15)
     {
-		ai->CastSpell(PRAYER_OF_MENDING, *GetMaster());
+        ai->CastSpell(PRAYER_OF_MENDING, *GetMaster());
     }
 
     // TODO: Prioritize group healing in some way. If 3 members (including master/self) should be healed, pick one of these:
@@ -221,7 +221,7 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
     switch (spec)
     {
         case PRIEST_SPEC_HOLY:
-			if (HOLY_FIRE > 0 && !pTarget->HasAura(HOLY_FIRE, EFFECT_INDEX_0) && ai->GetManaPercent() >= 13)
+            if (HOLY_FIRE > 0 && !pTarget->HasAura(HOLY_FIRE, EFFECT_INDEX_0) && ai->GetManaPercent() >= 13)
             {
                 ai->CastSpell(HOLY_FIRE, *pTarget);
             }
@@ -250,11 +250,11 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
             break;*/
 
         case PRIEST_SPEC_SHADOW:
-			if (DEVOURING_PLAGUE > 0 && !pTarget->HasAura(DEVOURING_PLAGUE, EFFECT_INDEX_0) && ai->GetManaPercent() >= 28)
+            if (DEVOURING_PLAGUE > 0 && !pTarget->HasAura(DEVOURING_PLAGUE, EFFECT_INDEX_0) && ai->GetManaPercent() >= 28)
             {
                 ai->CastSpell(DEVOURING_PLAGUE, *pTarget);
             }
-			else if (VAMPIRIC_TOUCH > 0 && !pTarget->HasAura(VAMPIRIC_TOUCH, EFFECT_INDEX_0) && ai->GetManaPercent() >= 18)
+            else if (VAMPIRIC_TOUCH > 0 && !pTarget->HasAura(VAMPIRIC_TOUCH, EFFECT_INDEX_0) && ai->GetManaPercent() >= 18)
             {
                 ai->CastSpell(VAMPIRIC_TOUCH, *pTarget);
             }
@@ -266,12 +266,12 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
             {
                 ai->CastSpell(MIND_BLAST, *pTarget);
             }
-			else if (MIND_FLAY > 0 && ai->GetManaPercent() >= 10)
+            else if (MIND_FLAY > 0 && ai->GetManaPercent() >= 10)
             {
                 ai->CastSpell(MIND_FLAY, *pTarget);
                 ai->SetIgnoreUpdateTime(3);
             }
-			else if (SHADOWFIEND > 0)
+            else if (SHADOWFIEND > 0)
             {
                 ai->CastSpell(SHADOWFIEND);
             }
@@ -335,7 +335,7 @@ void PlayerbotPriestAI::DoNonCombatActions()
     PlayerbotAI* ai = GetAI();
     Player * m_bot = GetPlayerBot();
     Player * master = GetMaster();
-	uint32 spec = m_bot->GetSpec();
+    uint32 spec = m_bot->GetSpec();
     if (!m_bot || !master)
         return;
 
@@ -344,10 +344,10 @@ void PlayerbotPriestAI::DoNonCombatActions()
     // selfbuff goes first
     if (ai->SelfBuff(INNER_FIRE))
         return;
-	if (spec == PRIEST_SPEC_SHADOW && SHADOWFORM > 0)
-		ai->SelfBuff(SHADOWFORM);
-	if (VAMPIRIC_EMBRACE > 0)
-		ai->SelfBuff(VAMPIRIC_EMBRACE);
+    if (spec == PRIEST_SPEC_SHADOW && SHADOWFORM > 0)
+        ai->SelfBuff(SHADOWFORM);
+    if (VAMPIRIC_EMBRACE > 0)
+        ai->SelfBuff(VAMPIRIC_EMBRACE);
 
     // mana check
     if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)

@@ -1141,9 +1141,9 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
             return false;
         }
         QueryResult *resultlvl = CharacterDatabase.PQuery("SELECT guid FROM playerbot_saved_data WHERE guid = '%u'", guid.GetCounter());
-		if (resultlvl)
-			CharacterDatabase.DirectPExecute("INSERT INTO playerbot_saved_data (guid,bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname) VALUES ('%u',0,0,0,0,'','')", guid.GetCounter());
-		mgr->GetPlayerBot(guid)->GetPlayerbotAI()->SetCombatOrderByStr(orderStr, target);
+        if (resultlvl)
+            CharacterDatabase.DirectPExecute("INSERT INTO playerbot_saved_data (guid,bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname) VALUES ('%u',0,0,0,0,'','')", guid.GetCounter());
+        mgr->GetPlayerBot(guid)->GetPlayerbotAI()->SetCombatOrderByStr(orderStr, target);
     }
     return true;
 }

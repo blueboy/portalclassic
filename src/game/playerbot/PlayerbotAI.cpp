@@ -7357,6 +7357,6 @@ uint32 Player::GetSpec()
         }
     }
 
-	//Return the tree with the deepest talent
-	return spec;
+    //Return the tree with the deepest talent
+    return spec;
 }
