@@ -82,7 +82,7 @@ void PlayerbotMageAI::DoNextCombatManeuver(Unit *pTarget)
         return;
 
     Unit* pVictim = pTarget->getVictim();
-    float dist = m_bot->GetCombatDistance(pTarget);
+    float dist = m_bot->GetCombatDistance(pTarget, true);
     uint32 spec = m_bot->GetSpec();
 
     switch (ai->GetScenarioType())

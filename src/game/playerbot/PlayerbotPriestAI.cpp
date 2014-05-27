@@ -38,7 +38,7 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     SHADOWFIEND                   = ai->initSpell(SHADOWFIEND_1);
     MIND_SEAR                     = ai->initSpell(MIND_SEAR_1);
     SHADOWFORM                    = ai->initSpell(SHADOWFORM_1);
-    VAMPIRIC_EMBRACE              = ai->initSpell(VAMPIRIC_EMBRACE_1);<<<<<<< HEAD
+    VAMPIRIC_EMBRACE              = ai->initSpell(VAMPIRIC_EMBRACE_1);
     
     //RANGED COMBAT
     SHOOT                         = ai->initSpell(SHOOT_1);
@@ -149,7 +149,7 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
             if (ai->GetHealthPercent() < 80 && RENEW) // TODO: Check whether you have renew active on you
                 return CastSpell(RENEW);
 
-            if (m_bot->GetCombatDistance(pTarget) <= 5 && SCREAM) // TODO: Check for cooldown
+            if (m_bot->GetCombatDistance(pTarget, true) <= 5 && SCREAM) // TODO: Check for cooldown
                 return CastSpell(SCREAM);
 
             if (MIND_BLAST) // TODO: Check for cooldown

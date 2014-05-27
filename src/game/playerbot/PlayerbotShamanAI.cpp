@@ -200,8 +200,7 @@ void PlayerbotShamanAI::DropTotems()
                 ai->CastSpell(FIRE_RESISTANCE_TOTEM);
             else if (MANA_SPRING_TOTEM > 0 && ((water == NULL) || (m_bot->GetDistance(water) > 30)) && ai->GetManaPercent() >= 5)
                 ai->CastSpell(MANA_SPRING_TOTEM);
-            }
-        break;
+            break;
 
         case SHAMAN_SPEC_ELEMENTAL:
             // Earth Totems 
@@ -225,7 +224,7 @@ void PlayerbotShamanAI::DropTotems()
                 ai->CastSpell(FIRE_RESISTANCE_TOTEM);
             else if (MANA_SPRING_TOTEM > 0 && ((water == NULL) || (m_bot->GetDistance(water) > 30)) && ai->GetManaPercent() >= 5)
                 ai->CastSpell(MANA_SPRING_TOTEM);
-                break;
+            break;
     };
 }
 
