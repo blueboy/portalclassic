@@ -3305,49 +3305,6 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         InterruptCurrentCastingSpell();
         return;
     }
-
-    if (m_botState == BOTSTATE_TAME)
-    {
-        Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, m_targetGuidCommand);
-        if (!pTarget)
-            return;  
-            
-        m_bot->SetSelectionGuid(m_targetGuidCommand);
-
-        if (!IsInRange(pTarget, TAME_BEAST_1))
-            m_bot->clearUnitState(UNIT_STAT_CHASE);        
-
-        if (!m_bot->hasUnitState(UNIT_STAT_CHASE))
-        {
-            m_bot->GetMotionMaster()->MoveChase(pTarget);
-            return;
-        }
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(TAME_BEAST_1);
-        if (!spellInfo)
-            return;
-
-        Spell *spell = new Spell(m_bot, spellInfo, false);
-        if (!spell)
-            return;
-
-        if (m_bot->GetPetGuid() || spell->CheckCast(true) != SPELL_CAST_OK || !pTarget ||
-            pTarget->isDead() || !m_bot->IsInMap(pTarget) || !(((Creature *) pTarget)->GetCreatureInfo()->type_flags & CREATURE_TYPEFLAGS_TAMEABLE))
-        {
-            MovementReset();
-            m_bot->SetSelectionGuid(ObjectGuid());
-            SetState(BOTSTATE_NORMAL);
-            SetIgnoreUpdateTime(0);
-        }
-        else if (!m_bot->HasAura(TAME_BEAST_1, EFFECT_INDEX_1))
-        {
-            m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
-            SpellCastTargets targets;
-            targets.setUnitTarget(pTarget);
-            spell->prepare(&targets);
-            SetIgnoreUpdateTime(10);
-        }
-        return;
-    }
         
     // direct cast command from master
     if (m_spellIdCommand != 0)
@@ -3357,39 +3314,6 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
             CastSpell(m_spellIdCommand, *pTarget);
         m_spellIdCommand = 0;
         m_targetGuidCommand = ObjectGuid();
-
-        return;
-    }
-
-    if (m_botState == BOTSTATE_ENCHANT)
-    {
-        SetState(BOTSTATE_NORMAL);
-        InspectUpdate();
-
-        return;
-    }
-
-    if (m_botState == BOTSTATE_CRAFT)
-    {
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(m_CurrentlyCastingSpellId);
-        if (!spellInfo)
-            return;
-
-        Spell *spell = new Spell(m_bot, spellInfo, false);
-        if (!spell)
-            return;
-
-        if (GetSpellCharges(m_CurrentlyCastingSpellId) == 0 || spell->CheckCast(true) != SPELL_CAST_OK)
-        {
-            SetState(BOTSTATE_NORMAL);
-            SetIgnoreUpdateTime(0);
-        }
-        else
-        {
-            SpellCastTargets targets;
-            spell->prepare(&targets);
-            SetIgnoreUpdateTime(3);
-        }
 
         return;
     }

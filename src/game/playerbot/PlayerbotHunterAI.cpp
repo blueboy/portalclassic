@@ -227,8 +227,8 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuver(Unit *pTarget)
             return RETURN_CONTINUE;
         else if (m_bot->getRace() == RACE_TAUREN && !pTarget->HasAura(WAR_STOMP, EFFECT_INDEX_0) && m_ai->CastSpell(WAR_STOMP, *pTarget))
             return RETURN_CONTINUE;
-        else if (m_bot->getRace() == RACE_DWARF && m_bot->HasAuraState(AURA_STATE_DEADLY_POISON) && m_ai->CastSpell(STONEFORM, *m_bot))
-            return RETURN_CONTINUE;
+//        else if (m_bot->getRace() == RACE_DWARF && m_bot->HasAuraState(AURA_STATE_DEADLY_POISON) && m_ai->CastSpell(STONEFORM, *m_bot))
+//            return RETURN_CONTINUE;
         else if (m_bot->getRace() == RACE_NIGHTELF && pVictim == m_bot && m_ai->GetHealthPercent() < 25 && !m_bot->HasAura(SHADOWMELD, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOWMELD, *m_bot))
             return RETURN_CONTINUE;
         else if ((pet && !pet->getDeathState() != ALIVE)
