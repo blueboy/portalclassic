@@ -3276,7 +3276,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
 
             return;
         }
-    }
+
         // if (m_botState != BOTSTATE_DEAD && m_botState != BOTSTATE_DEADRELEASED)
         // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - %s died and is not in correct state...", m_bot->GetName() );
         // clear loot list on death
@@ -3332,12 +3332,12 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
 
         if (m_bot->GetPetGuid() || spell->CheckCast(true) != SPELL_CAST_OK || !pTarget ||
             pTarget->isDead() || !m_bot->IsInMap(pTarget) || !(((Creature *) pTarget)->GetCreatureInfo()->type_flags & CREATURE_TYPEFLAGS_TAMEABLE))
-         {
+        {
             MovementReset();
             m_bot->SetSelectionGuid(ObjectGuid());
             SetState(BOTSTATE_NORMAL);
             SetIgnoreUpdateTime(0);
-         }
+        }
         else if (!m_bot->HasAura(TAME_BEAST_1, EFFECT_INDEX_1))
         {
             m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
