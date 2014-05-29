@@ -66,7 +66,7 @@ PlayerbotMageAI::PlayerbotMageAI(Player* const master, Player* const bot, Player
 
 PlayerbotMageAI::~PlayerbotMageAI() {}
 
-CombatManeuverReturns PlayerbotMageAI::DoFirstCombatManeuver(Unit *pTarget)
+CombatManeuverReturns PlayerbotMageAI::DoFirstCombatManeuver(Unit* /*pTarget*/)
 {
     return RETURN_NO_ACTION_OK;
 }
@@ -86,7 +86,7 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuver(Unit *pTarget)
             if (FIREBALL > 0)
                 if (CastSpell(FIREBALL, pTarget))
                     return RETURN_CONTINUE;
-
+		default:
             return RETURN_NO_ACTION_ERROR;
     }
 

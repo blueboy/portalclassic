@@ -98,7 +98,7 @@ PlayerbotShamanAI::PlayerbotShamanAI(Player* const master, Player* const bot, Pl
 
 PlayerbotShamanAI::~PlayerbotShamanAI() {}
 
-CombatManeuverReturns PlayerbotShamanAI::DoFirstCombatManeuver(Unit *pTarget)
+CombatManeuverReturns PlayerbotShamanAI::DoFirstCombatManeuver(Unit* /*pTarget*/)
 {
     return RETURN_NO_ACTION_OK;
 }
@@ -311,6 +311,7 @@ CombatManeuverReturns PlayerbotShamanAI::DoNextCombatManeuver(Unit *pTarget)
     {
         case PlayerbotAI::SCENARIO_DUEL:
             m_ai->CastSpell(LIGHTNING_BOLT);
+        default:
             return RETURN_CONTINUE;
     }
 

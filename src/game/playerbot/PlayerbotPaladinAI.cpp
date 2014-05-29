@@ -283,6 +283,7 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuver(Unit *pTarget)
                 m_ai->CastSpell(HAMMER_OF_JUSTICE);
                 return RETURN_CONTINUE;
             }
+        default:
             return RETURN_NO_ACTION_UNKNOWN;
     }
 

@@ -4834,7 +4834,7 @@ bool PlayerbotAI::TradeCopper(uint32 copper)
     return false;
 }
 
-bool PlayerbotAI::DoTeleport(WorldObject &obj)
+bool PlayerbotAI::DoTeleport(WorldObject& /*obj*/)
 {
     m_ignoreAIUpdatesUntilTime = time(0) + 6;
     PlayerbotChatHandler ch(GetMaster());
@@ -5973,7 +5973,7 @@ void PlayerbotAI::_HandleCommandUse(std::string &text, Player &fromPlayer)
      }
 }
 
-void PlayerbotAI::_HandleCommandEquip(std::string &text, Player &fromPlayer)
+void PlayerbotAI::_HandleCommandEquip(std::string &text, Player& /*fromPlayer*/)
 {
     std::list<uint32> itemIds;
     std::list<Item*> itemList;
@@ -5984,7 +5984,7 @@ void PlayerbotAI::_HandleCommandEquip(std::string &text, Player &fromPlayer)
     SendNotEquipList(*m_bot);
 }
 
-void PlayerbotAI::_HandleCommandFind(std::string &text, Player &fromPlayer)
+void PlayerbotAI::_HandleCommandFind(std::string &text, Player& /*fromPlayer*/)
 {
     extractGOinfo(text, m_lootTargets);
  
@@ -6376,7 +6376,7 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
     }
 }
 
-void PlayerbotAI::_HandleCommandSpells(std::string &text, Player &fromPlayer)
+void PlayerbotAI::_HandleCommandSpells(std::string& /*text*/, Player &fromPlayer)
 {
     int loc = GetMaster()->GetSession()->GetSessionDbcLocale();
 
@@ -6460,7 +6460,7 @@ void PlayerbotAI::_HandleCommandSpells(std::string &text, Player &fromPlayer)
     ch.SendSysMessage(negOut.str().c_str());
 }
 
-void PlayerbotAI::_HandleCommandSurvey(std::string &text, Player &fromPlayer)
+void PlayerbotAI::_HandleCommandSurvey(std::string& /*text*/, Player &fromPlayer)
 {
     uint32 count = 0;
     std::ostringstream detectout;

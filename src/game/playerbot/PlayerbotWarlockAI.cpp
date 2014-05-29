@@ -80,7 +80,7 @@ PlayerbotWarlockAI::PlayerbotWarlockAI(Player* const master, Player* const bot, 
 
 PlayerbotWarlockAI::~PlayerbotWarlockAI() {}
 
-CombatManeuverReturns PlayerbotWarlockAI::DoFirstCombatManeuver(Unit *pTarget)
+CombatManeuverReturns PlayerbotWarlockAI::DoFirstCombatManeuver(Unit* /*pTarget*/)
 {
     return RETURN_NO_ACTION_OK;
 }

@@ -171,6 +171,7 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuver(Unit *pTarget)
     //    case PlayerbotAI::SCENARIO_DUEL:
     //        if (HEROIC_STRIKE > 0)
     //            m_ai->CastSpell(HEROIC_STRIKE);
+    //    default:
     //        return;
     //}
     // ------- Non Duel combat ----------
@@ -179,7 +180,6 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuver(Unit *pTarget)
 
     Player *m_bot = GetPlayerBot();
     Unit* pVictim = pTarget->getVictim();
-    float fTargetDist = m_bot->GetCombatDistance(pTarget, true);
     PlayerbotAI::CombatOrderType co = m_ai->GetCombatOrder();
     uint32 spec = m_bot->GetSpec();
 
@@ -376,13 +376,13 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuver(Unit *pTarget)
                     out << " > Heroic Throw";
                 else if (m_bot->getRace() == RACE_TAUREN && !pTarget->HasAura(WAR_STOMP, EFFECT_INDEX_0) && !pTarget->HasAura(PIERCING_HOWL, EFFECT_INDEX_0) && !pTarget->HasAura(SHOCKWAVE, EFFECT_INDEX_0) && !pTarget->HasAura(CONCUSSION_BLOW, EFFECT_INDEX_0) && m_ai->CastSpell(WAR_STOMP, *pTarget))
                     out << " > War Stomp";
-                else if (m_bot->getRace() == RACE_HUMAN && m_bot->hasUnitState(UNIT_STAT_STUNNED) || m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM) && m_ai->CastSpell(EVERY_MAN_FOR_HIMSELF, *m_bot))
+                else if (m_bot->getRace() == RACE_HUMAN && (m_bot->hasUnitState(UNIT_STAT_STUNNED) || m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM)) && m_ai->CastSpell(EVERY_MAN_FOR_HIMSELF, *m_bot))
                     out << " > Every Man for Himself";
-                else if (m_bot->getRace() == RACE_UNDEAD && m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM) && m_ai->CastSpell(WILL_OF_THE_FORSAKEN, *m_bot))
+                else if (m_bot->getRace() == RACE_UNDEAD && (m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM)) && m_ai->CastSpell(WILL_OF_THE_FORSAKEN, *m_bot))
                     out << " > Will of the Forsaken";
                 else if (m_bot->getRace() == RACE_DWARF && m_bot->HasAuraState(AURA_STATE_DEADLY_POISON) && m_ai->CastSpell(STONEFORM, *m_bot))
                     out << " > Stoneform";
-                else if (m_bot->getRace() == RACE_GNOME && m_bot->hasUnitState(UNIT_STAT_STUNNED) || m_bot->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) && m_ai->CastSpell(ESCAPE_ARTIST, *m_bot))
+                else if (m_bot->getRace() == RACE_GNOME && (m_bot->hasUnitState(UNIT_STAT_STUNNED) || m_bot->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED)) && m_ai->CastSpell(ESCAPE_ARTIST, *m_bot))
                     out << " > Escape Artist";
                 else if (m_bot->getRace() == RACE_NIGHTELF && pVictim == m_bot && m_ai->GetHealthPercent() < 25 && !m_bot->HasAura(SHADOWMELD, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOWMELD, *m_bot))
                     out << " > Shadowmeld";
