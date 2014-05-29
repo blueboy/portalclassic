@@ -119,9 +119,6 @@ Unit* PlayerbotClassAI::GetHealTarget()
                 case CLASS_WARRIOR:
                     targets.at(i).type = (uSpec == WARRIOR_SPEC_PROTECTION) ? TYPE_TANK : TYPE_DPS;
                     break;
-                case CLASS_DEATH_KNIGHT:
-                    targets.at(i).type = (uSpec == DEATHKNIGHT_SPEC_FROST) ? TYPE_TANK : TYPE_DPS;
-                    break;
                 case CLASS_MAGE:
                 case CLASS_WARLOCK:
                 case CLASS_ROGUE:
