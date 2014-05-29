@@ -424,6 +424,7 @@ public:
     void DoNextCombatManeuver();
     void DoCombatMovement();
     void SetIgnoreUpdateTime(uint8 t = 0) { m_ignoreAIUpdatesUntilTime = time(NULL) + t; };
+    time_t CurrentTime() { return time(NULL); };
 
     Player *GetPlayerBot() const { return m_bot; }
     Player *GetPlayer() const { return m_bot; }
