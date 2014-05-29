@@ -2843,12 +2843,12 @@ Unit* PlayerbotAI::FindAttacker(ATTACKERINFOTYPE ait, Unit *victim)
 */
 void PlayerbotAI::CombatDelayRestore()
 {
-    QueryResult* result = CharacterDatabase.PQuery("SELECT combat_delay FROM playerbot_saved_data WHERE guid = '%lu'", m_bot->GetGUIDLow());
+    QueryResult* result = CharacterDatabase.PQuery("SELECT combat_delay FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
 
     if (!result)
     {
         sLog.outString();
-        sLog.outString(">> [CombatDelayRestore()] Loaded `playerbot_saved_data`, found no match for guid %lu.", m_bot->GetGUIDLow());
+        sLog.outString(">> [CombatDelayRestore()] Loaded `playerbot_saved_data`, found no match for guid %u.", m_bot->GetGUIDLow());
         m_DelayAttack = 0;
         return;
     }
@@ -2867,12 +2867,12 @@ void PlayerbotAI::CombatDelayRestore()
 
 void PlayerbotAI::CombatOrderRestore()
 {
-    QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname,combat_delay FROM playerbot_saved_data WHERE guid = '%lu'", m_bot->GetGUIDLow());
+    QueryResult* result = CharacterDatabase.PQuery("SELECT bot_primary_order,bot_secondary_order,primary_target,secondary_target,pname,sname,combat_delay FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
 
     if (!result)
     {
         sLog.outString();
-        sLog.outString(">> [CombatOrderRestore()] Loaded `playerbot_saved_data`, found no match for guid %lu.", m_bot->GetGUIDLow());
+        sLog.outString(">> [CombatOrderRestore()] Loaded `playerbot_saved_data`, found no match for guid %u.", m_bot->GetGUIDLow());
         TellMaster("I have no orders");
         return;
     }
@@ -5738,7 +5738,7 @@ void PlayerbotAI::_HandleCommandCombat(std::string &text, Player &fromPlayer)
     {
         uint32 gdelay;
         sscanf(text.c_str(), "%d", &gdelay);
-        if (gdelay >= 0 && gdelay <= 10)
+        if (gdelay <= 10)
         {
             m_DelayAttack = gdelay;
             TellMaster("Combat delay is now '%u' ", m_DelayAttack);
