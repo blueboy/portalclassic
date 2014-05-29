@@ -194,8 +194,9 @@ CombatManeuverReturns PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
     //    case PlayerbotAI::SCENARIO_DUEL:
     //        if (CastSpell(MOONFIRE))
     //            return true;
-    //    default:
     //        return false;
+    //    default:
+    //        break;
     //}
 
 
