@@ -86,8 +86,9 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuver(Unit *pTarget)
             if (FIREBALL > 0)
                 if (CastSpell(FIREBALL, pTarget))
                     return RETURN_CONTINUE;
-		default:
             return RETURN_NO_ACTION_ERROR;
+        default:
+            break;
     }
 
     // ------- Non Duel combat ----------

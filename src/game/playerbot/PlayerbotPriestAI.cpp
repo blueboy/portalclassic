@@ -158,8 +158,9 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
                 return CastSpell(SMITE);
 
             m_ai->TellMaster("Couldn't find a spell to cast while dueling");
-        default:
             return RETURN_NO_ACTION_UNKNOWN;
+        default:
+            break;
     }
 
     // ------- Non Duel combat ----------

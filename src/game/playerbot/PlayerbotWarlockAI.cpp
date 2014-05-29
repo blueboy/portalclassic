@@ -99,11 +99,9 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuver(Unit *pTarget)
     //switch (m_ai->GetScenarioType())
     //{
     //    case PlayerbotAI::SCENARIO_DUEL:
-    //    {
     //        if (SHADOW_BOLT > 0)
     //            m_ai->CastSpell(SHADOW_BOLT);
     //        return;
-    //    }
     //    default:
     //        break;
     //}
