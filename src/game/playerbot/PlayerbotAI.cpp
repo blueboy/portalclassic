@@ -3478,6 +3478,10 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
     if (m_bot->HasSpellCooldown(spellId))
         return false;
 
+    // Power check (stolen from: CreatureAI.cpp - CreatureAI::CanCastSpell)
+    if (m_bot->GetPower((Powers)pSpellInfo->powerType) < Spell::CalculatePowerCost(pSpellInfo, m_bot))
+        return false;
+
     // see Creature.cpp 1738 for reference
     // don't allow bot to cast damage spells on friends
     const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
