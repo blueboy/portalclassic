@@ -1998,17 +1998,14 @@ void PlayerbotAI::DoNextCombatManeuver()
     {
         switch (GetClassAI()->DoFirstCombatManeuver(m_targetCombat))
         {
-            case RETURN_FINISHED_FIRST_MOVES:
-                m_targetChanged = false;
-                return DoCombatMovement();
-
-            case RETURN_CONTINUE:
+            case RETURN_CONTINUE: // true needed for rogue stealth attack
                 // TODO: is there EVER a second 'first combat maneuver' that affects bot/target movement? If no, uncomment below
-                //return DoCombatMovement();
-                return;
+                m_targetChanged = true;
+                break;
 
             case RETURN_NO_ACTION_ERROR:
                 TellMaster("FirstCombatManeuver: No action performed due to error. Heading onto NextCombatManeuver.");
+            case RETURN_FINISHED_FIRST_MOVES: // false default
             case RETURN_NO_ACTION_UNKNOWN:
             case RETURN_NO_ACTION_OK:
             default: // assume no action -> no return
@@ -2019,19 +2016,18 @@ void PlayerbotAI::DoNextCombatManeuver()
     // do normal combat movement
     DoCombatMovement();
 
-    switch (GetClassAI()->DoNextCombatManeuver(m_targetCombat))
+    if (!m_targetChanged)
     {
-        case RETURN_NO_ACTION_UNKNOWN:
-        case RETURN_NO_ACTION_OK:
-            return;
-
-        case RETURN_CONTINUE:
-            return;
-
-        case RETURN_NO_ACTION_ERROR:
-        default:
-            // error, error...
-            return;
+        // if m_targetChanged = false
+        switch (GetClassAI()->DoNextCombatManeuver(m_targetCombat))
+        {
+            case RETURN_NO_ACTION_UNKNOWN:
+            case RETURN_NO_ACTION_OK:
+            case RETURN_CONTINUE:
+            case RETURN_NO_ACTION_ERROR:
+            default:
+                return;
+        }
     }
 }
 
@@ -3509,7 +3505,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
         if (pTarget && m_bot->IsFriendlyTo(pTarget))
             return false;
 
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+        m_bot->SetInFront(pTarget);
     }
 
     float CastTime = 0.0f;
@@ -3588,7 +3584,10 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
         if (!m_bot->IsWithinLOSInMap(pTarget))
             return false;
 
-        m_bot->CastSpell(pTarget, pSpellInfo, false);       // actually cast spell
+        if (IsAutoRepeatRangedSpell(pSpellInfo))
+            m_bot->CastSpell(pTarget, pSpellInfo, true);       // cast triggered spell
+        else
+            m_bot->CastSpell(pTarget, pSpellInfo, false);      // uni-cast spell
     }
 
     m_ignoreAIUpdatesUntilTime = time(NULL) + CastTime + 1;
