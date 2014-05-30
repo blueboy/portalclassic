@@ -273,10 +273,6 @@ JOB_TYPE PlayerbotClassAI::GetTargetJob(Player* target)
             if (uSpec == WARRIOR_SPEC_PROTECTION)
                 return JOB_TANK;
             return (m_master == target) ? JOB_MASTER : JOB_DPS;
-        case CLASS_DEATH_KNIGHT:
-            if (uSpec == DEATHKNIGHT_SPEC_FROST)
-                return JOB_TANK;
-            return (m_master == target) ? JOB_MASTER : JOB_DPS;
         case CLASS_MAGE:
         case CLASS_WARLOCK:
         case CLASS_ROGUE:
