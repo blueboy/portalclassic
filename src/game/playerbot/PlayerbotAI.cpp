@@ -7113,7 +7113,7 @@ void PlayerbotAI::_HandleCommandHelp(std::string &text, Player &fromPlayer)
             // Catches all valid subcommands, also placeholders for potential future sub-subcommands
             if (ExtractCommand("combat", text, true))
             {
-                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat tank", "Order me to tank. Best used on paladins, warriors, druids or death knights.").c_str());
+                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat tank", "Order me to tank. Best used on paladins, warriors or druids.").c_str());
                 ch.SendSysMessage(_HandleCommandHelpHelper("orders combat heal", "Order me to heal. Best used on shamans, priests, druids or paladins.").c_str());
                 ch.SendSysMessage(_HandleCommandHelpHelper("orders combat assist", "Assist the linked target focusing our killing power.", HL_TARGET).c_str());
                 ch.SendSysMessage(_HandleCommandHelpHelper("orders combat protect", "Protect the listed target, attempting to keep aggro away from the target.", HL_TARGET).c_str());
