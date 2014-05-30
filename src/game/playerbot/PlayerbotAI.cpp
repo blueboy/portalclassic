@@ -6904,13 +6904,6 @@ void PlayerbotAI::_HandleCommandHelp(std::string &text, Player &fromPlayer)
 
         if (!bMainHelp)
         {
-            ch.SendSysMessage(_HandleCommandHelpHelper("orders delay <0-10>", "Activates a delay before I start fighting.").c_str());
-            ch.SendSysMessage(_HandleCommandHelpHelper("orders resume", "Resume combat orders to what they were before logout.").c_str());
-
-            // Catches all valid subcommands, also placeholders for potential future sub-subcommands
-            if (ExtractCommand("delay", text, true)) {}
-            else if (ExtractCommand("resume", text, true)) {}
-
             if (text != "") SendWhisper(sInvalidSubcommand, fromPlayer);
             return;
         }
