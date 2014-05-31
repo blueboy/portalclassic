@@ -7106,18 +7106,18 @@ void PlayerbotAI::_HandleCommandHelp(std::string &text, Player &fromPlayer)
 
         if (!bMainHelp)
         {
-            ch.SendSysMessage(_HandleCommandHelpHelper("orders combat <tank | heal | assist | protect | reset> [targetPlayer]", "Sets general orders I should follow. Assist and Protect require a target.").c_str());
-            ch.SendSysMessage(_HandleCommandHelpHelper("orders delay <0-10>", "Activates a delay before I start fighting.").c_str());
-            ch.SendSysMessage(_HandleCommandHelpHelper("orders resume", "Resume combat orders to what they were before logout.").c_str());
+            SendWhisper(_HandleCommandHelpHelper("orders combat <tank | heal | assist | protect | reset> [targetPlayer]", "Sets general orders I should follow. Assist and Protect require a target."), fromPlayer);
+            SendWhisper(_HandleCommandHelpHelper("orders delay <0-10>", "Activates a delay before I start fighting."), fromPlayer);
+            SendWhisper(_HandleCommandHelpHelper("orders resume", "Resume combat orders to what they were before logout."), fromPlayer);
 
             // Catches all valid subcommands, also placeholders for potential future sub-subcommands
             if (ExtractCommand("combat", text, true))
             {
-                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat tank", "Order me to tank. Best used on paladins, warriors or druids.").c_str());
-                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat heal", "Order me to heal. Best used on shamans, priests, druids or paladins.").c_str());
-                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat assist", "Assist the linked target focusing our killing power.", HL_TARGET).c_str());
-                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat protect", "Protect the listed target, attempting to keep aggro away from the target.", HL_TARGET).c_str());
-                ch.SendSysMessage(_HandleCommandHelpHelper("orders combat reset", "Resets my combat orders as though you'd never given me any at all.").c_str());
+                SendWhisper(_HandleCommandHelpHelper("orders combat tank", "Order me to tank. Best used on paladins, warriors or druids."), fromPlayer);
+                SendWhisper(_HandleCommandHelpHelper("orders combat heal", "Order me to heal. Best used on shamans, priests, druids or paladins."), fromPlayer);
+                SendWhisper(_HandleCommandHelpHelper("orders combat assist", "Assist the linked target focusing our killing power.", HL_TARGET), fromPlayer);
+                SendWhisper(_HandleCommandHelpHelper("orders combat protect", "Protect the listed target, attempting to keep aggro away from the target.", HL_TARGET), fromPlayer);
+                SendWhisper(_HandleCommandHelpHelper("orders combat reset", "Resets my combat orders as though you'd never given me any at all."), fromPlayer);
 
                 if (ExtractCommand("tank", text, true)) {}
                 else if (ExtractCommand("heal", text, true)) {}
@@ -7125,12 +7125,12 @@ void PlayerbotAI::_HandleCommandHelp(std::string &text, Player &fromPlayer)
                 else if (ExtractCommand("protect", text, true)) {}
                 else if (ExtractCommand("reset", text, true)) {}
 
-                else if (text != "") ch.SendSysMessage(sInvalidSubcommand.c_str());
+                else if (text != "") SendWhisper(sInvalidSubcommand.c_str(), fromPlayer);
             }
             else if (ExtractCommand("delay", text, true)) {}
             else if (ExtractCommand("resume", text, true)) {}
 
-            else if (text != "") ch.SendSysMessage(sInvalidSubcommand.c_str());
+            else if (text != "") SendWhisper(sInvalidSubcommand.c_str(), fromPlayer);
             return;
         }
     }
