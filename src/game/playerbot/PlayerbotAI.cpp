@@ -89,7 +89,7 @@ m_taxiMaster(ObjectGuid()),
 
     // start following master (will also teleport bot to master)
     SetMovementOrder(MOVEMENT_FOLLOW, GetMaster());
-    CombatDelayRestore();
+    BotDataRestore();
     m_DelayAttackInit = CurrentTime();
 
     // get class specific ai
@@ -2946,19 +2946,20 @@ Unit* PlayerbotAI::FindAttacker(ATTACKERINFOTYPE ait, Unit *victim)
 }
 
 /**
-* CombatDelayRestore()
-* Restores only m_DelayAttack - the other attributes need a valid target. This function is to be called when the targets
+* BotDataRestore()
+* Restores autoequip - the toggle status for the 'equip auto' command.
+* Restores gDelayAttack - the other attributes need a valid target. This function is to be called when the targets
 * may or may not be online (such as upon login). See CombatOrderRestore() for full orders restore.
 * Restores m_DelayAttack - the other attributes need a valid target. This function is to be called when the targets
 */
-void PlayerbotAI::CombatDelayRestore()
+void PlayerbotAI::BotDataRestore()
 {
     QueryResult* result = CharacterDatabase.PQuery("SELECT combat_delay FROM playerbot_saved_data WHERE guid = '%u'", m_bot->GetGUIDLow());
 
     if (!result)
     {
         sLog.outString();
-        sLog.outString(">> [CombatDelayRestore()] Loaded `playerbot_saved_data`, found no match for guid %u.", m_bot->GetGUIDLow());
+        sLog.outString(">> [BotDataRestore()] Loaded `playerbot_saved_data`, found no match for guid %u.", m_bot->GetGUIDLow());
         m_DelayAttack = 0;
         return;
     }

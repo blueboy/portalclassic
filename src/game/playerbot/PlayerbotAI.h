@@ -417,7 +417,7 @@ public:
     Unit *gPrimtarget;
     Unit *gSectarget;
     uint32 gQuestFetch;
-    void CombatDelayRestore();
+    void BotDataRestore();
     void Feast();
     void InterruptCurrentCastingSpell();
     void GetCombatTarget(Unit* forcedTarged = 0);
