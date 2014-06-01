@@ -2232,6 +2232,7 @@ bool PlayerbotAI::CastPull()
 {
     if (!m_bot) return false;
     if (!GetClassAI()) return false;
+    if (!GetCurrentTarget()) return false;
 
     if ((GetCombatOrder() & ORDERS_TANK) == 0) return false;
 
@@ -6064,7 +6065,7 @@ void PlayerbotAI::_HandleCommandPull(std::string &text, Player &fromPlayer)
     if (ExtractCommand("test", text)) // switch to automatic follow distance
     {
         if (CanPull(fromPlayer))
-            SendWhisper("Looks like I could pull just fine.", fromPlayer);
+            SendWhisper("Looks like I am capable of pulling. Ask me 'pull ready' with a target for a more precise check.", fromPlayer);
         return;
     }
     if (ExtractCommand("ready", text)) // switch to automatic follow distance
@@ -6105,11 +6106,15 @@ void PlayerbotAI::_HandleCommandPull(std::string &text, Player &fromPlayer)
     // TODO: Okay, this one should actually be fixable. InMap should return, but LOS (Line of Sight) should result in moving, well, into LoS.
     if (!m_bot->IsWithinLOSInMap(thingToAttack))
     {
-        SendWhisper("I can't see that target! <DevNote: If the tank is near the target, remember that Line of Sight rules apply and *you* need to compensate for them - for now>", fromPlayer);
+        SendWhisper("I can't see that target!", fromPlayer);
         return;
     }
     GetCombatTarget(thingToAttack);
-
+    if (!GetCurrentTarget())
+    {
+        SendWhisper("Failed to set target, cause unknown.", fromPlayer);
+        return;
+    }
     if (bReadyCheck)
     {
         SendWhisper("All checks have been passed and I am ready to pull! ... Are you sure you wouldn't like a smaller target?", fromPlayer);
