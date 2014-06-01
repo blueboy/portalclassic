@@ -339,12 +339,17 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                     Unit* thingToAttack = ObjectAccessor::GetUnit(*m_master, attackOnGuid);
                     if (!thingToAttack) return;
 
-                    Player *bot = 0;
+                    Player* bot = 0;
                     for (PlayerBotMap::iterator itr = m_playerBots.begin(); itr != m_playerBots.end(); ++itr)
                     {
                         bot = itr->second;
-                        if (!bot->IsFriendlyTo(thingToAttack) && bot->IsWithinLOSInMap(thingToAttack))
-                            bot->GetPlayerbotAI()->GetCombatTarget(thingToAttack);
+                        if (!bot->IsFriendlyTo(thingToAttack))
+                        {
+                            if (!bot->IsWithinLOSInMap(thingToAttack))
+                                bot->GetPlayerbotAI()->DoTeleport(*m_master);
+                            if (bot->IsWithinLOSInMap(thingToAttack))
+                                bot->GetPlayerbotAI()->Attack(thingToAttack);
+                        }
                     }
                     return;
                 }
