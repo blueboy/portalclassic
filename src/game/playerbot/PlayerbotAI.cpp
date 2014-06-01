@@ -689,12 +689,23 @@ void PlayerbotAI::SendOrders(Player& /*player*/)
         out << "I HEAL and WON'T DISPEL";
     else if (m_combatOrder & ORDERS_PASSIVE)
         out << "I'm PASSIVE";
-    if ((m_combatOrder & ORDERS_PRIMARY) && (m_combatOrder & ORDERS_SECONDARY))
+    if ((m_combatOrder & ORDERS_PRIMARY) && (m_combatOrder & (ORDERS_PROTECT | ORDERS_RESIST)))
+    {
         out << " and ";
-    if (m_combatOrder & ORDERS_PROTECT)
-        out << "I PROTECT " << (m_targetProtect ? m_targetProtect->GetName() : "unknown");
-    else if (m_combatOrder & ORDERS_RESIST)
-        out << "I RESIST " << m_resistType;
+        if (m_combatOrder & ORDERS_PROTECT)
+                out << "I PROTECT " << (m_targetProtect ? m_targetProtect->GetName() : "unknown");
+        if (m_combatOrder & ORDERS_RESIST)
+        {
+            if (m_combatOrder & ORDERS_RESIST_FIRE)
+                out << "I RESIST FIRE";
+            if (m_combatOrder & ORDERS_RESIST_NATURE)
+                out << "I RESIST NATURE";
+            if (m_combatOrder & ORDERS_RESIST_FROST)
+                out << "I RESIST FROST";
+            if (m_combatOrder & ORDERS_RESIST_SHADOW)
+                out << "I RESIST SHADOW";
+        }
+    }
     out << ".";
 
     if (m_mgr->m_confDebugWhisper)
@@ -725,7 +736,8 @@ void PlayerbotAI::SendOrders(Player& /*player*/)
     }
 
     TellMaster(out.str().c_str());
-    TellMaster("My combat delay is '%u'", m_DelayAttack);
+    if (m_DelayAttack)
+        TellMaster("My combat delay is '%u'", m_DelayAttack);
 }
 
 // handle outgoing packets the server would send to the client
@@ -5643,7 +5655,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     if (text.empty()                                   ||
         text.find("X-Perl")      != std::wstring::npos ||
         text.find("HealBot")     != std::wstring::npos ||
-        text.find("HealComm")    != std::wstring::npos ||   // "HealComm	99990094"
+        text.find("HealComm")    != std::wstring::npos ||   // "HealComm    99990094"
         text.find("LOOT_OPENED") != std::wstring::npos ||
         text.find("CTRA")        != std::wstring::npos ||
         text.find("GathX")       == 0)                      // Gatherer
