@@ -420,6 +420,7 @@ public:
     Unit *gSectarget;
     uint32 gQuestFetch;
     void BotDataRestore();
+    void CombatOrderRestore();
     void Feast();
     void InterruptCurrentCastingSpell();
     void Attack(Unit* forcedTarget = NULL);

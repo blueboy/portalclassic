@@ -95,7 +95,7 @@ CombatManeuverReturns PlayerbotWarriorAI::DoFirstCombatManeuver(Unit* pTarget)
         {
             if (PlayerbotAI::ORDERS_TANK & m_ai->GetCombatOrder())
             {
-                if (m_bot->GetCombatDistance(pTarget) <= ATTACK_DISTANCE)
+                if (m_bot->GetCombatDistance(pTarget, true) <= ATTACK_DISTANCE)
                 {
                     // Set everyone's UpdateAI() waiting to 2 seconds
                     m_ai->SetGroupIgnoreUpdateTime(2);
@@ -213,7 +213,7 @@ CombatManeuverReturns PlayerbotWarriorAI::DoFirstCombatManeuverPVP(Unit *pTarget
     if (!m_ai)  return RETURN_NO_ACTION_ERROR;
     if (!m_bot) return RETURN_NO_ACTION_ERROR;
 
-    float fTargetDist = m_bot->GetCombatDistance(pTarget);
+    float fTargetDist = m_bot->GetCombatDistance(pTarget, true);
 
     if (DEFENSIVE_STANCE && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK))
     {
@@ -490,7 +490,6 @@ void PlayerbotWarriorAI::DoNonCombatActions()
 
     if (EatDrinkBandage(false))
         return;
-    }
 } // end DoNonCombatActions
 
 // Match up with "Pull()" below
@@ -519,7 +518,7 @@ bool PlayerbotWarriorAI::Pull()
     if (!m_bot) return false;
     if (!m_ai)  return false;
 
-    if (m_bot->GetCombatDistance(m_ai->GetCurrentTarget()) > ATTACK_DISTANCE)
+    if (m_bot->GetCombatDistance(m_ai->GetCurrentTarget(), true) > ATTACK_DISTANCE)
     {
         if (!m_ai->IsInRange(m_ai->GetCurrentTarget(), AUTO_SHOT))
         {

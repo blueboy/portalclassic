@@ -57,7 +57,7 @@ m_combatOrder(ORDERS_NONE), m_ScenarioType(SCENARIO_PVE),
 m_TimeDoneEating(0), m_TimeDoneDrinking(0),
 m_CurrentlyCastingSpellId(0), m_spellIdCommand(0),
 m_targetGuidCommand(ObjectGuid()),
-m_taxiMaster(ObjectGuid()),
+m_taxiMaster(ObjectGuid())
 {
 
     // set bot state and needed item list
@@ -94,7 +94,6 @@ m_taxiMaster(ObjectGuid()),
 
     // get class specific ai
     ReloadAI();
-
 }
 
 PlayerbotAI::~PlayerbotAI()
@@ -2240,9 +2239,6 @@ bool PlayerbotAI::CastPull()
     {
         case CLASS_PALADIN:
             return ((PlayerbotPaladinAI*)GetClassAI())->Pull();
-
-        case CLASS_DEATH_KNIGHT:
-            return ((PlayerbotDeathKnightAI*)GetClassAI())->Pull();
 
         case CLASS_DRUID:
             return ((PlayerbotDruidAI*)GetClassAI())->Pull();
