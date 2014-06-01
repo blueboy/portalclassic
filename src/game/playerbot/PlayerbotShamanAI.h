@@ -199,9 +199,6 @@ private:
            ELEMENTAL_MASTERY,
            THUNDERSTORM;
 
-    // first aid
-    uint32 RECENTLY_BANDAGED;
-
     // racial
     uint32 ARCANE_TORRENT,
         GIFT_OF_THE_NAARU, 
