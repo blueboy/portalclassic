@@ -1332,11 +1332,51 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                 // clear current target
                 m_lootCurrent = ObjectGuid();
                 // clear movement
-                m_bot->GetMotionMaster()->Clear();
+                m_bot->GetMotionMaster()->Clear(false);
                 m_bot->GetMotionMaster()->MoveIdle();
                 SetIgnoreUpdateTime();
             }
 
+            return;
+        }
+        
+        case SMSG_LOOT_ROLL_WON:
+        {
+            WorldPacket p(packet);   // (8+4+4+4+4+8+1+1)
+            ObjectGuid guid;
+            uint32 itemid;
+
+            p.read_skip<ObjectGuid>(); // creature guid what we're looting
+            p.read_skip<uint32>();   // item slot in loot
+            p >> itemid;             // the itemEntryId for the item that shall be rolled fo
+            p.read_skip<uint32>();   // randomSuffix
+            p.read_skip<uint32>();   // Item random property
+            p >> guid;               // guid of the player who won
+            p.read_skip<uint8>();    // rollnumber related to SMSG_LOOT_ROLL
+            p.read_skip<uint8>();    // Rolltype related to SMSG_LOOT_ROLL
+
+            if (m_bot->GetObjectGuid() != guid)
+                return;
+
+            SetState(BOTSTATE_DELAYED);
+
+            /* ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
+            if(pProto)
+            {
+                std::ostringstream out;
+                out << "|cff009900" << "I won: |r";
+                MakeItemLink(pProto,out);
+                if (FindItem(itemid,true))
+                    out << "and have the item";
+                TellMaster(out.str().c_str());
+            }*/
+            return;
+        }
+
+        case SMSG_PARTYKILLLOG:
+        {
+            // reset AI delay so bots immediately respond to next combat target & or looting/skinning
+            SetIgnoreUpdateTime(0);
             return;
         }
 
@@ -1782,6 +1822,7 @@ void PlayerbotAI::Feast()
         Item* pItem = FindDrink();
         if (pItem != NULL)
         {
+            TellMaster("drinking %s now...",pItem->GetProto()->Name1);
             UseItem(pItem);
             m_TimeDoneDrinking = CurrentTime() + 30;
             return;
@@ -1795,7 +1836,7 @@ void PlayerbotAI::Feast()
         Item* pItem = FindFood();
         if (pItem != NULL)
         {
-            //TellMaster("eating now...");
+            TellMaster("drinking %s now...",pItem->GetProto()->Name1);
             UseItem(pItem);
             m_TimeDoneEating = CurrentTime() + 30;
             return;
@@ -2383,7 +2424,7 @@ void PlayerbotAI::DoLoot()
     // clear BOTSTATE_LOOTING if no more loot targets
     if (m_lootCurrent.IsEmpty() && m_lootTargets.empty())
     {
-        // DEBUG_LOG ("[PlayerbotAI]: DoLoot - %s is going back to idle", m_bot->GetName() );
+        // DEBUG_LOG ("[PlayerbotAI]: DoLoot - %s is going back to idle", m_bot->GetName());
         SetState(BOTSTATE_NORMAL);
         m_bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
         m_inventory_full = false;
@@ -2430,7 +2471,7 @@ void PlayerbotAI::DoLoot()
         {
             m_lootCurrent = ObjectGuid();
             // clear movement target, take next target on next update
-            m_bot->GetMotionMaster()->Clear();
+            m_bot->GetMotionMaster()->Clear(false);
             m_bot->GetMotionMaster()->MoveIdle();
             return;
         }
@@ -2677,10 +2718,10 @@ void PlayerbotAI::DoLoot()
             DEBUG_LOG ("[PlayerbotAI]: DoLoot attempts failed on [%s]",
                        go ? go->GetGOInfo()->name : c->GetCreatureInfo()->Name);
             m_lootCurrent = ObjectGuid();
-            // clear movement target, take next target on next update
-            m_bot->GetMotionMaster()->Clear();
-            m_bot->GetMotionMaster()->MoveIdle();
         }
+        // clear movement target, take next target on next update
+        m_bot->GetMotionMaster()->Clear(false);
+        m_bot->GetMotionMaster()->MoveIdle();
     }
 }
 
@@ -3415,7 +3456,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         {
             // become ghost
             if (m_bot->GetCorpse()) {
-                // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - %s already has a corpse...", m_bot->GetName() );
+                // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - %s already has a corpse...", m_bot->GetName());
                 SetState(BOTSTATE_DEADRELEASED);
                 return;
             }
@@ -3437,10 +3478,10 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
             // get bot's corpse
             Corpse *corpse = m_bot->GetCorpse();
             if (!corpse)
-                // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - %s has no corpse!", m_bot->GetName() );
+                // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - %s has no corpse!", m_bot->GetName());
                 return;
             // teleport ghost from graveyard to corpse
-            // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - Teleport %s to corpse...", m_bot->GetName() );
+            // DEBUG_LOG ("[PlayerbotAI]: UpdateAI - Teleport %s to corpse...", m_bot->GetName());
             DoTeleport(*corpse);
             // check if we are allowed to resurrect now
             if ((corpse->GetGhostTime() + m_bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP)) > CurrentTime())
@@ -3491,6 +3532,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
     Spell* const pSpell = GetCurrentSpell();
     if (pSpell && !(pSpell->IsChannelActive() || pSpell->IsAutoRepeat()))
     {
+        // DEBUG_LOG("spell (%s) is being interrupted",pSpell->m_spellInfo->SpellName[0]);
         InterruptCurrentCastingSpell();
         return;
     }
@@ -3524,14 +3566,14 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         {
             if (!pSpell || !pSpell->IsChannelActive())
             {
-                // DEBUG_LOG("m_DelayAttackInit (%li)+ m_DelayAttack (%u) > time(%li)", m_DelayAttackInit, m_DelayAttack, CurrentTime());
+                // DEBUG_LOG("m_DelayAttackInit (%li) + m_DelayAttack (%u) > time(%li)", m_DelayAttackInit, m_DelayAttack, CurrentTime());
                 if (m_DelayAttackInit + m_DelayAttack > CurrentTime())
                     return SetIgnoreUpdateTime(1); // short bursts of delay
 
                 return DoNextCombatManeuver();
             }
             else // channelling a spell
-                return SetIgnoreUpdateTime(1);  // It's better to update AI more frequently during combat
+                return SetIgnoreUpdateTime(0);  // It's better to update AI more frequently during combat
         }
 
         return;
@@ -3771,7 +3813,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
                             TellMaster("Couldn't take quest");
                     }
                     m_lootCurrent = ObjectGuid();
-                    m_bot->GetMotionMaster()->Clear();
+                    m_bot->GetMotionMaster()->Clear(false);
                     m_bot->GetMotionMaster()->MoveIdle();
                 }
             } */
@@ -4781,7 +4823,7 @@ void PlayerbotAI::findNearbyCreature()
                 }
             }
             itr = m_findNPC.erase(itr); // all done lets go home
-            m_bot->GetMotionMaster()->Clear();
+            m_bot->GetMotionMaster()->Clear(false);
             m_bot->GetMotionMaster()->MoveIdle();
         }
     }
