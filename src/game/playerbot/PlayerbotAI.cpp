@@ -1827,6 +1827,9 @@ void PlayerbotAI::Attack(Unit* forcedTarget)
 
     GetCombatTarget(forcedTarget);
 
+    if (!m_targetCombat)
+        return;
+
     m_bot->Attack(m_targetCombat, true);
 
     // add thingToAttack to loot list
