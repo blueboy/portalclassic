@@ -13,6 +13,7 @@ enum
 
 enum WarriorSpells
 {
+    AUTO_SHOT_2                     = 75,
     BATTLE_SHOUT_1                  = 6673,
     BATTLE_STANCE_1                 = 2457,
     BERSERKER_RAGE_1                = 18499,
@@ -63,7 +64,13 @@ enum WarriorSpells
     THUNDER_CLAP_1                  = 6343,
     VICTORY_RUSH_1                  = 34428,
     VIGILANCE_1                     = 50720,
-    WHIRLWIND_1                     = 1680
+    WHIRLWIND_1                     = 1680,
+
+    //Procs
+    SLAM_PROC_1                     = 46916,
+    BLOODSURGE_1                    = 46915,
+    TASTE_FOR_BLOOD_1               = 56638,    
+    SUDDEN_DEATH_1                  = 52437
 };
 
 //class Player;
@@ -75,27 +82,99 @@ public:
     virtual ~PlayerbotWarriorAI();
 
     // all combat actions go here
-    bool DoFirstCombatManeuver(Unit*);
-    void DoNextCombatManeuver(Unit*);
+    CombatManeuverReturns DoFirstCombatManeuver(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuver(Unit* pTarget);
+    bool Pull();
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
 
+    //Buff/rebuff shouts
+    void CheckShouts();
+
+    // Utility Functions
+    bool CanPull();
+
 private:
+    CombatManeuverReturns DoFirstCombatManeuverPVE(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuverPVE(Unit* pTarget);
+    CombatManeuverReturns DoFirstCombatManeuverPVP(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuverPVP(Unit* pTarget);
+
     // ARMS
-    uint32 BATTLE_STANCE, CHARGE, HEROIC_STRIKE, REND, THUNDER_CLAP, HAMSTRING, MOCKING_BLOW, RETALIATION, SWEEPING_STRIKES, MORTAL_STRIKE, BLADESTORM, HEROIC_THROW, SHATTERING_THROW;
+    uint32 BATTLE_STANCE, 
+        CHARGE, 
+        HEROIC_STRIKE, 
+        REND, 
+        THUNDER_CLAP, 
+        HAMSTRING, 
+        MOCKING_BLOW, 
+        RETALIATION, 
+        SWEEPING_STRIKES, 
+        MORTAL_STRIKE, 
+        BLADESTORM, 
+        HEROIC_THROW, 
+        SHATTERING_THROW,
+        TASTE_FOR_BLOOD,
+        SUDDEN_DEATH;
 
     // PROTECTION
-    uint32 DEFENSIVE_STANCE, BLOODRAGE, SUNDER_ARMOR, TAUNT, SHIELD_BASH, REVENGE, SHIELD_BLOCK, DISARM, SHIELD_WALL, SHIELD_SLAM, VIGILANCE, DEVASTATE, SHOCKWAVE, CONCUSSION_BLOW, SPELL_REFLECTION, LAST_STAND;
+    uint32 DEFENSIVE_STANCE, 
+        BLOODRAGE, 
+        SUNDER_ARMOR, 
+        TAUNT, 
+        SHIELD_BASH, 
+        REVENGE, 
+        SHIELD_BLOCK, 
+        DISARM, 
+        SHIELD_WALL, 
+        SHIELD_SLAM, 
+        VIGILANCE, 
+        DEVASTATE, 
+        SHOCKWAVE, 
+        CONCUSSION_BLOW, 
+        SPELL_REFLECTION, 
+        LAST_STAND;
 
     // FURY
-    uint32 BERSERKER_STANCE, BATTLE_SHOUT, DEMORALIZING_SHOUT, OVERPOWER, CLEAVE, INTIMIDATING_SHOUT, EXECUTE, CHALLENGING_SHOUT, SLAM, INTERCEPT, DEATH_WISH, BERSERKER_RAGE, WHIRLWIND, PUMMEL, BLOODTHIRST, RECKLESSNESS, RAMPAGE, HEROIC_FURY, COMMANDING_SHOUT, ENRAGED_REGENERATION, PIERCING_HOWL;
-
-    // first aid
-    uint32 RECENTLY_BANDAGED;
+    uint32 BERSERKER_STANCE, 
+        BATTLE_SHOUT, 
+        DEMORALIZING_SHOUT, 
+        OVERPOWER, 
+        CLEAVE, 
+        INTIMIDATING_SHOUT, 
+        EXECUTE, 
+        CHALLENGING_SHOUT, 
+        SLAM, 
+        INTERCEPT, 
+        DEATH_WISH, 
+        BERSERKER_RAGE, 
+        WHIRLWIND, 
+        PUMMEL, 
+        BLOODTHIRST, 
+        RECKLESSNESS,
+        RAMPAGE, 
+        HEROIC_FURY, 
+        COMMANDING_SHOUT, 
+        ENRAGED_REGENERATION, 
+        PIERCING_HOWL,
+        SLAM_PROC,
+        BLOODSURGE;
 
     // racial
-    uint32 ARCANE_TORRENT, GIFT_OF_THE_NAARU, STONEFORM, ESCAPE_ARTIST, EVERY_MAN_FOR_HIMSELF, SHADOWMELD, BLOOD_FURY, WAR_STOMP, BERSERKING, WILL_OF_THE_FORSAKEN;
+    uint32 ARCANE_TORRENT, 
+        GIFT_OF_THE_NAARU, 
+        STONEFORM, 
+        ESCAPE_ARTIST, 
+        EVERY_MAN_FOR_HIMSELF, 
+        SHADOWMELD, 
+        BLOOD_FURY, 
+        WAR_STOMP, 
+        BERSERKING, 
+        WILL_OF_THE_FORSAKEN;
+
+    // general
+    uint32 AUTO_SHOT;
 
     uint32 SpellSequence;
 };

@@ -65,6 +65,7 @@ enum PriestSpells
     SHADOW_WORD_PAIN_1              = 589,
     SHADOWFIEND_1                   = 34433,
     SHADOWFORM_1                    = 15473,
+    SHOOT_1                         = 5019,
     SILENCE_1                       = 15487,
     SMITE_1                         = 585,
     VAMPIRIC_EMBRACE_1              = 15286,
@@ -79,18 +80,27 @@ public:
     virtual ~PlayerbotPriestAI();
 
     // all combat actions go here
-    bool DoFirstCombatManeuver(Unit*);
-    void DoNextCombatManeuver(Unit*);
+    CombatManeuverReturns DoFirstCombatManeuver(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuver(Unit* pTarget);
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
 
-    // buff a specific player, usually a real PC who is not in group
-    bool BuffPlayer(Player *target);
+    // Utility Functions
+    bool CastHoTOnTank();
 
 private:
+    CombatManeuverReturns DoFirstCombatManeuverPVE(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuverPVE(Unit* pTarget);
+    CombatManeuverReturns DoFirstCombatManeuverPVP(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuverPVP(Unit* pTarget);
+
+    CombatManeuverReturns CastSpell(uint32 nextAction, Unit *pTarget = NULL) { return CastSpellWand(nextAction, pTarget, SHOOT); }
+
     // Heals the target based off its hps
-    bool HealTarget (Unit* target);
+    CombatManeuverReturns HealPlayer(Player* target);
+
+    static bool BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target);
 
     // holy
     uint32 BINDING_HEAL,
@@ -108,7 +118,11 @@ private:
            PRAYER_OF_MENDING,
            RENEW,
            RESURRECTION,
-           SMITE;
+           SMITE,
+           CURE_DISEASE;
+           
+    // ranged
+    uint32 SHOOT;
 
     // shadowmagic
     uint32 FADE,
@@ -121,7 +135,9 @@ private:
            VAMPIRIC_TOUCH,
            PRAYER_OF_SHADOW_PROTECTION,
            SHADOWFIEND,
-           MIND_SEAR;
+           MIND_SEAR,
+           SHADOWFORM,
+           VAMPIRIC_EMBRACE;
 
     // discipline
     uint32 POWER_WORD_SHIELD,
@@ -136,9 +152,6 @@ private:
            PRAYER_OF_SPIRIT,
            INNER_FOCUS;
 
-    // first aid
-    uint32 RECENTLY_BANDAGED;
-
     // racial
     uint32 ARCANE_TORRENT,
            GIFT_OF_THE_NAARU,
@@ -149,8 +162,6 @@ private:
            WAR_STOMP,
            BERSERKING,
            WILL_OF_THE_FORSAKEN;
-
-    uint32 SpellSequence, LastSpellHoly, LastSpellShadowMagic, LastSpellDiscipline;
 };
 
 #endif
