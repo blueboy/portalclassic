@@ -439,7 +439,7 @@ bool PlayerbotPriestAI::BuffPlayer(Player* target)
     if (ai->Buff(POWER_WORD_FORTITUDE, target))
         return true;
 
-    if ((target->getClass() == CLASS_DRUID || target->getPowerType() == POWER_MANA) && ai->Buff(DIVINE_SPIRIT, target))
+    if ((target->getClass() == CLASS_DRUID || target->GetPowerType() == POWER_MANA) && ai->Buff(DIVINE_SPIRIT, target))
         return true;
 
     return false;

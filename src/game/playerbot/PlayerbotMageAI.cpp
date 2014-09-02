@@ -458,7 +458,7 @@ bool PlayerbotMageAI::BuffPlayer(Player* target)
     PlayerbotAI * ai = GetAI();
     Pet * pet = target->GetPet();
 
-    if (pet && pet->getPowerType() == POWER_MANA && ai->Buff(ARCANE_INTELLECT, pet))
+    if (pet && pet->GetPowerType() == POWER_MANA && ai->Buff(ARCANE_INTELLECT, pet))
         return true;
 
     if (ARCANE_INTELLECT)

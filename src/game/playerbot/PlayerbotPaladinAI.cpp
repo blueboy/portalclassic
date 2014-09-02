@@ -470,7 +470,7 @@ bool PlayerbotPaladinAI::BuffPlayer(Player* target)
         case CLASS_WARLOCK:
             if (petCanBeBlessed)
             {
-                if (pet->getPowerType() == POWER_MANA)
+                if (pet->GetPowerType() == POWER_MANA)
                 {
                     if (Bless(BLESSING_OF_WISDOM, pet))
                         return true;
