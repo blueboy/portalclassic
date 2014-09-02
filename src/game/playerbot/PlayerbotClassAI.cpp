@@ -112,7 +112,7 @@ CombatManeuverReturns PlayerbotClassAI::Buff(bool (*BuffHelper)(PlayerbotAI*, ui
             if (!groupMember || !groupMember->isAlive() || groupMember->IsInDuel())
                 continue;
             JOB_TYPE job = GetTargetJob(groupMember);
-            if (job & type && (!(job & JOB_MANAONLY) || groupMember->getClass() == CLASS_DRUID || groupMember->getPowerType() == POWER_MANA))
+            if (job & type && (!(job & JOB_MANAONLY) || groupMember->getClass() == CLASS_DRUID || groupMember->GetPowerType() == POWER_MANA))
             {
                 if (BuffHelper(m_ai, spellId, groupMember))
                     return RETURN_CONTINUE;
@@ -122,7 +122,7 @@ CombatManeuverReturns PlayerbotClassAI::Buff(bool (*BuffHelper)(PlayerbotAI*, ui
     else
     {
         if (m_master && !m_master->IsInDuel()
-            && (!(GetTargetJob(m_master) & JOB_MANAONLY) || m_master->getClass() == CLASS_DRUID || m_master->getPowerType() == POWER_MANA))
+            && (!(GetTargetJob(m_master) & JOB_MANAONLY) || m_master->getClass() == CLASS_DRUID || m_master->GetPowerType() == POWER_MANA))
             if (BuffHelper(m_ai, spellId, m_master))
                 return RETURN_CONTINUE;
         // Do not check job or power type - any buff you have is always useful to self
