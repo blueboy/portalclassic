@@ -686,7 +686,7 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
     UpdateMaxHealth();                                      // Update max Health (for add bonus from stamina)
     SetHealth(GetMaxHealth());
 
-    if (getPowerType() == POWER_MANA)
+    if (GetPowerType() == POWER_MANA)
     {
         UpdateMaxPower(POWER_MANA);                         // Update max Mana (for add bonus from intellect)
         SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
@@ -895,7 +895,11 @@ uint32 Player::EnvironmentalDamage(EnvironmentalDamageType type, uint32 damage)
     data << uint32(resist);
     SendMessageToSet(&data, true);
 
-    uint32 final_damage = DealDamage(this, damage, NULL, SELF_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+    DamageEffectType damageType = SELF_DAMAGE;
+    if (type == DAMAGE_FALL && getClass() == CLASS_ROGUE)
+        damageType = SELF_DAMAGE_ROGUE_FALL;
+
+    uint32 final_damage = DealDamage(this, damage, NULL, damageType, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 
     if (type == DAMAGE_FALL && !isAlive())                  // DealDamage not apply item durability loss at self damage
     {
@@ -4460,7 +4464,7 @@ void Player::UpdateLocalChannels(uint32 newZone)
         //  new channel
         char new_channel_name_buf[100];
         snprintf(new_channel_name_buf, 100, ch->pattern[m_session->GetSessionDbcLocale()], current_zone_name.c_str());
-        Channel* new_channel = cMgr->GetJoinChannel(new_channel_name_buf, ch->ChannelID);
+        Channel* new_channel = cMgr->GetJoinChannel(new_channel_name_buf);
 
         if ((*i) != new_channel)
         {
@@ -13574,7 +13578,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     InitStatsForLevel();
 
     // is it need, only in pre-2.x used and field byte removed later?
-    if (getPowerType() == POWER_RAGE || getPowerType() == POWER_MANA)
+    if (GetPowerType() == POWER_RAGE || GetPowerType() == POWER_MANA)
         SetByteValue(UNIT_FIELD_BYTES_1, 1, 0xEE);
 
     // rest bonus can only be calculated after InitStatsForLevel()
@@ -16399,8 +16403,8 @@ void Player::InitDataForForm(bool reapplyMods)
             SetAttackTime(BASE_ATTACK, 1000);               // Speed 1
             SetAttackTime(OFF_ATTACK, 1000);                // Speed 1
 
-            if (getPowerType() != POWER_ENERGY)
-                setPowerType(POWER_ENERGY);
+            if (GetPowerType() != POWER_ENERGY)
+                SetPowerType(POWER_ENERGY);
             break;
         }
         case FORM_BEAR:
@@ -16409,8 +16413,8 @@ void Player::InitDataForForm(bool reapplyMods)
             SetAttackTime(BASE_ATTACK, 2500);               // Speed 2.5
             SetAttackTime(OFF_ATTACK, 2500);                // Speed 2.5
 
-            if (getPowerType() != POWER_RAGE)
-                setPowerType(POWER_RAGE);
+            if (GetPowerType() != POWER_RAGE)
+                SetPowerType(POWER_RAGE);
             break;
         }
         default:                                            // 0, for example
@@ -16418,8 +16422,8 @@ void Player::InitDataForForm(bool reapplyMods)
             SetRegularAttackTime();
 
             ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(getClass());
-            if (cEntry && cEntry->powerType < MAX_POWERS && uint32(getPowerType()) != cEntry->powerType)
-                setPowerType(Powers(cEntry->powerType));
+            if (cEntry && cEntry->powerType < MAX_POWERS && uint32(GetPowerType()) != cEntry->powerType)
+                SetPowerType(Powers(cEntry->powerType));
 
             break;
         }
