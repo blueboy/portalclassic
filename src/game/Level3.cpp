@@ -1980,7 +1980,8 @@ bool ChatHandler::HandleLearnAllMyClassCommand(char* /*args*/)
 
 bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
 {
-    ChrClassesEntry const* clsEntry = sChrClassesStore.LookupEntry(m_session->GetPlayer()->getClass());
+    Player* player = m_session->GetPlayer();
+    ChrClassesEntry const* clsEntry = sChrClassesStore.LookupEntry(player->getClass());
     if (!clsEntry)
         return true;
     uint32 family = clsEntry->spellfamily;
@@ -2000,7 +2001,7 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
             continue;
 
         // skip wrong class/race skills
-        if (!m_session->GetPlayer()->IsSpellFitByClassAndRace(spellInfo->Id))
+        if (!player->IsSpellFitByClassAndRace(spellInfo->Id))
             continue;
 
         // skip other spell families
@@ -2013,10 +2014,10 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
             continue;
 
         // skip broken spells
-        if (!SpellMgr::IsSpellValid(spellInfo, m_session->GetPlayer(), false))
+        if (!SpellMgr::IsSpellValid(spellInfo, player, false))
             continue;
 
-        m_session->GetPlayer()->learnSpell(spellInfo->Id, false);
+        player->learnSpell(spellInfo->Id, false);
     }
 
     SendSysMessage(LANG_COMMAND_LEARN_CLASS_SPELLS);
@@ -2057,7 +2058,7 @@ bool ChatHandler::HandleLearnAllMyTalentsCommand(char* /*args*/)
             continue;
 
         SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellid);
-        if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, m_session->GetPlayer(), false))
+        if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, player, false))
             continue;
 
         // learn highest rank of talent and learn all non-talent spell ranks (recursive by tree)
@@ -2070,9 +2071,11 @@ bool ChatHandler::HandleLearnAllMyTalentsCommand(char* /*args*/)
 
 bool ChatHandler::HandleLearnAllLangCommand(char* /*args*/)
 {
+    Player* player = m_session->GetPlayer();
+
     // skipping UNIVERSAL language (0)
     for (int i = 1; i < LANGUAGES_COUNT; ++i)
-        m_session->GetPlayer()->learnSpell(lang_description[i].spell_id, false);
+        player->learnSpell(lang_description[i].spell_id, false);
 
     SendSysMessage(LANG_COMMAND_LEARN_ALL_LANG);
     return true;
@@ -2093,6 +2096,7 @@ bool ChatHandler::HandleLearnAllDefaultCommand(char* args)
 
 bool ChatHandler::HandleLearnCommand(char* args)
 {
+    Player* player = m_session->GetPlayer();
     Player* targetPlayer = getSelectedPlayer();
 
     if (!targetPlayer)
@@ -2112,7 +2116,7 @@ bool ChatHandler::HandleLearnCommand(char* args)
         return false;
 
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell);
-    if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, m_session->GetPlayer()))
+    if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, player))
     {
         PSendSysMessage(LANG_COMMAND_SPELL_BROKEN, spell);
         SetSentErrorMessage(true);
@@ -2121,7 +2125,7 @@ bool ChatHandler::HandleLearnCommand(char* args)
 
     if (!allRanks && targetPlayer->HasSpell(spell))
     {
-        if (targetPlayer == m_session->GetPlayer())
+        if (targetPlayer == player)
             SendSysMessage(LANG_YOU_KNOWN_SPELL);
         else
             PSendSysMessage(LANG_TARGET_KNOWN_SPELL, targetPlayer->GetName());
@@ -3354,9 +3358,10 @@ bool ChatHandler::HandleGetDistanceCommand(char* args)
 
 bool ChatHandler::HandleDieCommand(char* /*args*/)
 {
+    Player* player = m_session->GetPlayer();
     Unit* target = getSelectedUnit();
 
-    if (!target || !m_session->GetPlayer()->GetSelectionGuid())
+    if (!target || !player->GetSelectionGuid())
     {
         SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
         SetSentErrorMessage(true);
@@ -3371,7 +3376,7 @@ bool ChatHandler::HandleDieCommand(char* /*args*/)
 
     if (target->isAlive())
     {
-        m_session->GetPlayer()->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+        player->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
     }
 
     return true;
@@ -3383,8 +3388,9 @@ bool ChatHandler::HandleDamageCommand(char* args)
         return false;
 
     Unit* target = getSelectedUnit();
+    Player* player = m_session->GetPlayer();
 
-    if (!target || !m_session->GetPlayer()->GetSelectionGuid())
+    if (!target || !player->GetSelectionGuid())
     {
         SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
         SetSentErrorMessage(true);
@@ -3403,12 +3409,12 @@ bool ChatHandler::HandleDamageCommand(char* args)
 
     uint32 damage = damage_int;
 
-    // flat melee damage without resistence/etc reduction
+    // flat melee damage without resistance/etc reduction
     if (!*args)
     {
-        m_session->GetPlayer()->DealDamage(target, damage, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-        if (target != m_session->GetPlayer())
-            m_session->GetPlayer()->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, 1, SPELL_SCHOOL_MASK_NORMAL, damage, 0, 0, VICTIMSTATE_NORMAL, 0);
+        player->DealDamage(target, damage, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+        if (target != player)
+            player->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, 1, SPELL_SCHOOL_MASK_NORMAL, damage, 0, 0, VICTIMSTATE_NORMAL, 0);
         return true;
     }
 
@@ -3422,7 +3428,7 @@ bool ChatHandler::HandleDamageCommand(char* args)
     SpellSchoolMask schoolmask = GetSchoolMask(school);
 
     if (schoolmask & SPELL_SCHOOL_MASK_NORMAL)
-        damage = m_session->GetPlayer()->CalcArmorReducedDamage(target, damage);
+        damage = player->CalcArmorReducedDamage(target, damage);
 
     // melee damage by specific school
     if (!*args)
@@ -3430,16 +3436,16 @@ bool ChatHandler::HandleDamageCommand(char* args)
         uint32 absorb = 0;
         uint32 resist = 0;
 
-        target->CalculateDamageAbsorbAndResist(m_session->GetPlayer(), schoolmask, SPELL_DIRECT_DAMAGE, damage, &absorb, &resist);
+        target->CalculateDamageAbsorbAndResist(player, schoolmask, SPELL_DIRECT_DAMAGE, damage, &absorb, &resist);
 
         if (damage <= absorb + resist)
             return true;
 
         damage -= absorb + resist;
 
-        m_session->GetPlayer()->DealDamageMods(target, damage, &absorb);
-        m_session->GetPlayer()->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
-        m_session->GetPlayer()->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, 1, schoolmask, damage, absorb, resist, VICTIMSTATE_NORMAL, 0);
+        player->DealDamageMods(target, damage, &absorb);
+        player->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
+        player->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, 1, schoolmask, damage, absorb, resist, VICTIMSTATE_NORMAL, 0);
         return true;
     }
 
@@ -3450,7 +3456,7 @@ bool ChatHandler::HandleDamageCommand(char* args)
     if (!spellid || !sSpellStore.LookupEntry(spellid))
         return false;
 
-    m_session->GetPlayer()->SpellNonMeleeDamageLog(target, spellid, damage);
+    player->SpellNonMeleeDamageLog(target, spellid, damage);
     return true;
 }
 
@@ -6386,8 +6392,10 @@ bool ChatHandler::HandleSendMessageCommand(char* args)
     if (!*args)
         return false;
 
+    WorldSession* rPlayerSession = rPlayer->GetSession();
+
     ///- Check that he is not logging out.
-    if (rPlayer->GetSession()->isLogingOut())
+    if (rPlayerSession->isLogingOut())
     {
         SendSysMessage(LANG_PLAYER_NOT_FOUND);
         SetSentErrorMessage(true);
@@ -6396,8 +6404,8 @@ bool ChatHandler::HandleSendMessageCommand(char* args)
 
     ///- Send the message
     // Use SendAreaTriggerMessage for fastest delivery.
-    rPlayer->GetSession()->SendAreaTriggerMessage("%s", args);
-    rPlayer->GetSession()->SendAreaTriggerMessage("|cffff0000[Message from administrator]:|r");
+    rPlayerSession->SendAreaTriggerMessage("%s", args);
+    rPlayerSession->SendAreaTriggerMessage("|cffff0000[Message from administrator]:|r");
 
     // Confirmation message
     std::string nameLink = GetNameLink(rPlayer);
@@ -6527,3 +6535,11 @@ bool ChatHandler::HandleMmapTestArea(char* args)
 
     return true;
 }
+
+bool ChatHandler::HandleServerResetAllRaidCommand(char* args)
+{
+    PSendSysMessage("Global raid instances reset, all players in raid instances will be teleported to homebind!");
+    sMapPersistentStateMgr.GetScheduler().ResetAllRaid();
+    return true;
+}
+

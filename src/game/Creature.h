@@ -55,6 +55,7 @@ enum CreatureFlagsExtra
     CREATURE_EXTRA_FLAG_AGGRO_ZONE      = 0x00000200,       // creature sets itself in combat with zone on aggro
     CREATURE_EXTRA_FLAG_GUARD           = 0x00000400,       // creature is a guard
     CREATURE_EXTRA_FLAG_NO_CALL_ASSIST  = 0x00000800,       // creature shouldn't call for assistance on aggro
+    CREATURE_EXTRA_FLAG_ACTIVE          = 0x00001000,       // creature is active object. Grid of this creature will be loaded and creature set as active
 };
 
 // GCC have alternative #pragma pack(N) syntax and old gcc version not support pack(push,N), also any gcc version not support it at some platform
@@ -469,6 +470,8 @@ enum TemporaryFactionFlags                                  // Used at real fact
     TEMPFACTION_TOGGLE_NON_ATTACKABLE   = 0x08,             // Remove UNIT_FLAG_NON_ATTACKABLE(0x02) when faction is changed (reapply when temp-faction is removed)
     TEMPFACTION_TOGGLE_OOC_NOT_ATTACK   = 0x10,             // Remove UNIT_FLAG_OOC_NOT_ATTACKABLE(0x100) when faction is changed (reapply when temp-faction is removed)
     TEMPFACTION_TOGGLE_PASSIVE          = 0x20,             // Remove UNIT_FLAG_PASSIVE(0x200) when faction is changed (reapply when temp-faction is removed)
+    TEMPFACTION_TOGGLE_PACIFIED         = 0x40,             // Remove UNIT_FLAG_PACIFIED(0x20000) when faction is changed (reapply when temp-faction is removed)
+    TEMPFACTION_TOGGLE_NOT_SELECTABLE   = 0x80,             // Remove UNIT_FLAG_NOT_SELECTABLE(0x2000000) when faction is changed (reapply when temp-faction is removed)
     TEMPFACTION_ALL,
 };
 
