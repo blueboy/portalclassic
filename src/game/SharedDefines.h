@@ -398,7 +398,7 @@ enum SpellAttributesEx4
     SPELL_ATTR_EX4_UNK7                         = 0x00000080,            // 7
     SPELL_ATTR_EX4_UNK8                         = 0x00000100,            // 8
     SPELL_ATTR_EX4_UNK9                         = 0x00000200,            // 9
-    SPELL_ATTR_EX4_SPELL_VS_EXTEND_COST         = 0x00000400,            // 10 Rogue Shiv have this flag
+    SPELL_ATTR_EX4_SPELL_VS_EXTEND_COST         = 0x00000400,            // 10
     SPELL_ATTR_EX4_UNK11                        = 0x00000800,            // 11
     SPELL_ATTR_EX4_UNK12                        = 0x00001000,            // 12
     SPELL_ATTR_EX4_UNK13                        = 0x00002000,            // 13
@@ -491,6 +491,15 @@ enum Team
     HORDE               = 67,
     ALLIANCE            = 469,
 };
+
+enum PvpTeamIndex
+{
+    TEAM_INDEX_ALLIANCE = 0,
+    TEAM_INDEX_HORDE    = 1,
+    TEAM_INDEX_NEUTRAL  = 2,
+};
+
+#define PVP_TEAM_COUNT    2
 
 enum SpellEffects
 {
@@ -894,7 +903,7 @@ enum Targets
     TARGET_SELF                        = 1,
     TARGET_RANDOM_ENEMY_CHAIN_IN_AREA  = 2,                 // only one spell has that, but regardless, it's a target type after all
     TARGET_RANDOM_FRIEND_CHAIN_IN_AREA = 3,
-    TARGET_4                           = 4,                 // some plague spells that are infectious - maybe targets not-infected friends inrange
+    TARGET_RANDOM_UNIT_CHAIN_IN_AREA   = 4,                 // some plague spells that are infectious - maybe targets not-infected friends inrange
     TARGET_PET                         = 5,
     TARGET_CHAIN_DAMAGE                = 6,
     TARGET_AREAEFFECT_INSTANT          = 7,                 // targets around provided destination point
@@ -2497,10 +2506,13 @@ enum TrackedAuraType
 
 #define EXPECTED_MANGOSD_CLIENT_BUILD        {5875, 6005, 6141, 0}
 
-// Maxlevel for expansion
-#define MAX_LEVEL_CLASSIC                    60
-
 // Max creature level (included some bosses and elite)
 #define DEFAULT_MAX_CREATURE_LEVEL 65
+
+enum TeleportLocation
+{
+    TELEPORT_LOCATION_HOMEBIND          = 0,
+    TELEPORT_LOCATION_BG_ENTRY_POINT    = 1,
+};
 
 #endif

@@ -273,12 +273,15 @@ bool Map::EnsureGridLoaded(const Cell& cell)
     return false;
 }
 
-void Map::LoadGrid(const Cell& cell, bool no_unload)
+void Map::ForceLoadGrid(float x, float y)
 {
-    EnsureGridLoaded(cell);
-
-    if (no_unload)
+    if (!IsLoaded(x, y))
+    {
+        CellPair p = MaNGOS::ComputeCellPair(x, y);
+        Cell cell(p);
+        EnsureGridLoadedAtEnter(cell);
         getNGrid(cell.GridX(), cell.GridY())->setUnloadExplicitLock(true);
+    }
 }
 
 bool Map::Add(Player* player)
@@ -723,7 +726,7 @@ void Map::CreatureRelocation(Creature* creature, float x, float y, float z, floa
     MANGOS_ASSERT(CheckGridIntegrity(creature, true));
 }
 
-bool Map::CreatureCellRelocation(Creature* c, Cell new_cell)
+bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
 {
     Cell const& old_cell = c->GetCurrentCell();
     if (old_cell.DiffGrid(new_cell))
@@ -1182,6 +1185,32 @@ void Map::CreateInstanceData(bool load)
     }
 }
 
+void Map::TeleportAllPlayersTo(TeleportLocation loc)
+{
+    while (HavePlayers())
+    {
+        if (Player* plr = m_mapRefManager.getFirst()->getSource())
+        {
+            // Teleport to specified location and removes the player from this map (if the map exists).
+            // Todo : we can add some specific location if needed (ex: map exit location for dungeon)
+            switch (loc)
+            {
+                case TELEPORT_LOCATION_HOMEBIND:
+                    plr->TeleportToHomebind();
+                    break;
+                case TELEPORT_LOCATION_BG_ENTRY_POINT:
+                    plr->TeleportToBGEntryPoint();
+                    break;
+                default:
+                    break;
+            }
+            // just in case, remove the player from the list explicitly here as well to prevent a possible infinite loop
+            // note that this remove is not needed if the code works well in other places
+            plr->GetMapRef().unlink();
+        }
+    }
+}
+
 template void Map::Add(Corpse*);
 template void Map::Add(Creature*);
 template void Map::Add(GameObject*);
@@ -1428,15 +1457,7 @@ void DungeonMap::PermBindAllPlayers(Player* player)
 
 void DungeonMap::UnloadAll(bool pForce)
 {
-    if (HavePlayers())
-    {
-        sLog.outError("DungeonMap::UnloadAll: there are still players in the instance at unload, should not happen!");
-        for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
-        {
-            Player* plr = itr->getSource();
-            plr->TeleportToHomebind();
-        }
-    }
+    TeleportAllPlayersTo(TELEPORT_LOCATION_HOMEBIND);
 
     if (m_resetAfterUnload == true)
         GetPersistanceState()->DeleteRespawnTimes();
@@ -1540,17 +1561,7 @@ void BattleGroundMap::SetUnload()
 
 void BattleGroundMap::UnloadAll(bool pForce)
 {
-    while (HavePlayers())
-    {
-        if (Player* plr = m_mapRefManager.getFirst()->getSource())
-        {
-            plr->TeleportTo(plr->GetBattleGroundEntryPoint());
-            // TeleportTo removes the player from this map (if the map exists) -> calls BattleGroundMap::Remove -> invalidates the iterator.
-            // just in case, remove the player from the list explicitly here as well to prevent a possible infinite loop
-            // note that this remove is not needed if the code works well in other places
-            plr->GetMapRef().unlink();
-        }
-    }
+    TeleportAllPlayersTo(TELEPORT_LOCATION_BG_ENTRY_POINT);
 
     Map::UnloadAll(pForce);
 }
