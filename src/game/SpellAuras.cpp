@@ -1598,9 +1598,9 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
 
                 // If spell that caused this aura has Croud Control or Daze effect
                 if ((aurMechMask & MECHANIC_NOT_REMOVED_BY_SHAPESHIFT) ||
-                        // some Daze spells have these parameters instead of MECHANIC_DAZE (skip snare spells)
-                        (aurSpellInfo->SpellIconID == 15 && aurSpellInfo->Dispel == 0 &&
-                         (aurMechMask & (1 << (MECHANIC_SNARE - 1))) == 0))
+                    // some Daze spells have these parameters instead of MECHANIC_DAZE (skip snare spells)
+                    (aurSpellInfo->SpellIconID == 15 && aurSpellInfo->Dispel == 0 &&
+                    (aurMechMask & (1 << (MECHANIC_SNARE - 1))) == 0))
                 {
                     ++iter;
                     continue;
@@ -1615,6 +1615,13 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             if (target->IsPolymorphed())
                 target->RemoveAurasDueToSpell(target->getTransForm());
 
+            //no break here
+        }
+        case FORM_GHOSTWOLF:
+        {
+            // remove water walk aura. TODO:: there is probably better way to do this
+            target->RemoveSpellsCausingAura(SPELL_AURA_WATER_WALK);
+
             break;
         }
         default:
@@ -1623,14 +1630,12 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
 
     if (apply)
     {
-        Powers PowerType = POWER_MANA;
-
         // remove other shapeshift before applying a new one
         target->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT, GetHolder());
 
         if (modelid > 0)
         {
-            target->SetObjectScale(DEFAULT_OBJECT_SCALE);
+            target->SetObjectScale(DEFAULT_OBJECT_SCALE * target->GetObjectScaleMod());
             target->SetDisplayId(modelid);
         }
 
@@ -1715,9 +1720,9 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             if (target->getRace() == RACE_TAUREN)
             {
                 if (target->getGender() == GENDER_MALE)
-                    target->SetObjectScale(DEFAULT_TAUREN_MALE_SCALE);
+                    target->SetObjectScale(DEFAULT_TAUREN_MALE_SCALE * target->GetObjectScaleMod());
                 else
-                    target->SetObjectScale(DEFAULT_TAUREN_FEMALE_SCALE);
+                    target->SetObjectScale(DEFAULT_TAUREN_FEMALE_SCALE * target->GetObjectScaleMod());
             }
 
             target->SetDisplayId(target->GetNativeDisplayId());
@@ -2215,9 +2220,9 @@ void Aura::HandleModCharm(bool apply, bool Real)
                     if (target->GetByteValue(UNIT_FIELD_BYTES_0, 1) == 0)
                     {
                         if (cinfo->UnitClass == 0)
-                            sLog.outErrorDb("Creature (Entry: %u) have unit_class = 0 but used in charmed spell, that will be result client crash.", cinfo->Entry);
+                            sLog.outErrorDb("Creature (Entry: %u) have UnitClass = 0 but used in charmed spell, that will be result client crash.", cinfo->Entry);
                         else
-                            sLog.outError("Creature (Entry: %u) have unit_class = %u but at charming have class 0!!! that will be result client crash.", cinfo->Entry, cinfo->UnitClass);
+                            sLog.outError("Creature (Entry: %u) have UnitClass = %u but at charming have class 0!!! that will be result client crash.", cinfo->Entry, cinfo->UnitClass);
 
                         target->SetByteValue(UNIT_FIELD_BYTES_0, 1, CLASS_MAGE);
                     }
