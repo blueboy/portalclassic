@@ -702,7 +702,7 @@ void PlayerbotDruidAI::DoNonCombatActions()
     }
 
     // Buff
-    if (m_bot->GetGroup() && GIFT_OF_THE_WILD && m_ai->HasSpellReagents(GIFT_OF_THE_WILD) && m_ai->Buff(GIFT_OF_THE_WILD, m_bot))
+    if (m_bot->GetGroup() && m_ai->HasSpellReagents(GIFT_OF_THE_WILD) && Buff(&PlayerbotDruidAI::BuffHelper, GIFT_OF_THE_WILD) & RETURN_CONTINUE)
         return;
     if (Buff(&PlayerbotDruidAI::BuffHelper, MARK_OF_THE_WILD) & RETURN_CONTINUE)
         return;
@@ -713,9 +713,6 @@ void PlayerbotDruidAI::DoNonCombatActions()
     CheckForms();
 
     // hp/mana check
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-
     if (EatDrinkBandage())
         return;
 

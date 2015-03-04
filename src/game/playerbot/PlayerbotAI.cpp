@@ -3012,6 +3012,23 @@ bool PlayerbotAI::IsInCombat()
     return inCombat;
 }
 
+bool PlayerbotAI::IsRegenerating()
+{
+    Unit::SpellAuraHolderMap& auras = m_bot->GetSpellAuraHolderMap();
+    for (Unit::SpellAuraHolderMap::iterator aura = auras.begin(); aura != auras.end(); aura++)
+    {
+        SpellEntry const* spell = aura->second->GetSpellProto();
+        if (!spell)
+            continue;
+        if (spell->Category == 59 || spell->Category == 11){
+            return true;
+        }
+    }
+    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
+        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
+    return false;
+}
+
 void PlayerbotAI::UpdateAttackersForTarget(Unit *victim)
 {
     HostileReference *ref = victim->getHostileRefManager().getFirst();
@@ -3350,12 +3367,14 @@ void PlayerbotAI::SetCombatOrder(CombatOrderType co, Unit* target)
     if ((co & ORDERS_PRIMARY))
     {
         m_combatOrder = (CombatOrderType) (((uint32) m_combatOrder & (uint32) ORDERS_SECONDARY) | (uint32) co);
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = '%u', primary_target = '%u', pname = '%s' WHERE guid = '%u'", (m_combatOrder & ~ORDERS_TEMP), gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
+        if (target)
+            CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = '%u', primary_target = '%u', pname = '%s' WHERE guid = '%u'", (m_combatOrder & ~ORDERS_TEMP), gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
     }
     else
     {
-        m_combatOrder = (CombatOrderType) ((uint32) m_combatOrder | (uint32) co);
-        CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = '%u', secondary_target = '%u', sname = '%s' WHERE guid = '%u'", (m_combatOrder & ~ORDERS_TEMP), gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
+        m_combatOrder = (CombatOrderType)((uint32)m_combatOrder | (uint32)co);
+        if (target)
+            CharacterDatabase.DirectPExecute("UPDATE playerbot_saved_data SET combat_order = '%u', secondary_target = '%u', sname = '%s' WHERE guid = '%u'", (m_combatOrder & ~ORDERS_TEMP), gTempTarget, gname.c_str(), m_bot->GetGUIDLow());
     }
 }
 
@@ -3722,7 +3741,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         return MovementReset();
 
     // do class specific non combat actions
-    if (GetClassAI() && !m_bot->IsMounted())
+    if (GetClassAI() && !m_bot->IsMounted() && !IsRegenerating())
     {
         GetClassAI()->DoNonCombatActions();
 
