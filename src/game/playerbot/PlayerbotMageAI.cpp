@@ -311,14 +311,10 @@ void PlayerbotMageAI::DoNonCombatActions()
             return;
 
     // buff group
-    if (m_bot->GetGroup() && ARCANE_BRILLIANCE && m_ai->In_Reach(m_bot,ARCANE_BRILLIANCE) && m_ai->HasSpellReagents(ARCANE_BRILLIANCE) && m_ai->Buff(ARCANE_BRILLIANCE, m_bot))
+    if (m_bot->GetGroup() && m_ai->HasSpellReagents(ARCANE_BRILLIANCE) && Buff(&PlayerbotMageAI::BuffHelper, ARCANE_BRILLIANCE) & RETURN_CONTINUE)
         return;
-    if (Buff(&PlayerbotMageAI::BuffHelper, ARCANE_INTELLECT, (JOB_ALL | JOB_MANAONLY)) & RETURN_CONTINUE)
+    else if (Buff(&PlayerbotMageAI::BuffHelper, ARCANE_INTELLECT, JOB_MANAONLY) & RETURN_CONTINUE)
         return;
-
-    // conjure food & water + hp/mana check
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     // TODO: The beauty of a mage is not only its ability to supply itself with water, but to share its water
     // So, conjure at *least* 1.25 stacks, ready to trade a stack and still have some left for self

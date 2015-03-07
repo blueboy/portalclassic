@@ -472,6 +472,7 @@ public:
     bool AddQuest(const uint32 entry, WorldObject* questgiver);
 
     bool IsInCombat();
+    bool IsRegenerating();
     bool IsGroupInCombat();
     Player* GetGroupTank(); // TODO: didn't want to pollute non-playerbot code but this should really go in group.cpp
     void SetGroupCombatOrder(CombatOrderType co);

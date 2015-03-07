@@ -538,9 +538,6 @@ void PlayerbotWarlockAI::DoNonCombatActions()
         }
     }
 
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-
     // hp/mana check
     if (pet && DARK_PACT && (pet->GetPower(POWER_MANA) / pet->GetMaxPower(POWER_MANA)) > 40 && m_ai->GetManaPercent() <= 50)
         if (m_ai->CastSpell(DARK_PACT, *m_bot))

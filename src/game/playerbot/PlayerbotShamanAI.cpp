@@ -531,9 +531,6 @@ void PlayerbotShamanAI::DoNonCombatActions()
     }
 
     // hp/mana check
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-
     if (EatDrinkBandage())
         return;
 } // end DoNonCombatActions

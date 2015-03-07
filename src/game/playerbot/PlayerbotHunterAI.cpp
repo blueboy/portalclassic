@@ -342,9 +342,6 @@ void PlayerbotHunterAI::DoNonCombatActions()
         m_ai->CastSpell(ASPECT_OF_THE_HAWK, *m_bot);
 
     // hp/mana check
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-
     if (EatDrinkBandage())
         return;
 
