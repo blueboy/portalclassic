@@ -112,12 +112,13 @@ class MANGOS_DLL_SPEC ChatHandler
         * \param ObjectGuid const& targetGuid  : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND* or *ACHIEVEMENT
         * \param char const* targetName        : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND*
         * \param char const* channelName       : Required only for CHAT_MSG_CHANNEL
+        * \param uint8 playerRank              : Used only for Defensive Channels (Value over 0 will show rank name before character name in channel)
         **/
         static void BuildChatPacket(
             WorldPacket& data, ChatMsg msgtype, char const* message, Language language = LANG_UNIVERSAL, ChatTagFlags chatTag = CHAT_TAG_NONE,
             ObjectGuid const& senderGuid = ObjectGuid(), char const* senderName = NULL,
             ObjectGuid const& targetGuid = ObjectGuid(), char const* targetName = NULL,
-            char const* channelName = NULL);
+            char const* channelName = NULL, uint8 playerRank = 0);
     protected:
         explicit ChatHandler() : m_session(NULL) {}      // for CLI subclass
 
@@ -333,7 +334,6 @@ class MANGOS_DLL_SPEC ChatHandler
 
         //-----------------------Npc Commands-----------------------
         bool HandleNpcAddCommand(char* args);
-        bool HandleNpcAddMoveCommand(char* args);
         bool HandleNpcAddVendorItemCommand(char* args);
         bool HandleNpcAIInfoCommand(char* args);
         bool HandleNpcAllowMovementCommand(char* args);
@@ -510,7 +510,6 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleWpModifyCommand(char* args);
         bool HandleWpShowCommand(char* args);
         bool HandleWpExportCommand(char* args);
-        bool HandleWpImportCommand(char* args);
 
         bool HandleHelpCommand(char* args);
         bool HandleCommandsCommand(char* args);
@@ -582,6 +581,7 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleMmapStatsCommand(char* args);
         bool HandleMmap(char* args);
         bool HandleMmapTestArea(char* args);
+        bool HandleMmapTestHeight(char* args);
 
         //! Development Commands
         bool HandleSaveAllCommand(char* args);
