@@ -4007,6 +4007,74 @@ void Player::SetWaterWalk(bool enable)
     GetSession()->SendPacket(&data);
 }
 
+void Player::SetLevitate(bool enable)
+{
+    // TODO: check if there is something similar for 2.4.3.
+    // WorldPacket data;
+    // if (enable)
+    //    data.Initialize(SMSG_MOVE_GRAVITY_DISABLE, 12);
+    // else
+    //    data.Initialize(SMSG_MOVE_GRAVITY_ENABLE, 12);
+    //
+    // data << GetPackGUID();
+    // data << uint32(0);                                      // unk
+    // SendMessageToSet(&data, true);
+
+    // data.Initialize(MSG_MOVE_GRAVITY_CHNG, 64);
+    // data << GetPackGUID();
+    // m_movementInfo.Write(data);
+    // SendMessageToSet(&data, false);
+}
+
+void Player::SetCanFly(bool enable)
+{
+//     TODO: check if there is something similar for 1.12.x (99% chance there is not)
+//     WorldPacket data;
+//     if (enable)
+//         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
+//     else
+//         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
+// 
+//     data << GetPackGUID();
+//     data << uint32(0);                                      // unk
+//     SendMessageToSet(&data, true);
+// 
+//     data.Initialize(MSG_MOVE_UPDATE_CAN_FLY, 64);
+//     data << GetPackGUID();
+//     m_movementInfo.Write(data);
+//     SendMessageToSet(&data, false);
+}
+
+void Player::SetFeatherFall(bool enable)
+{
+    WorldPacket data;
+    if (enable)
+        data.Initialize(SMSG_MOVE_FEATHER_FALL, 8 + 4);
+    else
+        data.Initialize(SMSG_MOVE_NORMAL_FALL, 8 + 4);
+
+    data << GetPackGUID();
+    data << uint32(0);
+    SendMessageToSet(&data, true);
+
+    // start fall from current height
+    if (!enable)
+        SetFallInformation(0, GetPositionZ());
+}
+
+void Player::SetHover(bool enable)
+{
+    WorldPacket data;
+    if (enable)
+        data.Initialize(SMSG_MOVE_SET_HOVER, 8 + 4);
+    else
+        data.Initialize(SMSG_MOVE_UNSET_HOVER, 8 + 4);
+
+    data << GetPackGUID();
+    data << uint32(0);
+    SendMessageToSet(&data, true);
+}
+
 /* Preconditions:
   - a resurrectable corpse must not be loaded for the player (only bones)
   - the player must be in world
@@ -6203,13 +6271,8 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
 
         if (sWorld.getConfig(CONFIG_BOOL_WEATHER))
         {
-            if (Weather* wth = sWorld.FindWeather(zone->ID))
-                wth->SendWeatherUpdateToPlayer(this);
-            else if (!sWorld.AddWeather(zone->ID))
-            {
-                // send fine weather packet to remove old zone's weather
-                Weather::SendFineWeatherUpdateToPlayer(this);
-            }
+            Weather* wth = GetMap()->GetWeatherSystem()->FindOrCreateWeather(newZone);
+            wth->SendWeatherUpdateToPlayer(this);
         }
     }
 

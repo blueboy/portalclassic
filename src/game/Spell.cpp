@@ -432,7 +432,7 @@ void Spell::FillTargetMap()
                 case TARGET_SELF:
                     switch (m_spellInfo->EffectImplicitTargetB[i])
                     {
-                        case TARGET_NONE:
+                        case TARGET_NONE:                   // Fill Target based on A only
                             // Arcane Missiles have strange targeting for auras
                             if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800))
                             {
@@ -445,6 +445,7 @@ void Spell::FillTargetMap()
                                 SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
                         case TARGET_EFFECT_SELECT:
+                        case TARGET_SCRIPT:                 // B-target only used with CheckCast here
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
                         case TARGET_AREAEFFECT_INSTANT:     // use B case that not dependent from from A in fact
@@ -4160,10 +4161,11 @@ SpellCastResult Spell::CheckCast(bool strict)
         for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
         {
             if (m_spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT ||
-                    (m_spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT && m_spellInfo->EffectImplicitTargetA[j] != TARGET_SELF) ||
+                    m_spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT ||
                     m_spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT_COORDINATES ||
                     m_spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT_COORDINATES ||
-                    m_spellInfo->EffectImplicitTargetA[j] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT)
+                    m_spellInfo->EffectImplicitTargetA[j] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
+                    m_spellInfo->EffectImplicitTargetB[j] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT)
             {
                 SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(m_spellInfo->Id);
 
@@ -4175,7 +4177,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (m_spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT_COORDINATES || m_spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT_COORDINATES)
                         sLog.outErrorDb("Spell entry %u, effect %i has EffectImplicitTargetA/EffectImplicitTargetB = TARGET_SCRIPT_COORDINATES, but gameobject or creature are not defined in `spell_script_target`", m_spellInfo->Id, j);
 
-                    if (m_spellInfo->EffectImplicitTargetA[j] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT)
+                    if (m_spellInfo->EffectImplicitTargetA[j] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT || m_spellInfo->EffectImplicitTargetB[j] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT)
                         sLog.outErrorDb("Spell entry %u, effect %i has EffectImplicitTargetA/EffectImplicitTargetB = TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT, but gameobject are not defined in `spell_script_target`", m_spellInfo->Id, j);
                 }
 
@@ -4745,24 +4747,28 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_LEAP:
             case SPELL_EFFECT_TELEPORT_UNITS_FACE_CASTER:
             {
-                float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
-                float fx = m_caster->GetPositionX() + dis * cos(m_caster->GetOrientation());
-                float fy = m_caster->GetPositionY() + dis * sin(m_caster->GetOrientation());
-                // teleport a bit above terrain level to avoid falling below it
-                float fz = m_caster->GetMap()->GetHeight(fx, fy, m_caster->GetPositionZ());
-                if (fz <= INVALID_HEIGHT)                   // note: this also will prevent use effect in instances without vmaps height enabled
-                    return SPELL_FAILED_TRY_AGAIN;
+                if (!m_caster || m_caster->IsTaxiFlying())
+                    return SPELL_FAILED_NOT_ON_TAXI;
 
-                float caster_pos_z = m_caster->GetPositionZ();
-                // Control the caster to not climb or drop when +-fz > 8
-                if (!(fz <= caster_pos_z + 8 && fz >= caster_pos_z - 8))
-                    return SPELL_FAILED_TRY_AGAIN;
+                // Blink has leap first and then removing of auras with root effect
+                // need further research with this
+                if (m_spellInfo->Effect[i] != SPELL_EFFECT_LEAP)
+                {
+                    if (m_caster->hasUnitState(UNIT_STAT_ROOT))
+                        return SPELL_FAILED_ROOTED;
+                }
 
-                // not allow use this effect at battleground until battleground start
                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
+                {
+                    if (((Player*)m_caster)->HasMovementFlag(MOVEFLAG_ONTRANSPORT))
+                        return SPELL_FAILED_NOT_ON_TRANSPORT;
+
+                    // not allow use this effect at battleground until battleground start
                     if (BattleGround const* bg = ((Player*)m_caster)->GetBattleGround())
                         if (bg->GetStatus() != STATUS_IN_PROGRESS)
                             return SPELL_FAILED_TRY_AGAIN;
+                }
+
                 break;
             }
             default: break;
