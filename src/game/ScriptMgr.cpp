@@ -104,6 +104,10 @@ uint8 GetSpellStartDBScriptPriority(SpellEntry const* spellinfo, SpellEffectInde
     if (spellinfo->Effect[effIdx] == SPELL_EFFECT_TRIGGER_SPELL && !sSpellStore.LookupEntry(spellinfo->EffectTriggerSpell[effIdx]))
         return 5;
 
+    // NonExisting trigger missile spells can also start DB-Spell-Scripts
+    if (spellinfo->Effect[effIdx] == SPELL_EFFECT_TRIGGER_MISSILE && !sSpellStore.LookupEntry(spellinfo->EffectTriggerSpell[effIdx]))
+        return 4;
+
     // Can not start script
     return 0;
 }
@@ -478,7 +482,7 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                     if (tmp.textId[i] && !sSpellStore.LookupEntry(uint32(tmp.textId[i])))
                     {
                         sLog.outErrorDb("Table `%s` using nonexistent spell (id: %u) in SCRIPT_COMMAND_CAST_SPELL for script id %u, dataint%u",
-                            tablename, uint32(tmp.textId[i]), tmp.id, i + 1);
+                                        tablename, uint32(tmp.textId[i]), tmp.id, i + 1);
                         hasErrored = true;
                     }
                 }
@@ -1124,7 +1128,8 @@ bool ScriptAction::HandleScriptStep()
     WorldObject* pTarget;
     Object* pSourceOrItem;                                  // Stores a provided pSource (if exists as WorldObject) or source-item
 
-    {                                                       // Add scope for source & target variables so that they are not used below
+    {
+        // Add scope for source & target variables so that they are not used below
         Object* source = NULL;
         Object* target = NULL;
         if (!GetScriptCommandObject(m_sourceGuid, true, source))
@@ -1477,12 +1482,12 @@ bool ScriptAction::HandleScriptStep()
 
             // Select Spell
             uint32 spell = m_script->castSpell.spellId;
-            uint32 i = 0;
-            while (i < MAX_TEXT_ID && m_script->textId[i])  // Count which dataint fields are filled
-                ++i;
-            if (i > 0)
-                if (uint32 rnd = urand(0, i))               // Random selection resulted in one of the dataint fields
-                    spell = m_script->textId[rnd - 1];
+            uint32 filledCount = 0;
+            while (filledCount < MAX_TEXT_ID && m_script->textId[filledCount])  // Count which dataint fields are filled
+                ++filledCount;
+            if (filledCount > 0)
+                if (uint32 randomField = urand(0, filledCount))               // Random selection resulted in one of the dataint fields
+                    spell = m_script->textId[randomField - 1];
 
             // TODO: when GO cast implemented, code below must be updated accordingly to also allow GO spell cast
             if (pSource && pSource->GetTypeId() == TYPEID_GAMEOBJECT)
@@ -1858,7 +1863,7 @@ bool ScriptAction::HandleScriptStep()
             }
             if (m_script->setFacing.resetFacing)
             {
-                float x,y,z,o;
+                float x, y, z, o;
                 if (pCSource->GetMotionMaster()->empty() || !pCSource->GetMotionMaster()->top()->GetResetPosition(*pCSource, x, y, z, o))
                     pCSource->GetRespawnCoord(x, y, z, &o);
                 pCSource->SetFacingTo(o);
@@ -1881,7 +1886,7 @@ bool ScriptAction::HandleScriptStep()
             if (LogIfNotUnit(pTarget))
                 return false;
 
-            float x,y,z;
+            float x, y, z;
             if (m_script->moveDynamic.maxDist == 0)         // Move to pTarget
             {
                 if (pTarget == pSource)
@@ -1895,7 +1900,7 @@ bool ScriptAction::HandleScriptStep()
             {
                 float orientation;
                 if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
-                    orientation = pSource->GetOrientation() + m_script->o + 2*M_PI_F;
+                    orientation = pSource->GetOrientation() + m_script->o + 2 * M_PI_F;
                 else
                     orientation = m_script->o;
 
