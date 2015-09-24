@@ -1246,6 +1246,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool getNextQuestId(const std::string& pString, unsigned int& pStartPos, unsigned int& pId);
         void skill(std::list<uint32>& m_spellsToLearn);
         bool requiredQuests(const char* pQuestIdString);
+        uint32 GetSpec();
 
         /*********************************************************/
         /***                   LOAD SYSTEM                     ***/
@@ -2074,7 +2075,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetPlayerbotMgr(PlayerbotMgr* mgr) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotMgr=mgr; }
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
         void SetBotDeathTimer() { m_deathTimer = 0; }
-        bool IsInDuel(Player const* player) const { return duel && (duel->opponent == player || duel->initiator == player) && duel->startTime != 0; }
+        bool IsInDuel() const { return duel && duel->startTime != 0; }
 
     protected:
 

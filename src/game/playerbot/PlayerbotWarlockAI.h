@@ -4,7 +4,14 @@
 #include "PlayerbotClassAI.h"
 
 #define SOUL_SHARD 6265
-#define MAX_SHARD_COUNT 4 // Maximum soul shard count bot should keep
+#define SPELLSTONE 5522
+#define GREATER_SPELLSTONE 13602
+#define MAJOR_SPELLSTONE 13603
+#define LESSER_FIRESTONE 1254
+#define FIRESTONE 13699
+#define GREATER_FIRESTONE 13700
+#define MAJOR_FIRESTONE 13701
+#define MAX_SHARD_COUNT 10 // Maximum soul shard count bot should keep
 
 enum
 {
@@ -16,8 +23,8 @@ enum
 
 enum StoneDisplayId
 {
-    FIRESTONE_DISPLAYID   = 7409,
-    SPELLSTONE_DISPLAYID  = 13291,
+    FIRESTONE_DISPLAYID   = 24380,
+    SPELLSTONE_DISPLAYID  = 21610,
     SOULSTONE_DISPLAYID   = 6009,
     HEALTHSTONE_DISPLAYID = 8026
 };
@@ -115,6 +122,7 @@ enum WarlockSpells
     SHADOWBURN_1                    = 17877,
     SHADOWFLAME_1                   = 47897,
     SHADOWFURY_1                    = 30283,
+    SHOOT_3                         = 5019,
     SOUL_FIRE_1                     = 6353,
     SOUL_LINK_1                     = 19028,
     SOULSHATTER_1                   = 29858,
@@ -135,8 +143,8 @@ public:
     virtual ~PlayerbotWarlockAI();
 
     // all combat actions go here
-    bool DoFirstCombatManeuver(Unit*);
-    void DoNextCombatManeuver(Unit*);
+    CombatManeuverReturns DoFirstCombatManeuver(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuver(Unit* pTarget);
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
@@ -145,6 +153,14 @@ public:
     //void BuffPlayer(Player *target);
 
 private:
+    CombatManeuverReturns DoFirstCombatManeuverPVE(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuverPVE(Unit* pTarget);
+    CombatManeuverReturns DoFirstCombatManeuverPVP(Unit* pTarget);
+    CombatManeuverReturns DoNextCombatManeuverPVP(Unit* pTarget);
+
+    CombatManeuverReturns CastSpell(uint32 nextAction, Unit *pTarget = NULL) { return CastSpellWand(nextAction, pTarget, SHOOT); }
+
+    void CheckDemon();
 
     // CURSES
     uint32 CURSE_OF_WEAKNESS,
@@ -153,6 +169,9 @@ private:
            CURSE_OF_TONGUES,
            CURSE_OF_THE_ELEMENTS,
            CURSE_OF_DOOM;
+           
+    // RANGED
+    uint32 SHOOT;
 
     // AFFLICTION
     uint32 CORRUPTION,
@@ -194,7 +213,8 @@ private:
            DETECT_INVISIBILITY,
            CREATE_FIRESTONE,
            CREATE_SOULSTONE,
-           CREATE_HEALTHSTONE;
+           CREATE_HEALTHSTONE,
+           CREATE_SPELLSTONE;
 
     // DEMON SUMMON
     uint32 SUMMON_IMP,
@@ -222,9 +242,6 @@ private:
            SUFFERING,
            TORMENT;
 
-    // first aid
-    uint32 RECENTLY_BANDAGED;
-
     // racial
     uint32 ARCANE_TORRENT,
            GIFT_OF_THE_NAARU,
@@ -236,11 +253,6 @@ private:
            WAR_STOMP,
            BERSERKING,
            WILL_OF_THE_FORSAKEN;
-
-    uint32 SpellSequence,
-           LastSpellCurse,
-           LastSpellAffliction,
-           LastSpellDestruction;
 
     uint32 m_lastDemon;      // Last demon entry used for spell initialization
     uint32 m_demonOfChoice;  // Preferred demon entry
