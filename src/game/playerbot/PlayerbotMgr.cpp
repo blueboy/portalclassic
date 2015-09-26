@@ -10,6 +10,7 @@
 #include "../Chat.h"
 #include "../Language.h"
 #include "../WaypointMovementGenerator.h"
+#include "../LootMgr.h"
 
 class LoginQueryHolder;
 class CharacterHandler;
@@ -549,25 +550,15 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 
         case CMSG_LOOT_ROLL:
         {
-            WorldPacket p(packet);    //WorldPacket packet for CMSG_LOOT_ROLL, (8+4+1)
+            WorldPacket p(packet);  //WorldPacket packet for CMSG_LOOT_ROLL, (8+4+1)
             ObjectGuid Guid;
             uint32 itemSlot;
             uint8 rollType;
-            Loot *loot = NULL;
 
-            p.rpos(0);        //reset packet pointer
-            p >> Guid;        //guid of the lootable target
-            p >> itemSlot;    //loot index
-            p >> rollType;    //need,greed or pass on roll
-
-            if (Creature* c = m_master->GetMap()->GetCreature(Guid))
-                loot = &c->loot;
-            else if (GameObject* go = m_master->GetMap()->GetGameObject(Guid))
-                loot = &go->loot;
-            else
-                return;
-
-            LootItem& lootItem = loot->items[itemSlot];
+            p.rpos(0);              //reset packet pointer
+            p >> Guid;              //guid of the lootable target
+            p >> itemSlot;          //loot index
+            p >> rollType;          //need,greed or pass on roll
 
             for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
             {
@@ -581,23 +572,35 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                 if (!group)
                     return;
 
-                ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(lootItem.itemid);
+                // check that the bot did not already vote
+                if (rollType >= ROLL_NOT_EMITED_YET)
+                    return;
+                    
+                Loot* loot = sLootMgr.GetLoot(bot, Guid);
+
+                if (!loot)
+                {
+                    sLog.outError("LootMgr::PlayerVote> Error cannot get loot object info!");
+                    return;
+                }
+
+                LootItem* lootItem = loot->GetLootItemInSlot(itemSlot);
+
+                ItemPrototype const *pProto = lootItem->itemProto;
                 if (!pProto)
                     return;
 
                 if (bot->GetPlayerbotAI()->CanStore())
                 {
-                    if (bot->CanUseItem(pProto) == EQUIP_ERR_OK && bot->GetPlayerbotAI()->IsItemUseful(lootItem.itemid))
+                    if (bot->CanUseItem(pProto) == EQUIP_ERR_OK && bot->GetPlayerbotAI()->IsItemUseful(lootItem->itemId))
                         choice = 1; // Need
-                    else if (bot->HasSkill(SKILL_ENCHANTING))
-                        choice = 3; // Disenchant
                     else
                         choice = 2; // Greed
                 }
                 else
-                    choice = 0; // Pass
+                    choice = 0;     // Pass
 
-                group->CountRollVote(bot, Guid, itemSlot, RollVote(choice));
+                sLootMgr.PlayerVote(bot, Guid, itemSlot, RollVote(choice));
             }
             return;
         }

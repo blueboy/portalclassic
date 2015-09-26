@@ -31,6 +31,7 @@
 #include "../AuctionHouseMgr.h"
 #include "../Mail.h"
 #include "../Language.h"
+#include "../LootMgr.h"
 
 // returns a float in range of..
 float rand_float(float low, float high)
@@ -1363,7 +1364,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             {
                 Creature *c = m_bot->GetMap()->GetCreature(m_lootCurrent);
 
-                if (c && c->GetCreatureInfo()->SkinningLootId && !c->lootForSkin)
+                if (c && c->GetCreatureInfo()->SkinningLootId && !c->GetLootStatus() != CREATURE_LOOT_STATUS_LOOTED)
                 {
                     uint32 reqSkill = c->GetCreatureInfo()->GetRequiredLootSkill();
                     // check if it is a leather skin and if it is to be collected (could be ore or herb)
@@ -4254,62 +4255,45 @@ bool PlayerbotAI::PickPocket(Unit* pTarget)
     if(!pTarget)
         return false;
 
-    bool looted = false;
-
     ObjectGuid markGuid = pTarget->GetObjectGuid();
     Creature *c = m_bot->GetMap()->GetCreature(markGuid);
     if(c)
     {
-        m_bot->SendLoot(markGuid, LOOT_PICKPOCKETING);
-        Loot *loot = &c->loot;
-        uint32 lootNum = loot->GetMaxSlotInLootFor(m_bot);
+        c->loot = new Loot(m_bot, c, LOOT_PICKPOCKETING);
 
-        if (m_mgr->m_confDebugWhisper)
+        if (c->loot->GetGoldAmount())
         {
-            std::ostringstream out;
+            m_bot->ModifyMoney(c->loot->GetGoldAmount());
 
-            // calculate how much money bot loots
-            uint32 copper = loot->gold;
-            uint32 gold = uint32(copper / 10000);
-            copper -= (gold * 10000);
-            uint32 silver = uint32(copper / 100);
-            copper -= (silver * 100);
-
-            out << "|r|cff009900" << m_bot->GetName() << " loots: " << "|h|cffffffff[|r|cff00ff00" << gold
-                << "|r|cfffffc00g|r|cff00ff00" << silver
-                << "|r|cffcdcdcds|r|cff00ff00" << copper
-                << "|r|cff993300c"
-                << "|h|cffffffff]";
-
-            TellMaster(out.str().c_str());
-        }
-
-        if (loot->gold)
-        {
-            m_bot->ModifyMoney(loot->gold);
-            loot->gold = 0;
-            loot->NotifyMoneyRemoved();
-        }
-
-        for (uint32 l = 0; l < lootNum; l++)
-        {
-            QuestItem *qitem = 0, *ffaitem = 0, *conditem = 0;
-            LootItem *item = loot->LootItemInSlot(l, m_bot, &qitem, &ffaitem, &conditem);
-            if (!item)
-                continue;
-
-            ItemPosCountVec dest;
-            if (m_bot->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, item->itemid, item->count) == EQUIP_ERR_OK)
+            if (m_mgr->m_confDebugWhisper)
             {
-                Item* pItem = m_bot->StoreNewItem (dest, item->itemid, true, item->randomPropertyId);
-                m_bot->SendNewItem(pItem, uint32(item->count), false, false, true);
-                --loot->unlootedCount;
-                looted = true;
+                std::ostringstream out;
+
+                // calculate how much money bot loots
+                uint32 copper = c->loot->GetGoldAmount();
+                uint32 gold = uint32(copper / 10000);
+                copper -= (gold * 10000);
+                uint32 silver = uint32(copper / 100);
+                copper -= (silver * 100);
+
+                out << "|r|cff009900" << m_bot->GetName() << " loots: " << "|h|cffffffff[|r|cff00ff00" << gold
+                    << "|r|cfffffc00g|r|cff00ff00" << silver
+                    << "|r|cffcdcdcds|r|cff00ff00" << copper
+                    << "|r|cff993300c"
+                    << "|h|cffffffff]";
+
+                TellMaster(out.str().c_str());
             }
+
+            // send the money to the bot and remove it from the creature
+            c->loot->SendGold(m_bot);
         }
-        // release loot
-        if (looted)
-            m_bot->GetSession()->DoLootRelease(markGuid);
+
+        if (!c->loot->AutoStore(m_bot, false, NULL_BAG, NULL_SLOT))
+            sLog.outDebug("PLAYERBOT Debug: Failed to get loot from pickpocketed NPC");
+
+        // release the loot whatever happened
+        c->loot->Release(m_bot);
     }
     return false; // ensures that the rogue only pick pockets target once
 }
