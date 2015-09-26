@@ -33,8 +33,6 @@
 #include "WaypointMovementGenerator.h"
 #include "Mail.h"
 
-#include "revision_nr.h"
-
 ScriptMapMapName sQuestEndScripts;
 ScriptMapMapName sQuestStartScripts;
 ScriptMapMapName sSpellScripts;
@@ -53,7 +51,6 @@ ScriptMgr::ScriptMgr() :
 
     m_pOnInitScriptLibrary(NULL),
     m_pOnFreeScriptLibrary(NULL),
-    m_pGetScriptLibraryVersion(NULL),
 
     m_pGetCreatureAI(NULL),
     m_pCreateInstanceData(NULL),
@@ -2163,14 +2160,6 @@ uint32 ScriptMgr::GetEventIdScriptId(uint32 eventId) const
     return 0;
 }
 
-char const* ScriptMgr::GetScriptLibraryVersion() const
-{
-    if (!m_pGetScriptLibraryVersion)
-        return "";
-
-    return m_pGetScriptLibraryVersion();
-}
-
 CreatureAI* ScriptMgr::GetCreatureAI(Creature* pCreature)
 {
     if (!m_pGetCreatureAI)
@@ -2321,14 +2310,8 @@ ScriptLoadResult ScriptMgr::LoadScriptLibrary(const char* libName)
             return SCRIPT_LOAD_ERR_WRONG_API;   \
         }
 
-    // let check used mangosd revision for build library (unsafe use with different revision because changes in inline functions, define and etc)
-    char const*(MANGOS_IMPORT * pGetMangosRevStr)();
-
-    GET_SCRIPT_HOOK_PTR(pGetMangosRevStr,              "GetMangosRevStr");
-
     GET_SCRIPT_HOOK_PTR(m_pOnInitScriptLibrary,        "InitScriptLibrary");
     GET_SCRIPT_HOOK_PTR(m_pOnFreeScriptLibrary,        "FreeScriptLibrary");
-    GET_SCRIPT_HOOK_PTR(m_pGetScriptLibraryVersion,    "GetScriptLibraryVersion");
 
     GET_SCRIPT_HOOK_PTR(m_pGetCreatureAI,              "GetCreatureAI");
     GET_SCRIPT_HOOK_PTR(m_pCreateInstanceData,         "CreateInstanceData");
@@ -2358,13 +2341,6 @@ ScriptLoadResult ScriptMgr::LoadScriptLibrary(const char* libName)
 
 #   undef GET_SCRIPT_HOOK_PTR
 
-    if (strcmp(pGetMangosRevStr(), REVISION_NR) != 0)
-    {
-        m_pOnFreeScriptLibrary = NULL;                      // prevent call before init
-        UnloadScriptLibrary();
-        return SCRIPT_LOAD_ERR_OUTDATED;
-    }
-
     m_pOnInitScriptLibrary();
     return SCRIPT_LOAD_OK;
 }
@@ -2382,7 +2358,6 @@ void ScriptMgr::UnloadScriptLibrary()
 
     m_pOnInitScriptLibrary      = NULL;
     m_pOnFreeScriptLibrary      = NULL;
-    m_pGetScriptLibraryVersion  = NULL;
 
     m_pGetCreatureAI            = NULL;
     m_pCreateInstanceData       = NULL;

@@ -32,6 +32,8 @@
 #define CONTACT_DISTANCE            0.5f
 #define INTERACTION_DISTANCE        5.0f
 #define ATTACK_DISTANCE             5.0f
+#define INSPECT_DISTANCE            11.11f
+#define TRADE_DISTANCE              11.11f
 #define MAX_VISIBILITY_DISTANCE     333.0f      // max distance for visible object show, limited in 333 yards
 #define DEFAULT_VISIBILITY_DISTANCE 90.0f       // default visible distance, 90 yards on continents
 #define DEFAULT_VISIBILITY_INSTANCE 120.0f      // default visible distance in instances, 120 yards
@@ -70,6 +72,7 @@ class UpdateMask;
 class InstanceData;
 class TerrainInfo;
 struct MangosStringLocale;
+class Loot;
 
 typedef UNORDERED_MAP<Player*, UpdateData> UpdateDataMapType;
 
@@ -222,6 +225,7 @@ class MANGOS_DLL_SPEC Object
         void SetGuidValue(uint16 index, ObjectGuid const& value) { SetUInt64Value(index, value.GetRawValue()); }
         void SetStatFloatValue(uint16 index, float value);
         void SetStatInt32Value(uint16 index, int32 value);
+        void ForceValuesUpdateAtIndex(uint32 index);
 
         void ApplyModUInt32Value(uint16 index, int32 val, bool apply);
         void ApplyModInt32Value(uint16 index, int32 val, bool apply);
@@ -355,6 +359,8 @@ class MANGOS_DLL_SPEC Object
 
         virtual bool HasQuest(uint32 /* quest_id */) const { return false; }
         virtual bool HasInvolvedQuest(uint32 /* quest_id */) const { return false; }
+
+        Loot* loot;
 
     protected:
         Object();
@@ -600,8 +606,6 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         // ASSERT print helper
         bool PrintCoordinatesError(float x, float y, float z, char const* descr) const;
 
-        virtual void StartGroupLoot(Group* /*group*/, uint32 /*timer*/) {}
-
     protected:
         explicit WorldObject();
 
@@ -610,8 +614,6 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         // mapId/instanceId should be set in SetMap() function!
         void SetLocationMapId(uint32 _mapId) { m_mapId = _mapId; }
         void SetLocationInstanceId(uint32 _instanceId) { m_InstanceId = _instanceId; }
-
-        virtual void StopGroupLoot() {}
 
         std::string m_name;
 

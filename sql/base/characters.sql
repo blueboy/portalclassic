@@ -21,7 +21,7 @@
 
 DROP TABLE IF EXISTS `character_db_version`;
 CREATE TABLE `character_db_version` (
-  `required_z2559_s2204_12756_01_characters_pvpstats` bit(1) DEFAULT NULL
+  `required_z2682_01_characters_pvpstats` bit(1) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Last applied sql update to DB';
 
 --
@@ -835,8 +835,8 @@ CREATE TABLE `guild` (
   `BorderStyle` int(5) NOT NULL DEFAULT '0',
   `BorderColor` int(5) NOT NULL DEFAULT '0',
   `BackgroundColor` int(5) NOT NULL DEFAULT '0',
-  `info` text NOT NULL,
-  `motd` varchar(255) NOT NULL DEFAULT '',
+  `info` varchar(500) NOT NULL DEFAULT '',
+  `motd` varchar(128) NOT NULL DEFAULT '',
   `createdate` bigint(20) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`guildid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Guild System';
@@ -887,8 +887,8 @@ CREATE TABLE `guild_member` (
   `guildid` int(6) unsigned NOT NULL DEFAULT '0',
   `guid` int(11) unsigned NOT NULL DEFAULT '0',
   `rank` tinyint(2) unsigned NOT NULL DEFAULT '0',
-  `pnote` varchar(255) NOT NULL DEFAULT '',
-  `offnote` varchar(255) NOT NULL DEFAULT '',
+  `pnote` varchar(31) NOT NULL DEFAULT '',
+  `offnote` varchar(31) NOT NULL DEFAULT '',
   UNIQUE KEY `guid_key` (`guid`),
   KEY `guildid_rank_key` (`guildid`,`rank`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Guild System';
@@ -1218,11 +1218,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `pvpstats_battlegrounds`;
 CREATE TABLE `pvpstats_battlegrounds` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `winner_team` TINYINT NOT NULL,
-  `bracket_id` TINYINT UNSIGNED NOT NULL,
-  `type` TINYINT UNSIGNED NOT NULL,
-  `date` DATETIME NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `winner_team` tinyint(3) NOT NULL,
+  `bracket_id` tinyint(3) unsigned NOT NULL,
+  `type` tinyint(3) unsigned NOT NULL,
+  `date` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
@@ -1241,20 +1241,20 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `pvpstats_players`;
 CREATE TABLE `pvpstats_players` (
-  `battleground_id` BIGINT UNSIGNED NOT NULL,
-  `player_guid` INT UNSIGNED NOT NULL,
-  `score_killing_blows` MEDIUMINT UNSIGNED NOT NULL,
-  `score_deaths` MEDIUMINT UNSIGNED NOT NULL,
-  `score_honorable_kills` MEDIUMINT UNSIGNED NOT NULL,
-  `score_bonus_honor` MEDIUMINT UNSIGNED NOT NULL,
-  `score_damage_done` MEDIUMINT UNSIGNED NOT NULL,
-  `score_healing_done` MEDIUMINT UNSIGNED NOT NULL,
-  `attr_1` MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-  `attr_2` MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-  `attr_3` MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-  `attr_4` MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-  `attr_5` MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-  PRIMARY KEY (`battleground_id`, `player_guid`)
+  `battleground_id` bigint(20) unsigned NOT NULL,
+  `character_guid` int(10) unsigned NOT NULL,
+  `score_killing_blows` mediumint(8) unsigned NOT NULL,
+  `score_deaths` mediumint(8) unsigned NOT NULL,
+  `score_honorable_kills` mediumint(8) unsigned NOT NULL,
+  `score_bonus_honor` mediumint(8) unsigned NOT NULL,
+  `score_damage_done` mediumint(8) unsigned NOT NULL,
+  `score_healing_done` mediumint(8) unsigned NOT NULL,
+  `attr_1` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  `attr_2` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  `attr_3` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  `attr_4` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  `attr_5` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`battleground_id`, `character_guid`)
 ) ENGINE=InnoDB;
 
 --

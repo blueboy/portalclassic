@@ -176,6 +176,7 @@ BattleGround::BattleGround()
     m_InvitedHorde      = 0;
     m_Winner            = TEAM_NONE;
     m_StartTime         = 0;
+    m_validStartPositionTimer = 0;
     m_Events            = 0;
     m_Name              = "";
     m_LevelMin          = 0;
@@ -300,14 +301,7 @@ void BattleGround::Update(uint32 diff)
         }
         else if (m_PrematureCountDownTimer < diff)
         {
-            // time's up!
-            Team winner = TEAM_NONE;
-            if (GetPlayersCountByTeam(ALLIANCE) >= GetMinPlayersPerTeam())
-                winner = ALLIANCE;
-            else if (GetPlayersCountByTeam(HORDE) >= GetMinPlayersPerTeam())
-                winner = HORDE;
-
-            EndBattleGround(winner);
+            EndBattleGround(GetPrematureWinner());
             m_PrematureCountDown = false;
         }
         else if (!sBattleGroundMgr.isTesting())
@@ -337,6 +331,29 @@ void BattleGround::Update(uint32 diff)
 
     if (GetStatus() == STATUS_WAIT_JOIN && GetPlayersSize())
     {
+        float maxDist = GetStartMaxDist();
+        if (maxDist > 0.0f)
+        {
+            if (m_validStartPositionTimer < diff)
+            {
+                for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
+                {
+                    if (Player* player = sObjectMgr.GetPlayer(itr->first))
+                    {
+                        float x, y, z, o;
+                        GetTeamStartLoc(player->GetTeam(), x, y, z, o);
+                        if (!player->IsWithinDist3d(x, y, z, maxDist))
+                        {
+                            player->TeleportTo(GetMapId(), x, y, z, o);
+                        }
+                    }
+                }
+                m_validStartPositionTimer = CHECK_PLAYER_POSITION_INVERVAL;
+            }
+            else
+                m_validStartPositionTimer -= diff;
+        }
+
         ModifyStartDelayTime(diff);
 
         if (!(m_Events & BG_STARTING_EVENT_1))
@@ -677,7 +694,7 @@ void BattleGround::EndBattleGround(Team winner)
         {
             static SqlStatementID insPvPstatsPlayer;
             BattleGroundScoreMap::iterator score = m_PlayerScores.find(itr->first);
-            SqlStatement stmt = CharacterDatabase.CreateStatement(insPvPstatsPlayer, "INSERT INTO pvpstats_players (battleground_id, player_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            SqlStatement stmt = CharacterDatabase.CreateStatement(insPvPstatsPlayer, "INSERT INTO pvpstats_players (battleground_id, character_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             stmt.addUInt32(battleground_id);
             stmt.addUInt32(plr->GetGUIDLow());
@@ -1055,18 +1072,20 @@ void BattleGround::AddOrSetPlayerToCorrectBgGroup(Player* plr, ObjectGuid plr_gu
 }
 
 // This method should be called when player logs into running battleground
-void BattleGround::EventPlayerLoggedIn(Player* player, ObjectGuid plr_guid)
+void BattleGround::EventPlayerLoggedIn(Player* player)
 {
+    ObjectGuid playerGuid = player->GetObjectGuid();
+
     // player is correct pointer
     for (OfflineQueue::iterator itr = m_OfflineQueue.begin(); itr != m_OfflineQueue.end(); ++itr)
     {
-        if (*itr == plr_guid)
+        if (*itr == playerGuid)
         {
             m_OfflineQueue.erase(itr);
             break;
         }
     }
-    m_Players[plr_guid].OfflineRemoveTime = 0;
+    m_Players[playerGuid].OfflineRemoveTime = 0;
     PlayerAddedToBGCheckIfBGIsRunning(player);
     // if battleground is starting, then add preparation aura
     // we don't have to do that, because preparation aura isn't removed when player logs out
@@ -1188,6 +1207,19 @@ void BattleGround::DoorOpen(ObjectGuid guid)
     }
     else
         sLog.outError("BattleGround: Door %s not found! - doors will be closed.", guid.GetString().c_str());
+}
+
+Team BattleGround::GetPrematureWinner()
+{
+    uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
+    uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
+
+    if (hordePlayers > alliancePlayers)
+        return HORDE;
+    if (alliancePlayers > hordePlayers)
+        return ALLIANCE;
+
+    return TEAM_NONE;
 }
 
 void BattleGround::OnObjectDBLoad(Creature* creature)

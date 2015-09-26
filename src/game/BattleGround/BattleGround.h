@@ -81,6 +81,7 @@ enum BattleGroundMarksCount
 
 enum BattleGroundTimeIntervals
 {
+    CHECK_PLAYER_POSITION_INVERVAL  = 1000,                 // ms
     RESURRECTION_INTERVAL           = 30000,                // ms
     INVITATION_REMIND_TIME          = 60000,                // ms
     INVITE_ACCEPT_WAIT_TIME         = 80000,                // ms
@@ -345,6 +346,9 @@ class BattleGround
             O = m_TeamStartLocO[idx];
         }
 
+        void SetStartMaxDist(float startMaxDist) { m_startMaxDist = startMaxDist; }
+        float GetStartMaxDist() const { return m_startMaxDist; }
+
         /* Packet Transfer */
         // method that should fill worldpacket with actual world states (not yet implemented for all battlegrounds!)
         virtual void FillInitialWorldStates(WorldPacket& /*data*/, uint32& /*count*/) {}
@@ -396,7 +400,7 @@ class BattleGround
 
         /* Triggers handle */
         // must be implemented in BG subclass
-        virtual void HandleAreaTrigger(Player* /*Source*/, uint32 /*Trigger*/) {}
+        virtual bool HandleAreaTrigger(Player* /*Source*/, uint32 /*Trigger*/) { return false;  }
         // must be implemented in BG subclass if need AND call base class generic code
         virtual void HandleKillPlayer(Player* player, Player* killer);
         virtual void HandleKillUnit(Creature* /*unit*/, Player* /*killer*/) {}
@@ -411,7 +415,7 @@ class BattleGround
         virtual void EventPlayerDroppedFlag(Player* /*player*/) {}
         virtual void EventPlayerClickedOnFlag(Player* /*player*/, GameObject* /*target_obj*/) {}
         virtual void EventPlayerCapturedFlag(Player* /*player*/) {}
-        void EventPlayerLoggedIn(Player* player, ObjectGuid plr_guid);
+        void EventPlayerLoggedIn(Player* player);
         void EventPlayerLoggedOut(Player* player);
 
         /* Death related */
@@ -449,6 +453,8 @@ class BattleGround
 
         void DoorOpen(ObjectGuid guid);
         void DoorClose(ObjectGuid guid);
+
+        virtual Team GetPrematureWinner();
 
         virtual bool HandlePlayerUnderMap(Player* /*plr*/) { return false; }
 
@@ -507,6 +513,7 @@ class BattleGround
         BattleGroundStatus m_Status;
         uint32 m_ClientInstanceID;                          // the instance-id which is sent to the client and without any other internal use
         uint32 m_StartTime;
+        uint32 m_validStartPositionTimer;
         int32 m_EndTime;                                    // it is set to 120000 when bg is ending and it decreases itself
         BattleGroundBracketId m_BracketId;
         bool   m_InBGFreeSlotQueue;                         // used to make sure that BG is only once inserted into the BattleGroundMgr.BGFreeSlotQueue[bgTypeId] deque
@@ -547,6 +554,7 @@ class BattleGround
         float m_TeamStartLocY[PVP_TEAM_COUNT];
         float m_TeamStartLocZ[PVP_TEAM_COUNT];
         float m_TeamStartLocO[PVP_TEAM_COUNT];
+        float m_startMaxDist;
 };
 
 // helper functions for world state list fill

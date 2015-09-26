@@ -28,6 +28,7 @@
 #include "ScriptMgr.h"
 #include "Totem.h"
 #include "SpellAuras.h"
+#include "LootMgr.h"
 
 void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 {
@@ -235,7 +236,13 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
         stmt.PExecute(pItem->GetGUIDLow());
     }
     else
-        pUser->SendLoot(pItem->GetObjectGuid(), LOOT_CORPSE);
+    {
+        Loot*& loot = pItem->loot;
+        if (!loot)
+            loot = new Loot(pUser, pItem, LOOT_PICKPOCKETING);
+
+        loot->ShowContentTo(pUser);
+    }
 }
 
 void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
@@ -250,8 +257,11 @@ void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
     if (!_player->IsSelfMover())
         return;
 
-    GameObject* obj = GetPlayer()->GetMap()->GetGameObject(guid);
+    GameObject* obj = _player->GetMap()->GetGameObject(guid);
     if (!obj)
+        return;
+
+    if (!obj->IsWithinDistInMap(_player, obj->GetInteractionDistance()))
         return;
 
     // Additional check preventing exploits (ie loot despawned chests)

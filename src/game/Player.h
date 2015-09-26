@@ -777,6 +777,19 @@ struct BGData
     bool m_needSave;                                        ///< true, if saved to DB fields modified after prev. save (marked as "saved" above)
 };
 
+struct TradeStatusInfo
+{
+    TradeStatusInfo() : Status(TRADE_STATUS_BUSY), TraderGuid(), Result(EQUIP_ERR_OK),
+        IsTargetResult(false), ItemLimitCategoryId(0), Slot(0) { }
+
+    TradeStatus Status;
+    ObjectGuid TraderGuid;
+    InventoryResult Result;
+    bool IsTargetResult;
+    uint32 ItemLimitCategoryId;
+    uint8 Slot;
+};
+
 class TradeData
 {
     public:                                                 // constructors
@@ -1036,9 +1049,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void AutoUnequipOffhandIfNeed();
         bool StoreNewItemInBestSlots(uint32 item_id, uint32 item_count);
         Item* StoreNewItemInInventorySlot(uint32 itemEntry, uint32 amount);
-
-        void AutoStoreLoot(WorldObject const* lootTarget, uint32 loot_id, LootStore const& store, bool broadcast = false, uint8 bag = NULL_BAG, uint8 slot = NULL_SLOT);
-        void AutoStoreLoot(Loot& loot, bool broadcast = false, uint8 bag = NULL_BAG, uint8 slot = NULL_SLOT);
 
         Item* ConvertItem(Item* item, uint32 newItemId);
 
@@ -1782,11 +1792,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         PlayerMenu* PlayerTalkClass;
         std::vector<ItemSetEffect*> ItemSetEff;
 
-        void SendLoot(ObjectGuid guid, LootType loot_type);
-        void SendLootRelease(ObjectGuid guid);
-        void SendNotifyLootItemRemoved(uint8 lootSlot);
-        void SendNotifyLootMoneyRemoved();
-
         /*********************************************************/
         /***               BATTLEGROUND SYSTEM                 ***/
         /*********************************************************/
@@ -2063,9 +2068,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         GridReference<Player>& GetGridRef() { return m_gridRef; }
         MapReference& GetMapRef() { return m_mapRef; }
-
-        bool isAllowedToLoot(Creature* creature);
-
 
         // Playerbot mod:
         // A Player can either have a playerbotMgr (to manage its bots), or have playerbotAI (if it is a bot), or
