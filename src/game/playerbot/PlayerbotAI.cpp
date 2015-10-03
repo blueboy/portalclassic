@@ -2598,7 +2598,7 @@ void PlayerbotAI::DoLoot()
 
         if (c)  // creature
         {
-            if (c->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
+            if (c->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE) && !c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
             {
                 // loot the creature
                 WorldPacket* const packet = new WorldPacket(CMSG_LOOT, 8);
