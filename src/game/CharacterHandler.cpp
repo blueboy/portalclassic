@@ -447,7 +447,7 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
     ObjectGuid playerGuid;
     recv_data >> playerGuid;
 
-    if (PlayerLoading() || GetPlayer() != NULL)
+    if (PlayerLoading() || GetPlayer() != nullptr)
     {
         sLog.outError("Player tryes to login again, AccountId = %d", GetAccountId());
         return;

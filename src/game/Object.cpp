@@ -50,12 +50,12 @@ Object::Object()
     m_objectTypeId      = TYPEID_OBJECT;
     m_objectType        = TYPEMASK_OBJECT;
 
-    m_uint32Values      = NULL;
+    m_uint32Values      = nullptr;
     m_valuesCount       = 0;
 
     m_inWorld           = false;
     m_objectUpdated     = false;
-    loot              = NULL;
+    loot              = nullptr;
 }
 
 Object::~Object()
@@ -233,7 +233,7 @@ void Object::DestroyForPlayer(Player* target) const
 
 void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 {
-    Unit const* unit = NULL;
+    Unit const* unit = nullptr;
     uint32 highGuid = 0;
     MovementFlags moveflags = MOVEFLAG_NONE;
 
@@ -320,6 +320,25 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
     bool IsActivateToQuest = false;
     bool IsPerCasterAuraState = false;
+    bool sendPercent = false;
+
+    if (m_objectTypeId == TYPEID_UNIT)
+    {
+        if (!static_cast<Creature const*>(this)->IsPet() && !target->IsFriendlyTo(static_cast<Unit const*>(this)))
+            sendPercent = true;
+    }
+    else
+    {
+        if (target != this && m_objectTypeId == TYPEID_PLAYER)
+        {
+            if (static_cast<Player const*>(this)->GetTeam() != static_cast<Player const*>(target)->GetTeam() ||
+                !target->IsFriendlyTo(static_cast<Unit const*>(this)))
+            {
+                // not same faction or not friendly
+                sendPercent = true;
+            }
+        }
+    }
 
     if (updatetype == UPDATETYPE_CREATE_OBJECT || updatetype == UPDATETYPE_CREATE_OBJECT2)
     {
@@ -375,6 +394,18 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                     }
 
                     *data << uint32(appendValue);
+                }
+                else if (sendPercent && index == UNIT_FIELD_HEALTH)
+                {
+                    // send health percentage instead of real value to enemy
+                    if (m_uint32Values[UNIT_FIELD_HEALTH] == 0)
+                        *data << uint32(0);
+                    else
+                        *data << uint32(ceil(m_uint32Values[UNIT_FIELD_HEALTH] * 100 / float(m_uint32Values[UNIT_FIELD_MAXHEALTH]))); // never less than 1 as health is not zero
+                }
+                else if (sendPercent && index == UNIT_FIELD_MAXHEALTH)
+                {
+                    *data << uint32(100);
                 }
                 // FIXME: Some values at server stored in float format but must be sent to client in uint32 format
                 else if (index >= UNIT_FIELD_BASEATTACKTIME && index <= UNIT_FIELD_RANGEDATTACKTIME)
@@ -485,7 +516,6 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                         {
                             case GAMEOBJECT_TYPE_QUESTGIVER:
                             case GAMEOBJECT_TYPE_CHEST:
-                                sLog.outString("Chest %s is updated, state is %u", gameObject->GetGuidStr().c_str(), uint32(gameObject->getLootState()));
                                 if (gameObject->getLootState() == GO_READY || gameObject->getLootState() == GO_ACTIVATED)
                                     *data << uint16(GO_DYNFLAG_LO_ACTIVATE | GO_DYNFLAG_LO_SPARKLE);
                                 else
@@ -553,7 +583,7 @@ bool Object::LoadValues(const char* data)
     int index;
     for (iter = tokens.begin(), index = 0; index < m_valuesCount; ++iter, ++index)
     {
-        m_uint32Values[index] = atol((*iter).c_str());
+        m_uint32Values[index] = std::stoul((*iter).c_str());
     }
 
     return true;
@@ -868,7 +898,7 @@ void Object::ForceValuesUpdateAtIndex(uint32 index)
 }
 
 WorldObject::WorldObject() :
-    m_currMap(NULL),
+    m_currMap(nullptr),
     m_mapId(0), m_InstanceId(0),
     m_isActiveObject(false)
 {
@@ -1195,7 +1225,7 @@ bool WorldObject::isInBack(WorldObject const* target, float distance, float arc)
     return IsWithinDist(target, distance) && !HasInArc(2 * M_PI_F - arc, target);
 }
 
-void WorldObject::GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z, float minDist /*=0.0f*/, float const* ori /*=NULL*/) const
+void WorldObject::GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z, float minDist /*=0.0f*/, float const* ori /*=nullptr*/) const
 {
     if (distance == 0)
     {
@@ -1234,7 +1264,7 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
         z = new_z + 0.05f;                                  // just to be sure that we are not a few pixel under the surface
 }
 
-void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=NULL*/) const
+void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=nullptr*/) const
 {
     if (!atMap)
         atMap = GetMap();
@@ -1343,7 +1373,7 @@ namespace MaNGOS
                 : i_object(obj), i_msgtype(msgtype), i_textData(textData), i_language(language), i_target(target) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
-                char const* text = NULL;
+                char const* text = nullptr;
                 if ((int32)i_textData->Content.size() > loc_idx + 1 && !i_textData->Content[loc_idx + 1].empty())
                     text = i_textData->Content[loc_idx + 1].c_str();
                 else
@@ -1487,7 +1517,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
     if (!cinfo)
     {
         sLog.outErrorDb("WorldObject::SummonCreature: Creature (Entry: %u) not existed for summoner: %s. ", id, GetGuidStr().c_str());
-        return NULL;
+        return nullptr;
     }
 
     TemporarySummon* pCreature = new TemporarySummon(GetObjectGuid());
@@ -1504,7 +1534,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
     if (!pCreature->Create(GetMap()->GenerateLocalLowGuid(cinfo->GetHighGuid()), pos, cinfo, team))
     {
         delete pCreature;
-        return NULL;
+        return nullptr;
     }
 
     pCreature->SetRespawnCoord(pos);
@@ -1727,7 +1757,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
         UpdateGroundPositionZ(x, y, z);
 }
 
-void WorldObject::PlayDistanceSound(uint32 sound_id, Player const* target /*= NULL*/) const
+void WorldObject::PlayDistanceSound(uint32 sound_id, Player const* target /*= nullptr*/) const
 {
     WorldPacket data(SMSG_PLAY_OBJECT_SOUND, 4 + 8);
     data << uint32(sound_id);
@@ -1738,7 +1768,7 @@ void WorldObject::PlayDistanceSound(uint32 sound_id, Player const* target /*= NU
         SendMessageToSet(&data, true);
 }
 
-void WorldObject::PlayDirectSound(uint32 sound_id, Player const* target /*= NULL*/) const
+void WorldObject::PlayDirectSound(uint32 sound_id, Player const* target /*= nullptr*/) const
 {
     WorldPacket data(SMSG_PLAY_SOUND, 4);
     data << uint32(sound_id);
