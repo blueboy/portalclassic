@@ -161,7 +161,7 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
     bool meleeReach = m_bot->CanReachWithMeleeAttack(pTarget);
     Pet *pet = m_bot->GetPet();
     uint32 spec = m_bot->GetSpec();
-    uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, NULL);
+    uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, nullptr);
 
     //If we have UA it will replace immolate in our rotation
     uint32 FIRE = (UNSTABLE_AFFLICTION > 0 ? UNSTABLE_AFFLICTION : IMMOLATE);
@@ -341,7 +341,7 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVP(Unit* pTarget)
 void PlayerbotWarlockAI::CheckDemon()
 {
     uint32 spec = m_bot->GetSpec();
-    uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, NULL);
+    uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, nullptr);
     Pet *pet = m_bot->GetPet();
 
     //Assign demon of choice
@@ -451,7 +451,7 @@ void PlayerbotWarlockAI::DoNonCombatActions()
     }
 
     // Destroy extra soul shards
-    uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, NULL);
+    uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, nullptr);
     uint8 freeSpace = m_ai->GetFreeBagSpace();
     if (shardCount > MAX_SHARD_COUNT || (freeSpace == 0 && shardCount > 1))
         m_bot->DestroyItemCount(SOUL_SHARD, shardCount > MAX_SHARD_COUNT ? shardCount - MAX_SHARD_COUNT : 1, true, false);
@@ -507,18 +507,18 @@ void PlayerbotWarlockAI::DoNonCombatActions()
     {
         Item* const stone = m_ai->FindConsumable(SPELLSTONE_DISPLAYID);
         Item* const stone2 = m_ai->FindConsumable(FIRESTONE_DISPLAYID);
-        uint8 spellstone_count = m_bot->GetItemCount(SPELLSTONE, false, NULL);
+        uint8 spellstone_count = m_bot->GetItemCount(SPELLSTONE, false, nullptr);
         if (spellstone_count == 0)
-            spellstone_count = m_bot->GetItemCount(GREATER_SPELLSTONE, false, NULL);
+            spellstone_count = m_bot->GetItemCount(GREATER_SPELLSTONE, false, nullptr);
         if (spellstone_count == 0)
-            spellstone_count = m_bot->GetItemCount(MAJOR_SPELLSTONE, false, NULL);
-        uint8 firestone_count = m_bot->GetItemCount(LESSER_FIRESTONE, false, NULL);
+            spellstone_count = m_bot->GetItemCount(MAJOR_SPELLSTONE, false, nullptr);
+        uint8 firestone_count = m_bot->GetItemCount(LESSER_FIRESTONE, false, nullptr);
         if (firestone_count == 0)
-            firestone_count = m_bot->GetItemCount(FIRESTONE, false, NULL);
+            firestone_count = m_bot->GetItemCount(FIRESTONE, false, nullptr);
         if (firestone_count == 0)
-            firestone_count = m_bot->GetItemCount(GREATER_FIRESTONE, false, NULL);
+            firestone_count = m_bot->GetItemCount(GREATER_FIRESTONE, false, nullptr);
         if (firestone_count == 0)
-            firestone_count = m_bot->GetItemCount(MAJOR_FIRESTONE, false, NULL);
+            firestone_count = m_bot->GetItemCount(MAJOR_FIRESTONE, false, nullptr);
         if (spellstone_count == 0 && firestone_count == 0)
         {
             if (CREATE_SPELLSTONE && shardCount > 0 && m_ai->CastSpell(CREATE_SPELLSTONE))
