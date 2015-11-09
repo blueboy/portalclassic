@@ -28,8 +28,6 @@
 #include "DBCStructure.h"
 #include "DBCStores.h"
 
-#include "Utilities/UnorderedMapSet.h"
-
 #include <map>
 
 class Player;
@@ -433,7 +431,7 @@ inline bool IsNeedCastSpellAtFormApply(SpellEntry const* spellInfo, ShapeshiftFo
 
     // passive spells with SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT are already active without shapeshift, do no recast!
     // Feline Swiftness Passive 2a not have 0x1 mask in Stance field in spell data as expected
-    return ((spellInfo->Stances & (1 << (form - 1))  || spellInfo->Id == 24864 && form == FORM_CAT) &&
+    return (((spellInfo->Stances & (1 << (form - 1)) || (spellInfo->Id == 24864 && form == FORM_CAT))) &&
             !spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
 }
 
@@ -620,8 +618,8 @@ struct SpellBonusEntry
     float  ap_dot_bonus;
 };
 
-typedef UNORDERED_MAP<uint32, SpellProcEventEntry> SpellProcEventMap;
-typedef UNORDERED_MAP<uint32, SpellBonusEntry>     SpellBonusMap;
+typedef std::unordered_map<uint32, SpellProcEventEntry> SpellProcEventMap;
+typedef std::unordered_map<uint32, SpellBonusEntry>     SpellBonusMap;
 
 #define ELIXIR_FLASK_MASK     0x03                          // 2 bit mask for batter compatibility with more recent client version, flaks must have both bits set
 #define ELIXIR_WELL_FED       0x10                          // Some foods have SPELLFAMILY_POTION
@@ -668,7 +666,7 @@ struct SpellTargetPosition
     float  target_Orientation;
 };
 
-typedef UNORDERED_MAP<uint32, SpellTargetPosition> SpellTargetPositionMap;
+typedef std::unordered_map<uint32, SpellTargetPosition> SpellTargetPositionMap;
 
 // Spell pet auras
 class PetAura
@@ -758,7 +756,7 @@ struct SpellChainNode
     uint8  rank;
 };
 
-typedef UNORDERED_MAP<uint32, SpellChainNode> SpellChainMap;
+typedef std::unordered_map<uint32, SpellChainNode> SpellChainMap;
 typedef std::multimap<uint32, uint32> SpellChainMapNext;
 
 // Spell learning properties (accessed using SpellMgr functions)

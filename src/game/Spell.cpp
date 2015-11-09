@@ -1709,9 +1709,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     }
                 }
             }
-
-            // exclude caster
-            targetUnitMap.remove(m_caster);
             break;
         }
         case TARGET_AREAEFFECT_CUSTOM:
@@ -2410,6 +2407,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             break;
     }
 
+    // remove caster from the list if required by attribute
+    if (targetMode != TARGET_SELF && m_spellInfo->HasAttribute(SPELL_ATTR_EX_CANT_TARGET_SELF))
+        targetUnitMap.remove(m_caster);
+
     if (unMaxTargets && targetUnitMap.size() > unMaxTargets)
     {
         // make sure one unit is always removed per iteration
@@ -2960,7 +2961,11 @@ void Spell::update(uint32 difftime)
 
                     // check for incapacitating player states
                     if (m_caster->hasUnitState(UNIT_STAT_CAN_NOT_REACT))
-                        cancel();
+                    {
+                        // certain channel spells are not interrupted
+                        if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX_CHANNELED_1) && !m_spellInfo->HasAttribute(SPELL_ATTR_EX3_UNK28))
+                            cancel();
+                    }
 
                     // check if player has turned if flag is set
                     if (m_spellInfo->ChannelInterruptFlags & CHANNEL_FLAG_TURNING && m_castOrientation != m_caster->GetOrientation())
@@ -6242,14 +6247,14 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
             if (Target && (raid || subgroup == Target->GetSubGroup())
                     && !m_caster->IsHostileTo(Target))
             {
-                if (Target == m_caster && withcaster ||
-                        Target != m_caster && m_caster->IsWithinDistInMap(Target, radius))
+                if (((Target == m_caster) && withcaster) ||
+                        ((Target != m_caster) && m_caster->IsWithinDistInMap(Target, radius)))
                     targetUnitMap.push_back(Target);
 
                 if (withPets)
                     if (Pet* pet = Target->GetPet())
-                        if (pet == m_caster && withcaster ||
-                                pet != m_caster && m_caster->IsWithinDistInMap(pet, radius))
+                        if (((pet == m_caster) && withcaster) ||
+                                ((pet != m_caster) && m_caster->IsWithinDistInMap(pet, radius)))
                             targetUnitMap.push_back(pet);
             }
         }
@@ -6257,14 +6262,14 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
     else
     {
         Unit* ownerOrSelf = pMember ? pMember : member->GetCharmerOrOwnerOrSelf();
-        if (ownerOrSelf == m_caster && withcaster ||
-                ownerOrSelf != m_caster && m_caster->IsWithinDistInMap(ownerOrSelf, radius))
+        if (((ownerOrSelf == m_caster) && withcaster) ||
+                ((ownerOrSelf != m_caster) && m_caster->IsWithinDistInMap(ownerOrSelf, radius)))
             targetUnitMap.push_back(ownerOrSelf);
 
         if (withPets)
             if (Pet* pet = ownerOrSelf->GetPet())
-                if (pet == m_caster && withcaster ||
-                        pet != m_caster && m_caster->IsWithinDistInMap(pet, radius))
+                if (((pet == m_caster) && withcaster) ||
+                        ((pet != m_caster) && m_caster->IsWithinDistInMap(pet, radius)))
                     targetUnitMap.push_back(pet);
     }
 }
