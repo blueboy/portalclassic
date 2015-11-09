@@ -10,7 +10,7 @@ class Object;
 class Item;
 class PlayerbotClassAI;
 
-typedef UNORDERED_MAP<ObjectGuid, Player*> PlayerBotMap;
+typedef std::unordered_map<ObjectGuid, Player*> PlayerBotMap;
 
 class MANGOS_DLL_SPEC PlayerbotMgr
 {
