@@ -20,9 +20,6 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     HOLY_FIRE                     = m_ai->initSpell(HOLY_FIRE_1);
     DESPERATE_PRAYER              = m_ai->initSpell(DESPERATE_PRAYER_1);
     PRAYER_OF_HEALING             = m_ai->initSpell(PRAYER_OF_HEALING_1);
-    CIRCLE_OF_HEALING             = m_ai->initSpell(CIRCLE_OF_HEALING_1);
-    BINDING_HEAL                  = m_ai->initSpell(BINDING_HEAL_1);
-    PRAYER_OF_MENDING             = m_ai->initSpell(PRAYER_OF_MENDING_1);
     CURE_DISEASE                  = m_ai->initSpell(CURE_DISEASE_1);
 
     // SHADOW
@@ -33,10 +30,7 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     MIND_FLAY                     = m_ai->initSpell(MIND_FLAY_1);
     DEVOURING_PLAGUE              = m_ai->initSpell(DEVOURING_PLAGUE_1);
     SHADOW_PROTECTION             = m_ai->initSpell(SHADOW_PROTECTION_1);
-    VAMPIRIC_TOUCH                = m_ai->initSpell(VAMPIRIC_TOUCH_1);
     PRAYER_OF_SHADOW_PROTECTION   = m_ai->initSpell(PRAYER_OF_SHADOW_PROTECTION_1);
-    SHADOWFIEND                   = m_ai->initSpell(SHADOWFIEND_1);
-    MIND_SEAR                     = m_ai->initSpell(MIND_SEAR_1);
     SHADOWFORM                    = m_ai->initSpell(SHADOWFORM_1);
     VAMPIRIC_EMBRACE              = m_ai->initSpell(VAMPIRIC_EMBRACE_1);
 
@@ -44,7 +38,6 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     SHOOT                         = m_ai->initSpell(SHOOT_1);
 
     // DISCIPLINE
-    PENANCE                       = m_ai->initSpell(PENANCE_1);
     INNER_FIRE                    = m_ai->initSpell(INNER_FIRE_1);
     POWER_WORD_SHIELD             = m_ai->initSpell(POWER_WORD_SHIELD_1);
     POWER_WORD_FORTITUDE          = m_ai->initSpell(POWER_WORD_FORTITUDE_1);
@@ -52,15 +45,12 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     FEAR_WARD                     = m_ai->initSpell(FEAR_WARD_1);
     DIVINE_SPIRIT                 = m_ai->initSpell(DIVINE_SPIRIT_1);
     PRAYER_OF_SPIRIT              = m_ai->initSpell(PRAYER_OF_SPIRIT_1);
-    MASS_DISPEL                   = m_ai->initSpell(MASS_DISPEL_1);
     POWER_INFUSION                = m_ai->initSpell(POWER_INFUSION_1);
     INNER_FOCUS                   = m_ai->initSpell(INNER_FOCUS_1);
 
-    RECENTLY_BANDAGED  = 11196; // first aid check
+    RECENTLY_BANDAGED             = 11196; // first aid check
 
     // racial
-    ARCANE_TORRENT                = m_ai->initSpell(ARCANE_TORRENT_MANA_CLASSES);
-    GIFT_OF_THE_NAARU             = m_ai->initSpell(GIFT_OF_THE_NAARU_PRIEST); // draenei
     STONEFORM                     = m_ai->initSpell(STONEFORM_ALL); // dwarf
     EVERY_MAN_FOR_HIMSELF         = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
     SHADOWMELD                    = m_ai->initSpell(SHADOWMELD_ALL);
@@ -122,11 +112,6 @@ CombatManeuverReturns PlayerbotPriestAI::DoFirstCombatManeuverPVE(Unit* /*pTarge
 
     if (m_ai->IsHealer())
     {
-        // TODO: This must be done with toggles: FullHealth allowed
-        Unit* healTarget = GetHealTarget(JOB_TANK);
-        // This is cast on a target, which activates (and switches to another target within the group) upon receiving+healing damage
-        // Mana efficient even at one use
-        if (healTarget && PRAYER_OF_MENDING > 0 && m_ai->In_Reach(healTarget,PRAYER_OF_MENDING) && !healTarget->HasAura(PRAYER_OF_MENDING, EFFECT_INDEX_0) && CastSpell(PRAYER_OF_MENDING, healTarget) & RETURN_CONTINUE)
             return RETURN_FINISHED_FIRST_MOVES;
     }
     return RETURN_NO_ACTION_OK;
@@ -168,7 +153,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
     // if in melee range OR can't shoot OR have no ranged (wand) equipped
-    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE 
+    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE
             && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true))
             && !m_ai->IsHealer())
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
@@ -267,8 +252,6 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         case PRIEST_SPEC_SHADOW:
             if (DEVOURING_PLAGUE > 0 && m_ai->In_Reach(pTarget,DEVOURING_PLAGUE) && !pTarget->HasAura(DEVOURING_PLAGUE, EFFECT_INDEX_0) && CastSpell(DEVOURING_PLAGUE, pTarget))
                 return RETURN_CONTINUE;
-            if (VAMPIRIC_TOUCH > 0 && m_ai->In_Reach(pTarget,VAMPIRIC_TOUCH) && !pTarget->HasAura(VAMPIRIC_TOUCH, EFFECT_INDEX_0) && CastSpell(VAMPIRIC_TOUCH, pTarget))
-                return RETURN_CONTINUE;
             if (SHADOW_WORD_PAIN > 0 && m_ai->In_Reach(pTarget,SHADOW_WORD_PAIN) && !pTarget->HasAura(SHADOW_WORD_PAIN, EFFECT_INDEX_0) && CastSpell(SHADOW_WORD_PAIN, pTarget))
                 return RETURN_CONTINUE;
             if (MIND_BLAST > 0 && m_ai->In_Reach(pTarget,MIND_BLAST) && (!m_bot->HasSpellCooldown(MIND_BLAST)) && CastSpell(MIND_BLAST, pTarget))
@@ -278,13 +261,6 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 m_ai->SetIgnoreUpdateTime(3);
                 return RETURN_CONTINUE;
             }
-            if (SHADOWFIEND > 0 && m_ai->In_Reach(pTarget,SHADOWFIEND) && !m_bot->GetPet() && CastSpell(SHADOWFIEND))
-                return RETURN_CONTINUE;
-            /*if (MIND_SEAR > 0 && m_ai->GetAttackerCount() >= 3 && CastSpell(MIND_SEAR, pTarget))
-            {
-                m_ai->SetIgnoreUpdateTime(5);
-                return RETURN_CONTINUE;
-            }*/
             if (SHADOWFORM == 0 && MIND_FLAY == 0 && SMITE > 0 && m_ai->In_Reach(pTarget,SMITE) && CastSpell(SMITE, pTarget)) // low levels
                 return RETURN_CONTINUE;
             break;
@@ -293,8 +269,6 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
             if (POWER_INFUSION > 0 && m_ai->In_Reach(GetMaster(),POWER_INFUSION) && CastSpell(POWER_INFUSION, GetMaster())) // TODO: just master?
                 return RETURN_CONTINUE;
             if (INNER_FOCUS > 0 && m_ai->In_Reach(m_bot,INNER_FOCUS) && !m_bot->HasAura(INNER_FOCUS, EFFECT_INDEX_0) && CastSpell(INNER_FOCUS, m_bot))
-                return RETURN_CONTINUE;
-            if (PENANCE > 0 && CastSpell(PENANCE))
                 return RETURN_CONTINUE;
             if (SMITE > 0 && m_ai->In_Reach(pTarget,SMITE) && CastSpell(SMITE, pTarget))
                 return RETURN_CONTINUE;
@@ -399,11 +373,6 @@ CombatManeuverReturns PlayerbotPriestAI::HealPlayer(Player* target)
         return RETURN_CONTINUE;
     if (hp < 45 && GREATER_HEAL > 0 && m_ai->In_Reach(target,GREATER_HEAL) && m_ai->CastSpell(GREATER_HEAL, *target))
         return RETURN_CONTINUE;
-    // Heals target AND self for equal amount
-    if (hp < 60 && hpSelf < 80 && BINDING_HEAL > 0 && m_ai->In_Reach(target,BINDING_HEAL) && m_ai->CastSpell(BINDING_HEAL, *target))
-        return RETURN_CONTINUE;
-    if (hp < 60 && PRAYER_OF_MENDING > 0 && m_ai->In_Reach(target,PRAYER_OF_MENDING) && !target->HasAura(PRAYER_OF_MENDING, EFFECT_INDEX_0) && CastSpell(PRAYER_OF_MENDING, target))
-        return RETURN_FINISHED_FIRST_MOVES;
     if (hp < 60 && HEAL > 0 && m_ai->In_Reach(target,HEAL) && m_ai->CastSpell(HEAL, *target))
         return RETURN_CONTINUE;
     if (hp < 90 && RENEW > 0 && m_ai->In_Reach(target,RENEW) && !target->HasAura(RENEW) && m_ai->CastSpell(RENEW, *target))
@@ -411,9 +380,6 @@ CombatManeuverReturns PlayerbotPriestAI::HealPlayer(Player* target)
 
     // Group heal. Not really useful until a group check is available?
     //if (hp < 40 && PRAYER_OF_HEALING > 0 && m_ai->CastSpell(PRAYER_OF_HEALING, *target) & RETURN_CONTINUE)
-    //    return RETURN_CONTINUE;
-    // Group heal. Not really useful until a group check is available?
-    //if (hp < 50 && CIRCLE_OF_HEALING > 0 && m_ai->CastSpell(CIRCLE_OF_HEALING, *target) & RETURN_CONTINUE)
     //    return RETURN_CONTINUE;
 
     return RETURN_NO_ACTION_OK;
@@ -489,7 +455,7 @@ bool PlayerbotPriestAI::BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target
     Pet * pet = target->GetPet();
     if (pet && !pet->HasAuraType(SPELL_AURA_MOD_UNATTACKABLE) && ai->Buff(spellId, pet))
         return true;
-    
+
     if (ai->Buff(spellId, target))
         return true;
 
