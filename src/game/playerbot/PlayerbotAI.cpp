@@ -4983,6 +4983,22 @@ void PlayerbotAI::findNearbyCreature()
     }
 }
 
+// Playerbot wrapper to know if a target is elite or not
+// This is used by the AI to switch from one action to another
+// if creature is dangerous (elite)
+bool PlayerbotAI::IsElite(Unit* pTarget) const
+{
+    if (!pTarget)
+        return false;
+        
+    if (Creature * pCreature = (Creature*) pTarget)
+    {
+        return (pCreature->IsElite() || pCreature->IsWorldBoss());
+    }
+    
+    return false;
+}
+
 bool PlayerbotAI::CanStore()
 {
     uint32 totalused = 0;
