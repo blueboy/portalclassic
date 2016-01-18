@@ -112,6 +112,8 @@ CombatManeuverReturns PlayerbotPriestAI::DoFirstCombatManeuverPVE(Unit* /*pTarge
 
     if (m_ai->IsHealer())
     {
+        // Cast renew on tank
+        if (CastHoTOnTank())
             return RETURN_FINISHED_FIRST_MOVES;
     }
     return RETURN_NO_ACTION_OK;
@@ -150,6 +152,9 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
     bool meleeReach = m_bot->CanReachWithMeleeAttack(pTarget);
     uint32 spec = m_bot->GetSpec();
 
+    // Define a tank bot will look at
+    Unit* pMainTank = GetHealTarget(JOB_TANK);
+   	
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
     // if in melee range OR can't shoot OR have no ranged (wand) equipped
@@ -166,7 +171,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         {
             if (CastSpell(FADE, m_bot))
             {
-                //m_ai->TellMaster("I'm casting fade.");
+                m_ai->TellMaster("I'm casting fade.");
                 return RETURN_CONTINUE;
             }
             else
@@ -175,13 +180,11 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
         // Heal myself
         // TODO: move to HealTarget code
-        // TODO: you forgot to check for the 'temporarily immune to PW:S because you only just got it cast on you' effect
-        //       - which is different effect from the actual shield.
-        if (m_ai->GetHealthPercent() < 25 && POWER_WORD_SHIELD > 0 && !m_bot->HasAura(POWER_WORD_SHIELD, EFFECT_INDEX_0))
+        if (m_ai->GetHealthPercent() < 35 && POWER_WORD_SHIELD > 0 && !m_bot->HasAura(POWER_WORD_SHIELD, EFFECT_INDEX_0) && !m_bot->HasAura(WEAKNED_SOUL, EFFECT_INDEX_0))
         {
             if (CastSpell(POWER_WORD_SHIELD) & RETURN_CONTINUE)
             {
-                //m_ai->TellMaster("I'm casting PW:S on myself.");
+                m_ai->TellMaster("I'm casting PW:S on myself.");
                 return RETURN_CONTINUE;
             }
             else if (m_ai->IsHealer()) // Even if any other RETURN_ANY_OK - aside from RETURN_CONTINUE
@@ -189,7 +192,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         }
         if (m_ai->GetHealthPercent() < 35 && DESPERATE_PRAYER > 0 && m_ai->In_Reach(m_bot,DESPERATE_PRAYER) && CastSpell(DESPERATE_PRAYER, m_bot) & RETURN_CONTINUE)
         {
-            //m_ai->TellMaster("I'm casting desperate prayer.");
+            m_ai->TellMaster("I'm casting desperate prayer.");
             return RETURN_CONTINUE;
         }
 
@@ -201,9 +204,8 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         if (newTarget->GetHealthPercent() > 25)
         {
             // If elite, do nothing and pray tank gets aggro off you
-            // TODO: Is there an IsElite function? If so, find it and insert.
-            //if (newTarget->IsElite())
-            //    return;
+            if (m_ai->IsElite(pTarget))
+                return RETURN_NO_ACTION_OK;
 
             // Not an elite. You could insert PSYCHIC SCREAM here but in any PvE situation that's 90-95% likely
             // to worsen the situation for the group. ... So please don't.
@@ -229,11 +231,16 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
     // Do damage tweaking for healers here
     if (m_ai->IsHealer())
     {
-        // TODO: elite exception
-        //if (Any target is an Elite)
-        //    return;
+        // If target is elite and not handled by MT: do nothing
+        if (m_ai->IsElite(pTarget) && pMainTank && pMainTank->getVictim() != pTarget)
+            return RETURN_NO_ACTION_OK;
 
-        return CastSpell(SHOOT, pTarget);
+        // Cast Shadow Word:Pain on current target and keep its up (if mana >= 40% or target HP < 15%)
+        if (SHADOW_WORD_PAIN > 0 && m_ai->In_Reach(pTarget,SHADOW_WORD_PAIN) && !pTarget->HasAura(SHADOW_WORD_PAIN, EFFECT_INDEX_0) &&
+        (pTarget->GetHealthPercent() < 15 || m_ai->GetManaPercent() >= 40) && CastSpell(SHADOW_WORD_PAIN, pTarget))
+            return RETURN_CONTINUE;
+        else // else shoot at it
+            return CastSpell(SHOOT, pTarget);
     }
 
     // Damage Spells
@@ -365,15 +372,29 @@ CombatManeuverReturns PlayerbotPriestAI::HealPlayer(Player* target)
     uint8 hp = target->GetHealthPercent();
     uint8 hpSelf = m_ai->GetHealthPercent();
 
+    // Define a tank bot will look at
+    Unit* pMainTank = GetHealTarget(JOB_TANK);
+
     if (hp >= 90)
         return RETURN_NO_ACTION_OK;
 
-    // TODO: Integrate shield here
+    // If target is out of range (40 yards) and is a tank: move towards it
+    // Other classes have to adjust their position to the healers
+    // TODO: This code should be common to all healers and will probably
+    // move to a more suitable place
+    if (pMainTank && !m_ai->In_Reach(pMainTank, FLASH_HEAL))
+    {
+        m_bot->GetMotionMaster()->MoveFollow(target, 39.0f, m_bot->GetOrientation());
+        return RETURN_CONTINUE;
+    }
+
+    if (hp < 25 && POWER_WORD_SHIELD > 0 && m_ai->In_Reach(target,POWER_WORD_SHIELD) && !m_bot->HasAura(POWER_WORD_SHIELD, EFFECT_INDEX_0) && !target->HasAura(WEAKNED_SOUL,EFFECT_INDEX_0) && m_ai->CastSpell(POWER_WORD_SHIELD, *target))
+        return RETURN_CONTINUE;
     if (hp < 35 && FLASH_HEAL > 0 && m_ai->In_Reach(target,FLASH_HEAL) && m_ai->CastSpell(FLASH_HEAL, *target))
         return RETURN_CONTINUE;
-    if (hp < 45 && GREATER_HEAL > 0 && m_ai->In_Reach(target,GREATER_HEAL) && m_ai->CastSpell(GREATER_HEAL, *target))
+    if (hp < 50 && GREATER_HEAL > 0 && m_ai->In_Reach(target,GREATER_HEAL) && m_ai->CastSpell(GREATER_HEAL, *target))
         return RETURN_CONTINUE;
-    if (hp < 60 && HEAL > 0 && m_ai->In_Reach(target,HEAL) && m_ai->CastSpell(HEAL, *target))
+    if (hp < 70 && HEAL > 0 && m_ai->In_Reach(target,HEAL) && m_ai->CastSpell(HEAL, *target))
         return RETURN_CONTINUE;
     if (hp < 90 && RENEW > 0 && m_ai->In_Reach(target,RENEW) && !target->HasAura(RENEW) && m_ai->CastSpell(RENEW, *target))
         return RETURN_CONTINUE;

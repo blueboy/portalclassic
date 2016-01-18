@@ -53,7 +53,8 @@ enum PriestSpells
     SHOOT_1                         = 5019,
     SILENCE_1                       = 15487,
     SMITE_1                         = 585,
-    VAMPIRIC_EMBRACE_1              = 15286
+    VAMPIRIC_EMBRACE_1              = 15286,
+    WEAKNED_SOUL                    = 6788
 };
 //class Player;
 
