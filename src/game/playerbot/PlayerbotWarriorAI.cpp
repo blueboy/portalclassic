@@ -6,6 +6,7 @@
  */
 #include "PlayerbotWarriorAI.h"
 #include "PlayerbotMgr.h"
+#include "../SpellAuras.h"
 
 class PlayerbotAI;
 PlayerbotWarriorAI::PlayerbotWarriorAI(Player* const master, Player* const bot, PlayerbotAI* const ai) : PlayerbotClassAI(master, bot, ai)
@@ -324,23 +325,66 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 return RETURN_CONTINUE;
 
         case WARRIOR_SPEC_PROTECTION:
-            if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK && !newTarget && TAUNT > 0 && !m_bot->HasSpellCooldown(TAUNT) && m_ai->CastSpell(TAUNT, *pTarget))
-                return RETURN_CONTINUE;
+            // First check: is bot's target targeting bot?
+            if (!newTarget)
+            {
+                // Cast taunt on bot current target if the mob is targeting someone else
+                if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK && TAUNT > 0 && !m_bot->HasSpellCooldown(TAUNT) && m_ai->CastSpell(TAUNT, *pTarget))
+                    return RETURN_CONTINUE;
+                // for some reason bot can't taunt: try to hamstring the target to give some time to the tank and the new victim of the target
+                else if (HAMSTRING > 0 && !pTarget->HasAura(HAMSTRING, EFFECT_INDEX_0) && m_ai->CastSpell(HAMSTRING, *pTarget))
+                    return RETURN_CONTINUE;
+            }
+
+            // If tank is on the verge of dying but "I DON'T WANT TO DIE !!! :'-(("
+            // TODO: should behaviour (or treshold) be different between elite and normal mobs? We don't want bots to burn such precious cooldown needlessly 
+            if (m_bot->GetHealthPercent() < 10)
+            {
+                // Cast Last Stand first because it has lower cooldown
+                if (LAST_STAND > 0 && !m_bot->HasAura(LAST_STAND, EFFECT_INDEX_0) && m_ai->CastSpell(LAST_STAND, *m_bot))
+                {
+                    m_ai->TellMaster("I'm using LAST STAND");
+                    return RETURN_CONTINUE;
+                }
+                // Cast Shield Wall only if Last Stand is on cooldown and not active
+                if (SHIELD_WALL > 0 && (m_bot->HasSpellCooldown(LAST_STAND) || LAST_STAND == 0) && !m_bot->HasAura(LAST_STAND, EFFECT_INDEX_0) && !m_bot->HasAura(SHIELD_WALL, EFFECT_INDEX_0) && m_ai->CastSpell(SHIELD_WALL, *m_bot))
+                {
+                    m_ai->TellMaster("I'm using SHIELD WALL");
+                    return RETURN_CONTINUE;
+                }
+            }
+
             // No way to tell if revenge is active (yet)
             /*if (REVENGE > 0 && m_ai->CastSpell(REVENGE, *pTarget))
                 return RETURN_CONTINUE;*/
             if (REND > 0 && !pTarget->HasAura(REND, EFFECT_INDEX_0) && m_ai->CastSpell(REND, *pTarget))
                 return RETURN_CONTINUE;
-            if (THUNDER_CLAP > 0 && !pTarget->HasAura(THUNDER_CLAP) && m_ai->CastSpell(THUNDER_CLAP, *pTarget))
-                return RETURN_CONTINUE;
+            //Do not waste rage applying Sunder Armor if it is already stacked 5 times
+            if (SUNDER_ARMOR > 0)
+            {
+                if (!pTarget->HasAura(SUNDER_ARMOR) && m_ai->CastSpell(SUNDER_ARMOR, *pTarget))   // no stacks: cast it
+                    return RETURN_CONTINUE;
+                else
+                {
+                	SpellAuraHolder* holder = pTarget->GetSpellAuraHolder(SUNDER_ARMOR);
+                    if (holder && (holder->GetStackAmount() < 5) && m_ai->CastSpell(SUNDER_ARMOR, *pTarget))
+	                    return RETURN_CONTINUE;
+                }
+            }
             if (DEMORALIZING_SHOUT > 0 && !pTarget->HasAura(DEMORALIZING_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(DEMORALIZING_SHOUT, *pTarget))
+                return RETURN_CONTINUE;
+            // TODO: only cast disarm if target has equipment?
+            if (DISARM > 0 && !pTarget->HasAura(DISARM, EFFECT_INDEX_0) && m_ai->CastSpell(DISARM, *pTarget))
+                return RETURN_CONTINUE;
+            // check that target is dangerous (elite) before casting shield block: preserve bot cooldowns
+            if (SHIELD_BLOCK > 0 && m_ai->IsElite(pTarget) && !m_bot->HasAura(SHIELD_BLOCK, EFFECT_INDEX_0) && m_ai->CastSpell(SHIELD_BLOCK, *m_bot))
+                return RETURN_CONTINUE;
+            if (THUNDER_CLAP > 0 && !pTarget->HasAura(THUNDER_CLAP) && m_ai->CastSpell(THUNDER_CLAP, *pTarget))
                 return RETURN_CONTINUE;
             if (CONCUSSION_BLOW > 0 && !m_bot->HasSpellCooldown(CONCUSSION_BLOW) && m_ai->CastSpell(CONCUSSION_BLOW, *pTarget))
                 return RETURN_CONTINUE;
             if (SHIELD_SLAM > 0 && !m_bot->HasSpellCooldown(SHIELD_SLAM) && m_ai->CastSpell(SHIELD_SLAM, *pTarget))
                 return RETURN_CONTINUE;
-            /*if (SUNDER > 0 && !pTarget->HasAura(SUNDER_ARMOR) && m_ai->CastSpell(SUNDER, *pTarget))
-                return RETURN_CONTINUE;*/
             if (HEROIC_STRIKE > 0 && m_ai->CastSpell(HEROIC_STRIKE, *pTarget))
                 return RETURN_CONTINUE;
 
@@ -352,8 +396,6 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
             break;
 
         case WarriorBattle:
-            if (LAST_STAND > 0 && !m_bot->HasAura(LAST_STAND, EFFECT_INDEX_0) && m_bot->GetHealthPercent() < 50 && m_ai->CastSpell(LAST_STAND, *m_bot))
-                return RETURN_CONTINUE;
             if (DEATH_WISH > 0 && !m_bot->HasAura(DEATH_WISH, EFFECT_INDEX_0) && m_ai->CastSpell(DEATH_WISH, *m_bot))
                 return RETURN_CONTINUE;
             if (RETALIATION > 0 && pVictim == m_bot && m_ai->GetAttackerCount() >= 2 && !m_bot->HasAura(RETALIATION, EFFECT_INDEX_0) && m_ai->CastSpell(RETALIATION, *m_bot))
@@ -361,8 +403,6 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
             if (SWEEPING_STRIKES > 0 && m_ai->GetAttackerCount() >= 2 && !m_bot->HasAura(SWEEPING_STRIKES, EFFECT_INDEX_0) && m_ai->CastSpell(SWEEPING_STRIKES, *m_bot))
                 return RETURN_CONTINUE;
             if (INTIMIDATING_SHOUT > 0 && m_ai->GetAttackerCount() > 5 && m_ai->CastSpell(INTIMIDATING_SHOUT, *pTarget))
-                return RETURN_CONTINUE;
-            if (HAMSTRING > 0 && !pTarget->HasAura(HAMSTRING, EFFECT_INDEX_0) && m_ai->CastSpell(HAMSTRING, *pTarget))
                 return RETURN_CONTINUE;
             if (CHALLENGING_SHOUT > 0 && pVictim != m_bot && m_ai->GetHealthPercent() > 25 && !pTarget->HasAura(MOCKING_BLOW, EFFECT_INDEX_0) && !pTarget->HasAura(CHALLENGING_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(CHALLENGING_SHOUT, *pTarget))
                 return RETURN_CONTINUE;
@@ -387,15 +427,6 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
             if (m_bot->getRace() == RACE_ORC && !m_bot->HasAura(BLOOD_FURY, EFFECT_INDEX_0) && m_ai->CastSpell(BLOOD_FURY, *m_bot))
                 return RETURN_CONTINUE;
             if (m_bot->getRace() == RACE_TROLL && !m_bot->HasAura(BERSERKING, EFFECT_INDEX_0) && m_ai->CastSpell(BERSERKING, *m_bot))
-                return RETURN_CONTINUE;
-            break;
-
-        case WarriorDefensive:
-            if (DISARM > 0 && !pTarget->HasAura(DISARM, EFFECT_INDEX_0) && m_ai->CastSpell(DISARM, *pTarget))
-                return RETURN_CONTINUE;
-            if (SHIELD_BLOCK > 0 && !m_bot->HasAura(SHIELD_BLOCK, EFFECT_INDEX_0) && m_ai->CastSpell(SHIELD_BLOCK, *m_bot))
-                return RETURN_CONTINUE;
-            if (SHIELD_WALL > 0 && !m_bot->HasAura(SHIELD_WALL, EFFECT_INDEX_0) && m_ai->CastSpell(SHIELD_WALL, *m_bot))
                 return RETURN_CONTINUE;
             break;*/
     }
