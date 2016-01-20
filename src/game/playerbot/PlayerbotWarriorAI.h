@@ -13,7 +13,6 @@ enum
 
 enum WarriorSpells
 {
-    AUTO_SHOT_2                     = 75,
     BATTLE_SHOUT_1                  = 6673,
     BATTLE_STANCE_1                 = 2457,
     BERSERKER_RAGE_1                = 18499,
@@ -23,7 +22,6 @@ enum WarriorSpells
     CHALLENGING_SHOUT_1             = 1161,
     CHARGE_1                        = 100,
     CLEAVE_1                        = 845,
-    COMMANDING_SHOUT_1              = 469,
     CONCUSSION_BLOW_1               = 12809,
     DEATH_WISH_1                    = 12292,
     DEFENSIVE_STANCE_1              = 71,
@@ -49,6 +47,9 @@ enum WarriorSpells
     SHIELD_BLOCK_1                  = 2565,
     SHIELD_SLAM_1                   = 23922,
     SHIELD_WALL_1                   = 871,
+    SHOOT_BOW_1                     = 2480,
+    SHOOT_GUN_1                     = 7918,
+    SHOOT_XBOW_1                    = 7919,
     SLAM_1                          = 1464,
     SUNDER_ARMOR_1                  = 7386,
     SWEEPING_STRIKES_1              = 12328,
@@ -130,7 +131,6 @@ private:
         PUMMEL,
         BLOODTHIRST,
         RECKLESSNESS,
-        COMMANDING_SHOUT,
         PIERCING_HOWL;
 
     // racial
@@ -144,7 +144,10 @@ private:
         WILL_OF_THE_FORSAKEN;
 
     // general
-    uint32 AUTO_SHOT;
+    uint32 SHOOT,
+        SHOOT_BOW,
+        SHOOT_GUN,
+        SHOOT_XBOW;
 
     uint32 SpellSequence;
 };

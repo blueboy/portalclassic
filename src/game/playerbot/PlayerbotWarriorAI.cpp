@@ -11,7 +11,9 @@
 class PlayerbotAI;
 PlayerbotWarriorAI::PlayerbotWarriorAI(Player* const master, Player* const bot, PlayerbotAI* const ai) : PlayerbotClassAI(master, bot, ai)
 {
-    AUTO_SHOT               = m_ai->initSpell(AUTO_SHOT_2); // GENERAL
+    SHOOT_BOW               = m_ai->initSpell(SHOOT_BOW_1); // GENERAL
+    SHOOT_GUN               = m_ai->initSpell(SHOOT_GUN_1); // GENERAL
+    SHOOT_XBOW              = m_ai->initSpell(SHOOT_XBOW_1); // GENERAL
 
     BATTLE_STANCE           = m_ai->initSpell(BATTLE_STANCE_1); //ARMS
     CHARGE                  = m_ai->initSpell(CHARGE_1); //ARMS
@@ -51,7 +53,6 @@ PlayerbotWarriorAI::PlayerbotWarriorAI(Player* const master, Player* const bot, 
     PUMMEL                  = m_ai->initSpell(PUMMEL_1); //FURY
     BLOODTHIRST             = m_ai->initSpell(BLOODTHIRST_1); //FURY
     RECKLESSNESS            = m_ai->initSpell(RECKLESSNESS_1); //FURY
-    COMMANDING_SHOUT        = m_ai->initSpell(COMMANDING_SHOUT_1); //FURY
     PIERCING_HOWL           = m_ai->initSpell(PIERCING_HOWL_1); //FURY
 
     RECENTLY_BANDAGED       = 11196; // first aid check
@@ -366,9 +367,9 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
                     return RETURN_CONTINUE;
                 else
                 {
-                	SpellAuraHolder* holder = pTarget->GetSpellAuraHolder(SUNDER_ARMOR);
+                    SpellAuraHolder* holder = pTarget->GetSpellAuraHolder(SUNDER_ARMOR);
                     if (holder && (holder->GetStackAmount() < 5) && m_ai->CastSpell(SUNDER_ARMOR, *pTarget))
-	                    return RETURN_CONTINUE;
+                        return RETURN_CONTINUE;
                 }
             }
             if (DEMORALIZING_SHOUT > 0 && !pTarget->HasAura(DEMORALIZING_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(DEMORALIZING_SHOUT, *pTarget))
@@ -448,16 +449,8 @@ void PlayerbotWarriorAI::CheckShouts()
     if (!m_ai)  return;
     if (!m_bot) return;
 
-    if (m_bot->GetSpec() == WARRIOR_SPEC_PROTECTION && COMMANDING_SHOUT > 0)
-    {
-        if (!m_bot->HasAura(COMMANDING_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(COMMANDING_SHOUT))
-            return;
-    }
-    else // Not prot, or prot but no Commanding Shout yet
-    {
-        if (!m_bot->HasAura(BATTLE_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(BATTLE_SHOUT))
-            return;
-    }
+    if (!m_bot->HasAura(BATTLE_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(BATTLE_SHOUT))
+        return;
 }
 
 void PlayerbotWarriorAI::DoNonCombatActions()
@@ -506,20 +499,51 @@ bool PlayerbotWarriorAI::Pull()
     if (!m_bot) return false;
     if (!m_ai)  return false;
 
+    // In Classic, Warriors had 3 differents spells for shooting with range weapons
+    // So we need to determine which one to use
+    // First step: look for the item equiped in range slot
+    Item* pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
+    if (!pItem)
+    {
+        m_ai->TellMaster("I don't have ranged weapon equiped.");
+        return false;
+    }
+
+    ItemPrototype const* pProto = pItem->GetProto();
+    if (pProto && pProto->Class == ITEM_CLASS_WEAPON)
+    {
+        switch (pProto->SubClass)
+        {
+            case ITEM_SUBCLASS_WEAPON_BOW:
+                SHOOT = SHOOT_BOW;
+                break;
+            case ITEM_SUBCLASS_WEAPON_GUN:
+                SHOOT = SHOOT_GUN;
+                break;
+            case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+                SHOOT = SHOOT_XBOW;
+                break;
+            default:
+                m_ai->TellMaster("Can't pull: equiped range item is neither a gun, bow or crossbow.");
+                return false;
+        }
+    }
+    else
+        return false;
+
     if (m_bot->GetCombatDistance(m_ai->GetCurrentTarget(), true) > ATTACK_DISTANCE)
     {
-        if (!m_ai->In_Range(m_ai->GetCurrentTarget(), AUTO_SHOT))
+        if (!m_ai->In_Reach(m_ai->GetCurrentTarget(), SHOOT))
         {
             m_ai->TellMaster("I'm out of range.");
             return false;
         }
 
-        // activate auto shot: Reworked to account for AUTO_SHOT being a triggered spell
-        if (AUTO_SHOT && m_ai->GetCurrentSpellId() != AUTO_SHOT)
-        {
-            m_bot->CastSpell(m_ai->GetCurrentTarget(), AUTO_SHOT, true);
-            return true;
-        }
+        // shoot at the target
+//        if (m_ai->CastSpell(SHOOT, m_ai->GetCurrentTarget()))
+        m_bot->CastSpell(m_ai->GetCurrentTarget(), SHOOT, true);
+        m_ai->TellMaster("I'm PULLING %s.", m_ai->GetCurrentTarget()->GetName());
+        return true;
     }
     else // target is in melee range
     {
