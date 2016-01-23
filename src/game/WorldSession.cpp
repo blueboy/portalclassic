@@ -39,6 +39,10 @@
 #include "SocialMgr.h"
 #include "LootMgr.h"
 
+#include <mutex>
+#include <deque>
+#include <algorithm>
+
 // Playerbot mod
 #include "playerbot/PlayerbotMgr.h"
 #include "playerbot/PlayerbotAI.h"
@@ -114,9 +118,7 @@ WorldSession::~WorldSession()
     }
 
     ///- empty incoming packet queue
-    WorldPacket* packet = nullptr;
-    while (_recvQueue.next(packet))
-        delete packet;
+    std::for_each(m_recvQueue.begin(), m_recvQueue.end(), [](const WorldPacket *packet) { delete packet; });
 }
 
 void WorldSession::SizeError(WorldPacket const& packet, uint32 size) const
@@ -188,7 +190,8 @@ void WorldSession::SendPacket(WorldPacket const* packet)
 /// Add an incoming packet to the queue
 void WorldSession::QueuePacket(WorldPacket* new_packet)
 {
-    _recvQueue.add(new_packet);
+    std::lock_guard<std::mutex> guard(m_recvQueueLock);
+    m_recvQueue.push_back(new_packet);
 }
 
 /// Logging helper for unexpected opcodes
@@ -212,16 +215,20 @@ void WorldSession::LogUnprocessedTail(WorldPacket* packet)
 /// Update the WorldSession (triggered by World update)
 bool WorldSession::Update(PacketFilter& updater)
 {
+    std::lock_guard<std::mutex> guard(m_recvQueueLock);
+
     ///- Retrieve packets from the receive queue and call the appropriate handlers
     /// not process packets if socket already closed
-    WorldPacket* packet = nullptr;
-    while (m_Socket && !m_Socket->IsClosed() && _recvQueue.next(packet, updater))
+    while (m_Socket && !m_Socket->IsClosed() && !m_recvQueue.empty())
     {
         /*#if 1
         sLog.outError( "MOEP: %s (0x%.4X)",
                         packet->GetOpcodeName(),
                         packet->GetOpcode());
         #endif*/
+
+        WorldPacket* packet = m_recvQueue.front();
+        m_recvQueue.pop_front();
 
         OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
         try
