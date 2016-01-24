@@ -205,7 +205,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         if (newTarget->GetHealthPercent() > 25)
         {
             // If elite, do nothing and pray tank gets aggro off you
-            if (m_ai->IsElite(pTarget))
+            if (m_ai->IsElite(newTarget))
                 return RETURN_NO_ACTION_OK;
 
             // Not an elite. You could insert PSYCHIC SCREAM here but in any PvE situation that's 90-95% likely
