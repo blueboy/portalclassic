@@ -30,6 +30,8 @@ PlayerbotWarlockAI::PlayerbotWarlockAI(Player* const master, Player* const bot, 
     HOWL_OF_TERROR        = m_ai->initSpell(HOWL_OF_TERROR_1);
     FEAR                  = m_ai->initSpell(FEAR_1);
     // DEMONOLOGY
+    BANISH                = m_ai->initSpell(BANISH_1);
+    ENSLAVE_DEMON         = m_ai->initSpell(ENSLAVE_DEMON_1);
     DEMON_SKIN            = m_ai->initSpell(DEMON_SKIN_1);
     DEMON_ARMOR           = m_ai->initSpell(DEMON_ARMOR_1);
     SHADOW_WARD           = m_ai->initSpell(SHADOW_WARD_1);
@@ -179,10 +181,36 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
         // Have threat, can't quickly lower it. 3 options remain: Stop attacking, lowlevel damage (wand), keep on keeping on.
         if (newTarget->GetHealthPercent() > 25)
         {
-            // If elite, do nothing and pray tank gets aggro off you
-            // TODO: Is there an IsElite function? If so, find it and insert.
-            //if (newTarget->IsElite())
-            //    return;
+            // If elite
+            if (m_ai->IsElite(newTarget))
+            {
+                // let warlock pet handle it to win some time
+                Creature * pCreature = (Creature*) newTarget;
+                if (pet)
+                {
+                    switch (pet->GetEntry())
+                    {
+                        // taunt the elite and tank it
+                        case DEMON_VOIDWALKER:
+                            if (TORMENT && m_ai->CastPetSpell(TORMENT, newTarget))
+                                return RETURN_NO_ACTION_OK;
+                        // maybe give it some love?
+                        case DEMON_SUCCUBUS:
+                            if (pCreature && pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_HUMANOID)
+                                if (SEDUCTION && !newTarget->HasAura(SEDUCTION) && m_ai->CastPetSpell(SEDUCTION, newTarget))
+                                    return RETURN_NO_ACTION_OK;
+                    }
+
+                }
+                // if aggroed mob is a demon or an elemental: banish it
+                if (pCreature && (pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_DEMON || pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_ELEMENTAL))
+                {
+                    if (BANISH && !newTarget->HasAura(BANISH) && CastSpell(BANISH, newTarget))
+                        return RETURN_CONTINUE;
+                }
+
+                return RETURN_NO_ACTION_OK; // do nothing and pray tank gets aggro off you
+            }
 
             // Not an elite. You could insert FEAR here but in any PvE situation that's 90-95% likely
             // to worsen the situation for the group. ... So please don't.
@@ -192,13 +220,22 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     // Create soul shard
     uint8 freeSpace = m_ai->GetFreeBagSpace();
-    if (DRAIN_SOUL && pTarget->GetHealth() < pTarget->GetMaxHealth() * 0.20 && m_ai->In_Reach(pTarget, DRAIN_SOUL) &&
+    uint8 HPThreshold = (m_ai->IsElite(pTarget) ? 10 : 25);
+    if (DRAIN_SOUL && pTarget->GetHealthPercent() < HPThreshold && m_ai->In_Reach(pTarget, DRAIN_SOUL) &&
         !pTarget->HasAura(DRAIN_SOUL) && (shardCount < MAX_SHARD_COUNT && freeSpace > 0) && CastSpell(DRAIN_SOUL, pTarget))
     {
         m_ai->SetIgnoreUpdateTime(15);
         return RETURN_CONTINUE;
     }
 
+    if (pet && DARK_PACT && (100 * pet->GetPower(POWER_MANA) / pet->GetMaxPower(POWER_MANA)) > 10 && m_ai->GetManaPercent() <= 20)
+        if (m_ai->CastSpell(DARK_PACT, *m_bot))
+            return RETURN_CONTINUE;
+
+    // Mana check and replenishment
+    if (LIFE_TAP && m_ai->GetManaPercent() <= 20 && m_ai->GetHealthPercent() > 50)
+        if (m_ai->CastSpell(LIFE_TAP, *m_bot))
+            return RETURN_CONTINUE;
 
     // Damage Spells
     switch (spec)
@@ -228,6 +265,8 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
             return RETURN_NO_ACTION_OK;
 
         case WARLOCK_SPEC_DESTRUCTION:
+            if (SHADOWBURN && pTarget->GetHealthPercent() < (HPThreshold / 2.0) && m_ai->In_Reach(pTarget, SHADOWBURN) && !pTarget->HasAura(SHADOWBURN) && CastSpell(SHADOWBURN, pTarget))
+                return RETURN_CONTINUE;
             if (CURSE_OF_AGONY && m_ai->In_Reach(pTarget,CURSE_OF_AGONY) && !pTarget->HasAura(CURSE_OF_AGONY) && CastSpell(CURSE_OF_AGONY, pTarget))
                 return RETURN_CONTINUE;
             if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
@@ -241,12 +280,7 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
             return RETURN_NO_ACTION_OK;
 
-            //if (LIFE_TAP && LastSpellAffliction < 1 && m_ai->GetManaPercent() <= 50 && m_ai->GetHealthPercent() > 50)
-            //    m_ai->CastSpell(LIFE_TAP, *m_bot);
-            //else if (DRAIN_SOUL && pTarget->GetHealth() < pTarget->GetMaxHealth() * 0.40 && !pTarget->HasAura(DRAIN_SOUL) && LastSpellAffliction < 3)
-            //    m_ai->CastSpell(DRAIN_SOUL, *pTarget);
-            //    //m_ai->SetIgnoreUpdateTime(15);
-            //else if (DRAIN_LIFE && LastSpellAffliction < 4 && !pTarget->HasAura(DRAIN_SOUL) && !pTarget->HasAura(SEED_OF_CORRUPTION) && !pTarget->HasAura(DRAIN_LIFE) && !pTarget->HasAura(DRAIN_MANA) && m_ai->GetHealthPercent() <= 70)
+            //if (DRAIN_LIFE && LastSpellAffliction < 4 && !pTarget->HasAura(DRAIN_SOUL) && !pTarget->HasAura(DRAIN_LIFE) && !pTarget->HasAura(DRAIN_MANA) && m_ai->GetHealthPercent() <= 70)
             //    m_ai->CastSpell(DRAIN_LIFE, *pTarget);
             //    //m_ai->SetIgnoreUpdateTime(5);
             //else if (HOWL_OF_TERROR && !pTarget->HasAura(HOWL_OF_TERROR) && m_ai->GetAttackerCount() > 3 && LastSpellAffliction < 8)
@@ -256,8 +290,6 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
             //    m_ai->CastSpell(FEAR, *pTarget);
             //    //m_ai->TellMaster("casting fear!");
             //    //m_ai->SetIgnoreUpdateTime(1.5);
-            //else if ((pet) && (DARK_PACT > 0 && m_ai->GetManaPercent() <= 50 && LastSpellAffliction < 10 && pet->GetPower(POWER_MANA) > 0))
-            //    m_ai->CastSpell(DARK_PACT, *m_bot);
             //else if (RAIN_OF_FIRE && LastSpellDestruction < 3 && m_ai->GetAttackerCount() >= 3)
             //    m_ai->CastSpell(RAIN_OF_FIRE, *pTarget);
             //    //m_ai->TellMaster("casting rain of fire!");
@@ -267,8 +299,6 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
             //else if (SOUL_FIRE && LastSpellDestruction < 9)
             //    m_ai->CastSpell(SOUL_FIRE, *pTarget);
             //    //m_ai->SetIgnoreUpdateTime(6);
-            //else if (SHADOWBURN && LastSpellDestruction < 11 && pTarget->GetHealth() < pTarget->GetMaxHealth() * 0.20 && !pTarget->HasAura(SHADOWBURN))
-            //    m_ai->CastSpell(SHADOWBURN, *pTarget);
             //else if (HELLFIRE && LastSpellDestruction < 12 && !m_bot->HasAura(HELLFIRE) && m_ai->GetAttackerCount() >= 5 && m_ai->GetHealthPercent() >= 50)
             //    m_ai->CastSpell(HELLFIRE);
             //    m_ai->TellMaster("casting hellfire!");
@@ -448,9 +478,21 @@ void PlayerbotWarlockAI::DoNonCombatActions()
         }
     }
 
+    // hp/mana check
+    if (pet && DARK_PACT && (100 * pet->GetPower(POWER_MANA) / pet->GetMaxPower(POWER_MANA)) > 40 && m_ai->GetManaPercent() <= 60)
+        if (m_ai->CastSpell(DARK_PACT, *m_bot))
+            return;
+
+    if (LIFE_TAP && m_ai->GetManaPercent() <= 80 && m_ai->GetHealthPercent() > 50)
+        if (m_ai->CastSpell(LIFE_TAP, *m_bot))
+            return;
+
+    // Do not waste time/soul shards to create spellstone or firestone
+    // if two-handed weapon (staff) or off-hand item are already equiped
     // Spellstone creation and use (Spellstone dominates firestone completely as I understand it)
     Item* const weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    Item* const offweapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+    if (weapon && !offweapon && weapon->GetProto()->SubClass != ITEM_SUBCLASS_WEAPON_STAFF && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
         Item* const stone = m_ai->FindConsumable(SPELLSTONE_DISPLAYID);
         Item* const stone2 = m_ai->FindConsumable(FIRESTONE_DISPLAYID);
@@ -484,15 +526,6 @@ void PlayerbotWarlockAI::DoNonCombatActions()
             return;
         }
     }
-
-    // hp/mana check
-    if (pet && DARK_PACT && (pet->GetPower(POWER_MANA) / pet->GetMaxPower(POWER_MANA)) > 40 && m_ai->GetManaPercent() <= 50)
-        if (m_ai->CastSpell(DARK_PACT, *m_bot))
-            return;
-
-    if (LIFE_TAP && m_ai->GetManaPercent() <= 60 && m_ai->GetHealthPercent() > 60)
-        if (m_ai->CastSpell(LIFE_TAP, *m_bot))
-            return;
 
     if (EatDrinkBandage())
         return;
