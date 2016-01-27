@@ -59,6 +59,7 @@ enum DemonSpellIconIds
 
 enum WarlockSpells
 {
+    AMPLIFY_CURSE_1                 = 18288,
     BANISH_1                        = 710,
     CONFLAGRATE_1                   = 17962,
     CORRUPTION_1                    = 172,
@@ -69,6 +70,8 @@ enum WarlockSpells
     CURSE_OF_AGONY_1                = 980,
     CURSE_OF_DOOM_1                 = 603,
     CURSE_OF_EXHAUSTION_1           = 18223,
+    CURSE_OF_RECKLESSNESS_1         = 704,
+    CURSE_OF_SHADOW_1               = 17862,
     CURSE_OF_THE_ELEMENTS_1         = 1490,
     CURSE_OF_TONGUES_1              = 1714,
     CURSE_OF_WEAKNESS_1             = 702,
@@ -133,12 +136,15 @@ private:
 
     CombatManeuverReturns CastSpell(uint32 nextAction, Unit *pTarget = nullptr) { return CastSpellWand(nextAction, pTarget, SHOOT); }
 
+    bool CheckCurse(Unit* pTarget);
     void CheckDemon();
 
     // CURSES
     uint32 CURSE_OF_WEAKNESS,
            CURSE_OF_AGONY,
            CURSE_OF_EXHAUSTION,
+           CURSE_OF_RECKLESSNESS,
+           CURSE_OF_SHADOW,
            CURSE_OF_TONGUES,
            CURSE_OF_THE_ELEMENTS,
            CURSE_OF_DOOM;
@@ -147,7 +153,8 @@ private:
     uint32 SHOOT;
 
     // AFFLICTION
-    uint32 CORRUPTION,
+    uint32 AMPLIFY_CURSE,
+           CORRUPTION,
            DRAIN_SOUL,
            DRAIN_LIFE,
            DRAIN_MANA,
@@ -216,6 +223,7 @@ private:
     uint32 m_lastDemon;      // Last demon entry used for spell initialization
     uint32 m_demonOfChoice;  // Preferred demon entry
     bool m_isTempImp;        // True if imp summoned temporarily until soul shard acquired for demon of choice.
+    uint32 m_CurrentCurse;   // Curse currently active on bot's target
 };
 
 #endif
