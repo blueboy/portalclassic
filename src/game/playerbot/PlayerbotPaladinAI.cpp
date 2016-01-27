@@ -14,19 +14,12 @@ class PlayerbotAI;
 PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, PlayerbotAI* const ai) : PlayerbotClassAI(master, bot, ai)
 {
     RETRIBUTION_AURA              = m_ai->initSpell(RETRIBUTION_AURA_1);
-    CRUSADER_AURA                 = m_ai->initSpell(CRUSADER_AURA_1);
-    CRUSADER_STRIKE               = m_ai->initSpell(CRUSADER_STRIKE_1);
     SEAL_OF_COMMAND               = m_ai->initSpell(SEAL_OF_COMMAND_1);
     SEAL_OF_RIGHTEOUSNESS         = m_ai->initSpell(SEAL_OF_RIGHTEOUSNESS_1);
-    SEAL_OF_CORRUPTION            = m_ai->initSpell(SEAL_OF_CORRUPTION_1);
     SEAL_OF_JUSTICE               = m_ai->initSpell(SEAL_OF_JUSTICE_1);
     SEAL_OF_LIGHT                 = m_ai->initSpell(SEAL_OF_LIGHT_1);
-    SEAL_OF_VENGEANCE             = m_ai->initSpell(SEAL_OF_VENGEANCE_1);
     SEAL_OF_WISDOM                = m_ai->initSpell(SEAL_OF_WISDOM_1);
-    JUDGEMENT_OF_LIGHT            = m_ai->initSpell(JUDGEMENT_OF_LIGHT_1);
-    JUDGEMENT_OF_WISDOM           = m_ai->initSpell(JUDGEMENT_OF_WISDOM_1);
-    JUDGEMENT_OF_JUSTICE          = m_ai->initSpell(JUDGEMENT_OF_JUSTICE_1);
-    DIVINE_STORM                  = m_ai->initSpell(DIVINE_STORM_1);
+    JUDGEMENT                     = m_ai->initSpell(JUDGEMENT_1);
     BLESSING_OF_MIGHT             = m_ai->initSpell(BLESSING_OF_MIGHT_1);
     GREATER_BLESSING_OF_MIGHT     = m_ai->initSpell(GREATER_BLESSING_OF_MIGHT_1);
     HAMMER_OF_WRATH               = m_ai->initSpell(HAMMER_OF_WRATH_1);
@@ -39,18 +32,14 @@ PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, 
     BLESSING_OF_WISDOM            = m_ai->initSpell(BLESSING_OF_WISDOM_1);
     GREATER_BLESSING_OF_WISDOM    = m_ai->initSpell(GREATER_BLESSING_OF_WISDOM_1);
     CONSECRATION                  = m_ai->initSpell(CONSECRATION_1);
-    AVENGING_WRATH                = m_ai->initSpell(AVENGING_WRATH_1);
     LAY_ON_HANDS                  = m_ai->initSpell(LAY_ON_HANDS_1);
     EXORCISM                      = m_ai->initSpell(EXORCISM_1);
-    SACRED_SHIELD                 = m_ai->initSpell(SACRED_SHIELD_1);
-    DIVINE_PLEA                   = m_ai->initSpell(DIVINE_PLEA_1);
     BLESSING_OF_KINGS             = m_ai->initSpell(BLESSING_OF_KINGS_1);
     GREATER_BLESSING_OF_KINGS     = m_ai->initSpell(GREATER_BLESSING_OF_KINGS_1);
     BLESSING_OF_SANCTUARY         = m_ai->initSpell(BLESSING_OF_SANCTUARY_1);
     GREATER_BLESSING_OF_SANCTUARY = m_ai->initSpell(GREATER_BLESSING_OF_SANCTUARY_1);
     HAMMER_OF_JUSTICE             = m_ai->initSpell(HAMMER_OF_JUSTICE_1);
     RIGHTEOUS_FURY                = m_ai->initSpell(RIGHTEOUS_FURY_1);
-    RIGHTEOUS_DEFENSE             = m_ai->initSpell(RIGHTEOUS_DEFENSE_1);
     SHADOW_RESISTANCE_AURA        = m_ai->initSpell(SHADOW_RESISTANCE_AURA_1);
     DEVOTION_AURA                 = m_ai->initSpell(DEVOTION_AURA_1);
     FIRE_RESISTANCE_AURA          = m_ai->initSpell(FIRE_RESISTANCE_AURA_1);
@@ -58,31 +47,18 @@ PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, 
     HAND_OF_PROTECTION            = m_ai->initSpell(HAND_OF_PROTECTION_1);
     DIVINE_PROTECTION             = m_ai->initSpell(DIVINE_PROTECTION_1);
     DIVINE_INTERVENTION           = m_ai->initSpell(DIVINE_INTERVENTION_1);
-    DIVINE_SACRIFICE              = m_ai->initSpell(DIVINE_SACRIFICE_1);
     DIVINE_SHIELD                 = m_ai->initSpell(DIVINE_SHIELD_1);
     HOLY_SHIELD                   = m_ai->initSpell(HOLY_SHIELD_1);
-    AVENGERS_SHIELD               = m_ai->initSpell(AVENGERS_SHIELD_1);
     HAND_OF_SACRIFICE             = m_ai->initSpell(HAND_OF_SACRIFICE_1);
-    SHIELD_OF_RIGHTEOUSNESS       = m_ai->initSpell(SHIELD_OF_RIGHTEOUSNESS_1);
     REDEMPTION                    = m_ai->initSpell(REDEMPTION_1);
     PURIFY                        = m_ai->initSpell(PURIFY_1);
     CLEANSE                       = m_ai->initSpell(CLEANSE_1);
-    HAND_OF_RECKONING             = m_ai->initSpell(HAND_OF_RECKONING_1);
-    ART_OF_WAR                    = m_ai->initSpell(ART_OF_WAR_1);
-    HAMMER_OF_THE_RIGHTEOUS       = m_ai->initSpell(HAMMER_OF_THE_RIGHTEOUS_1);
-
-    // Warrior auras
-    DEFENSIVE_STANCE              = 71;   //Def Stance
-    BERSERKER_STANCE              = 2458; //Ber Stance
-    BATTLE_STANCE                 = 2457; //Bat Stance
 
     FORBEARANCE                   = 25771; // cannot be protected
 
     RECENTLY_BANDAGED             = 11196; // first aid check
 
     // racial
-    ARCANE_TORRENT                = m_ai->initSpell(ARCANE_TORRENT_MANA_CLASSES);
-    GIFT_OF_THE_NAARU             = m_ai->initSpell(GIFT_OF_THE_NAARU_PALADIN); // draenei
     STONEFORM                     = m_ai->initSpell(STONEFORM_ALL); // dwarf
     EVERY_MAN_FOR_HIMSELF         = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
 
@@ -231,19 +207,8 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
         case PALADIN_SPEC_RETRIBUTION:
             if (HAMMER_OF_WRATH > 0 && pTarget->GetHealth() < pTarget->GetMaxHealth() * 0.20 && m_ai->CastSpell (HAMMER_OF_WRATH, *pTarget))
                 return RETURN_CONTINUE;
-            if (ART_OF_WAR > 0 && EXORCISM > 0 && !m_bot->HasSpellCooldown(EXORCISM) && m_bot->HasAura(ART_OF_WAR, EFFECT_INDEX_0) && m_ai->CastSpell (EXORCISM, *pTarget))
-                return RETURN_CONTINUE;
-            if (CRUSADER_STRIKE > 0 && !m_bot->HasSpellCooldown(CRUSADER_STRIKE) && m_ai->CastSpell (CRUSADER_STRIKE, *pTarget))
-                return RETURN_CONTINUE;
-            if (DIVINE_STORM > 0 && /*m_ai->GetAttackerCount() >= 3 && meleeReach*/ !m_bot->HasSpellCooldown(DIVINE_STORM) && m_ai->CastSpell (DIVINE_STORM, *pTarget))
-                return RETURN_CONTINUE;
-            if (JUDGEMENT_OF_LIGHT > 0 && m_ai->CastSpell (JUDGEMENT_OF_LIGHT, *pTarget))
-                return RETURN_CONTINUE;
-            if (AVENGING_WRATH > 0 && m_ai->CastSpell (AVENGING_WRATH, *m_bot))
                 return RETURN_CONTINUE;
             /*if (HAMMER_OF_JUSTICE > 0 && !pTarget->HasAura(HAMMER_OF_JUSTICE, EFFECT_INDEX_0) && m_ai->CastSpell (HAMMER_OF_JUSTICE, *pTarget))
-                return RETURN_CONTINUE;*/
-            /*if (SACRED_SHIELD > 0 && pVictim == m_bot && m_ai->GetHealthPercent() < 70 && !m_bot->HasAura(SACRED_SHIELD, EFFECT_INDEX_0) && m_ai->CastSpell (SACRED_SHIELD, *m_bot))
                 return RETURN_CONTINUE;*/
             /*if (HOLY_WRATH > 0 && m_ai->GetAttackerCount() >= 3 && meleeReach && m_ai->CastSpell (HOLY_WRATH, *pTarget))
                 return RETURN_CONTINUE;*/
@@ -251,38 +216,23 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 return RETURN_CONTINUE;*/
             /*if (DIVINE_PROTECTION > 0 && pVictim == m_bot && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && m_ai->GetHealthPercent() < 30 && m_ai->CastSpell (DIVINE_PROTECTION, *m_bot))
                 return RETURN_CONTINUE;*/
-            /*if (RIGHTEOUS_DEFENSE > 0 && pVictim != m_bot && m_ai->GetHealthPercent() > 70 && m_ai->CastSpell (RIGHTEOUS_DEFENSE, *pTarget))
-                return RETURN_CONTINUE;*/
-            /*if (DIVINE_PLEA > 0 && !m_bot->HasAura(DIVINE_PLEA, EFFECT_INDEX_0) && m_ai->CastSpell (DIVINE_PLEA, *m_bot))
-                return RETURN_CONTINUE;*/
             /*if (DIVINE_FAVOR > 0 && !m_bot->HasAura(DIVINE_FAVOR, EFFECT_INDEX_0) && m_ai->CastSpell (DIVINE_FAVOR, *m_bot))
                 return RETURN_CONTINUE;*/
             return RETURN_NO_ACTION_OK;
 
         case PALADIN_SPEC_PROTECTION:
             //Taunt if orders specify
-            if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK && !newTarget && HAND_OF_RECKONING > 0 && !m_bot->HasSpellCooldown(HAND_OF_RECKONING) && m_ai->CastSpell(HAND_OF_RECKONING, *pTarget))
-                return RETURN_CONTINUE;
             if (CONSECRATION > 0 && !m_bot->HasSpellCooldown(CONSECRATION) && m_ai->CastSpell(CONSECRATION, *pTarget))
                 return RETURN_CONTINUE;
             if (HOLY_SHIELD > 0 && !m_bot->HasAura(HOLY_SHIELD) && m_ai->CastSpell(HOLY_SHIELD, *m_bot))
                 return RETURN_CONTINUE;
-            if (AVENGERS_SHIELD > 0 && !m_bot->HasSpellCooldown(AVENGERS_SHIELD) && m_ai->CastSpell(AVENGERS_SHIELD, *pTarget))
-                return RETURN_CONTINUE;
-            if (HAMMER_OF_THE_RIGHTEOUS > 0 && !m_bot->HasSpellCooldown(HAMMER_OF_THE_RIGHTEOUS) && m_ai->CastSpell(HAMMER_OF_THE_RIGHTEOUS, *pTarget))
-                return RETURN_CONTINUE;
             if (SHIELD_OF_RIGHTEOUSNESS > 0 && !m_bot->HasSpellCooldown(SHIELD_OF_RIGHTEOUSNESS) && m_ai->CastSpell(SHIELD_OF_RIGHTEOUSNESS, *pTarget))
-                return RETURN_CONTINUE;
-            if (JUDGEMENT_OF_LIGHT > 0 && m_ai->CastSpell (JUDGEMENT_OF_LIGHT, *pTarget))
                 return RETURN_CONTINUE;
             return RETURN_NO_ACTION_OK;
     }
 
     //if (DIVINE_SHIELD > 0 && m_ai->GetHealthPercent() < 30 && pVictim == m_bot && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && !m_bot->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0))
     //    m_ai->CastSpell(DIVINE_SHIELD, *m_bot);
-
-    //if (DIVINE_SACRIFICE > 0 && m_ai->GetHealthPercent() > 50 && pVictim != m_bot && !m_bot->HasAura(DIVINE_SACRIFICE, EFFECT_INDEX_0))
-    //    m_ai->CastSpell(DIVINE_SACRIFICE, *m_bot);
 
     return RETURN_NO_ACTION_OK;
 }
@@ -467,7 +417,7 @@ void PlayerbotPaladinAI::DoNonCombatActions()
     if (!m_bot)  return;
 
     if (!m_bot->isAlive() || m_bot->IsInDuel()) return;
-    
+
     CheckAuras();
 
     //Put up RF if tank
@@ -644,8 +594,6 @@ bool PlayerbotPaladinAI::CanPull()
 // Match up with "CanPull()" above
 bool PlayerbotPaladinAI::Pull()
 {
-    if (HAND_OF_RECKONING && m_ai->CastSpell(HAND_OF_RECKONING))
-        return true;
     if (EXORCISM && m_ai->CastSpell(EXORCISM))
         return true;
 
