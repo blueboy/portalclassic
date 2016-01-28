@@ -14,18 +14,14 @@ PlayerbotRogueAI::PlayerbotRogueAI(Player* const master, Player* const bot, Play
     BACKSTAB                 = m_ai->initSpell(BACKSTAB_1);
     KICK                     = m_ai->initSpell(KICK_1);
     FEINT                    = m_ai->initSpell(FEINT_1);
-    FAN_OF_KNIVES            = m_ai->initSpell(FAN_OF_KNIVES_1);
     GOUGE                    = m_ai->initSpell(GOUGE_1);
     SPRINT                   = m_ai->initSpell(SPRINT_1);
 
-    SHADOWSTEP               = m_ai->initSpell(SHADOWSTEP_1);
     STEALTH                  = m_ai->initSpell(STEALTH_1);
     VANISH                   = m_ai->initSpell(VANISH_1);
     EVASION                  = m_ai->initSpell(EVASION_1);
-    CLOAK_OF_SHADOWS         = m_ai->initSpell(CLOAK_OF_SHADOWS_1);
     HEMORRHAGE               = m_ai->initSpell(HEMORRHAGE_1);
     GHOSTLY_STRIKE           = m_ai->initSpell(GHOSTLY_STRIKE_1);
-    SHADOW_DANCE             = m_ai->initSpell(SHADOW_DANCE_1);
     BLIND                    = m_ai->initSpell(BLIND_1);
     DISTRACT                 = m_ai->initSpell(DISTRACT_1);
     PREPARATION              = m_ai->initSpell(PREPARATION_1);
@@ -38,14 +34,12 @@ PlayerbotRogueAI::PlayerbotRogueAI(Player* const master, Player* const bot, Play
     GARROTE                  = m_ai->initSpell(GARROTE_1);
     EXPOSE_ARMOR             = m_ai->initSpell(EXPOSE_ARMOR_1);
     RUPTURE                  = m_ai->initSpell(RUPTURE_1);
-    DISMANTLE                = m_ai->initSpell(DISMANTLE_1);
     CHEAP_SHOT               = m_ai->initSpell(CHEAP_SHOT_1);
     AMBUSH                   = m_ai->initSpell(AMBUSH_1);
     MUTILATE                 = m_ai->initSpell(MUTILATE_1);
 
     RECENTLY_BANDAGED   = 11196; // first aid check
     // racial
-    ARCANE_TORRENT           = m_ai->initSpell(ARCANE_TORRENT_ROGUE);
     STONEFORM                = m_ai->initSpell(STONEFORM_ALL); // dwarf
     ESCAPE_ARTIST            = m_ai->initSpell(ESCAPE_ARTIST_ALL); // gnome
     EVERY_MAN_FOR_HIMSELF    = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
@@ -192,13 +186,7 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
     }*/
 
     // decide what to do:
-    if (pVictim == m_bot && CLOAK_OF_SHADOWS > 0 && m_bot->HasAura(SPELL_AURA_PERIODIC_DAMAGE) && !m_bot->HasAura(CLOAK_OF_SHADOWS, EFFECT_INDEX_0) && m_ai->CastSpell(CLOAK_OF_SHADOWS))
-    {
-        if (m_ai->GetManager()->m_confDebugWhisper)
-            m_ai->TellMaster("CoS!");
-        return RETURN_CONTINUE;
-    }
-    else if (m_bot->HasAura(STEALTH, EFFECT_INDEX_0))
+    if (m_bot->HasAura(STEALTH, EFFECT_INDEX_0))
         SpellSequence = RogueStealth;
     else if (pTarget->IsNonMeleeSpellCasted(true))
         SpellSequence = RogueSpellPreventing;
@@ -304,13 +292,11 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
                 // failed for some (non-energy related) reason, fall through to normal attacks to maximize DPS
             }
 
-            if (SHADOW_DANCE > 0 && !m_bot->HasAura(SHADOW_DANCE, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOW_DANCE, *m_bot))
+            if (CHEAP_SHOT > 0 && !pTarget->HasAura(CHEAP_SHOT, EFFECT_INDEX_0) && m_ai->CastSpell(CHEAP_SHOT, *pTarget))
                 return RETURN_CONTINUE;
-            if (CHEAP_SHOT > 0 && m_bot->HasAura(SHADOW_DANCE, EFFECT_INDEX_0) && !pTarget->HasAura(CHEAP_SHOT, EFFECT_INDEX_0) && m_ai->CastSpell(CHEAP_SHOT, *pTarget))
+            if (AMBUSH > 0 && m_ai->CastSpell(AMBUSH, *pTarget))
                 return RETURN_CONTINUE;
-            if (AMBUSH > 0 && m_bot->HasAura(SHADOW_DANCE, EFFECT_INDEX_0) && m_ai->CastSpell(AMBUSH, *pTarget))
-                return RETURN_CONTINUE;
-            if (GARROTE > 0 && m_bot->HasAura(SHADOW_DANCE, EFFECT_INDEX_0) && m_ai->CastSpell(GARROTE, *pTarget))
+            if (GARROTE > 0 && m_ai->CastSpell(GARROTE, *pTarget))
                 return RETURN_CONTINUE;
             if (BACKSTAB > 0 && pTarget->isInBackInMap(m_bot, 1) && m_ai->CastSpell(BACKSTAB, *pTarget))
                 return RETURN_CONTINUE;
@@ -321,10 +307,6 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
             if (GHOSTLY_STRIKE > 0 && m_ai->CastSpell(GHOSTLY_STRIKE, *pTarget))
                 return RETURN_CONTINUE;
             if (HEMORRHAGE > 0 && m_ai->CastSpell(HEMORRHAGE, *pTarget))
-                return RETURN_CONTINUE;
-            if (DISMANTLE > 0 && !pTarget->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED) && m_ai->CastSpell(DISMANTLE, *pTarget))
-                return RETURN_CONTINUE;
-            if (SHADOWSTEP > 0 && m_ai->CastSpell(SHADOWSTEP, *pTarget))
                 return RETURN_CONTINUE;
             if (m_bot->getRace() == RACE_HUMAN && (m_bot->hasUnitState(UNIT_STAT_STUNNED) || m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM)) && m_ai->CastSpell(EVERY_MAN_FOR_HIMSELF, *m_bot))
                 return RETURN_CONTINUE;
