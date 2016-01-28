@@ -4999,6 +4999,35 @@ bool PlayerbotAI::IsElite(Unit* pTarget) const
     return false;
 }
 
+// Check if bot target has one of the following auras: Sap, Polymorph, Shackle Undead, Banish, Seduction, Freezing Trap, Hibernate
+// This is used by the AI to prevent bots from attacking crowd control targets 
+
+static const uint32 uAurasIds[21] =
+{
+    118, 12824, 12825, 12826,   // polymorph
+    28272, 28271,               // polymorph pig, turtle
+    9484, 9485, 10955,          // shackle
+    6358,                       // seduction
+    710, 18647,                 // banish
+    6770, 2070, 11297,          // sap
+    3355, 14308, 14309,         // freezing trap (effect auras IDs, not spell IDs)
+    2637, 18657, 18658          // hibernate
+};
+
+bool PlayerbotAI::IsNeutralized(Unit* pTarget)
+{
+    if (!pTarget)
+        return false;
+
+    for (uint8 i = 0; i < countof(uAurasIds); ++i)
+    {
+        if (pTarget->HasAura(uAurasIds[i], EFFECT_INDEX_0))
+            return true;
+    }
+
+    return false;
+}
+
 bool PlayerbotAI::CanStore()
 {
     uint32 totalused = 0;
