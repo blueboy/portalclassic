@@ -15,22 +15,16 @@ enum
     ANCESTRAL_SPIRIT_1              = 2008,
     ASTRAL_RECALL_1                 = 556,
     BLOODLUST_1                     = 2825,
-    CALL_OF_THE_ANCESTORS_1         = 66843,
-    CALL_OF_THE_ELEMENTS_1          = 66842,
-    CALL_OF_THE_SPIRITS_1           = 66844,
     CHAIN_HEAL_1                    = 1064,
     CHAIN_LIGHTNING_1               = 421,
-    CHAINED_HEAL_1                  = 70809,
-    CLEANSE_SPIRIT_1                = 51886,
     CLEANSING_TOTEM_1               = 8170,
-    CURE_TOXINS_1                   = 526,
+    CURE_DISEASE_SHAMAN_1           = 2870,                 
+    CURE_POISON_SHAMAN_1            = 526,
     EARTH_ELEMENTAL_TOTEM_1         = 2062,
     EARTH_SHIELD_1                  = 974,
     EARTH_SHOCK_1                   = 8042,
     EARTHBIND_TOTEM_1               = 2484,
-    EARTHLIVING_WEAPON_1            = 51730,
     ELEMENTAL_MASTERY_1             = 16166,
-    FERAL_SPIRIT_1                  = 51533,
     FIRE_ELEMENTAL_TOTEM_1          = 2894,
     FIRE_NOVA_1                     = 1535,
     FIRE_RESISTANCE_TOTEM_1         = 8184,
@@ -44,10 +38,6 @@ enum
     GROUNDING_TOTEM_1               = 8177,
     HEALING_STREAM_TOTEM_1          = 5394,
     HEALING_WAVE_1                  = 331,
-    HEROISM_1                       = 32182,
-    HEX_1                           = 51514,
-    LAVA_BURST_1                    = 51505,
-    LAVA_LASH_1                     = 60103,
     LESSER_HEALING_WAVE_1           = 8004,
     LIGHTNING_BOLT_1                = 403,
     LIGHTNING_SHIELD_1              = 324,
@@ -57,31 +47,23 @@ enum
     NATURE_RESISTANCE_TOTEM_1       = 10595,
     NATURES_SWIFTNESS_SHAMAN_1      = 16188,
     PURGE_1                         = 370,
-    RIPTIDE_1                       = 61295,
     ROCKBITER_WEAPON_1              = 8017,
     SEARING_TOTEM_1                 = 3599,
     SENTRY_TOTEM_1                  = 6495,
-    SHAMANISTIC_RAGE_1              = 30823,
     STONECLAW_TOTEM_1               = 5730,
     STONESKIN_TOTEM_1               = 8071,
     STORMSTRIKE_1                   = 17364,
     STRENGTH_OF_EARTH_TOTEM_1       = 8075,
-    THUNDERSTORM_1                  = 51490,
-    TIDAL_FORCE_1                   = 55198,
-    TOTEM_OF_WRATH_1                = 30706,
-    TOTEMIC_RECALL_1                = 36936,
     TREMOR_TOTEM_1                  = 8143,
     WATER_BREATHING_1               = 131,
-    WATER_SHIELD_1                  = 52127,
     WATER_WALKING_1                 = 546,
-    WIND_SHEAR_1                    = 57994,
     WINDFURY_TOTEM_1                = 8512,
     WINDFURY_WEAPON_1               = 8232,
     WRATH_OF_AIR_TOTEM_1            = 3738,
 
     //Totem Buffs
     STRENGTH_OF_EARTH_EFFECT_1      = 8076,
-    FLAMETONGUE_EFFECT_1            = 52109,
+    FLAMETONGUE_EFFECT_1            = 8026,
     MAGMA_TOTEM_EFFECT_1            = 8188,
     STONECLAW_EFFECT_1              = 5728,
     FIRE_RESISTANCE_EFFECT_1        = 8185,
@@ -92,18 +74,14 @@ enum
     WINDFURY_EFFECT_1               = 8515,
     WRATH_OF_AIR_EFFECT_1           = 2895,
     CLEANSING_TOTEM_EFFECT_1        = 8172,
-    HEALING_STREAM_EFFECT_1         = 52042,
     MANA_SPRING_EFFECT_1            = 5677,
     TREMOR_TOTEM_EFFECT_1           = 8145,
-    TOTEM_OF_WRATH_EFFECT_1         = 57658,
     EARTHBIND_EFFECT_1              = 6474,
     // FIRE_ELEMENTAL_TOTEM uses spell effect index 2
     // SEARING_TOTEM uses spell effect index 0
     // EARTH_ELEMENTAL_TOTEM uses spell effect indexes 1 and 2
 
     //Spec buffs
-    MAELSTROM_WEAPON_1              = 51532, //This is the final rank only, the spell family thing doesn't work so I decided to go with max only
-
 };
 //class Player;
 
@@ -152,14 +130,9 @@ private:
            NATURE_RESISTANCE_TOTEM,
            WIND_FURY_TOTEM,
            STORMSTRIKE,
-           LAVA_LASH,
-           SHAMANISTIC_RAGE,
            WRATH_OF_AIR_TOTEM,
            EARTH_ELEMENTAL_TOTEM,
-           BLOODLUST,
-           HEROISM,
-           FERAL_SPIRIT,
-           MAELSTROM_WEAPON;
+           BLOODLUST;
 
     // RESTORATION
     uint32 HEALING_WAVE,
@@ -171,13 +144,9 @@ private:
            CHAIN_HEAL,
            MANA_TIDE_TOTEM,
            EARTH_SHIELD,
-           WATER_SHIELD,
-           EARTHLIVING_WEAPON,
-           RIPTIDE,
-           CURE_TOXINS,
-           CLEANSE_SPIRIT,
-           NATURES_SWIFTNESS_SHAMAN,
-           TIDAL_FORCE;
+           CURE_DISEASE_SHAMAN,
+           CURE_POISON_SHAMAN,
+           NATURES_SWIFTNESS_SHAMAN;
 
     // ELEMENTAL
     uint32 LIGHTNING_BOLT,
@@ -187,48 +156,40 @@ private:
            SEARING_TOTEM,
            PURGE,
            FIRE_NOVA_TOTEM,
-           WIND_SHOCK,
            FROST_SHOCK,
            MAGMA_TOTEM,
            CHAIN_LIGHTNING,
-           TOTEM_OF_WRATH,
            FIRE_ELEMENTAL_TOTEM,
-           LAVA_BURST,
            EARTHBIND_TOTEM,
-           HEX,
-           ELEMENTAL_MASTERY,
-           THUNDERSTORM;
+           ELEMENTAL_MASTERY;
 
     // racial
-    uint32 ARCANE_TORRENT,
-        GIFT_OF_THE_NAARU, 
-        STONEFORM,
-        ESCAPE_ARTIST, 
-        EVERY_MAN_FOR_HIMSELF,
-        SHADOWMELD, 
-        BLOOD_FURY,
-        WAR_STOMP,
-        BERSERKING,
-        WILL_OF_THE_FORSAKEN;
+    uint32 STONEFORM,
+           ESCAPE_ARTIST, 
+           EVERY_MAN_FOR_HIMSELF,
+           SHADOWMELD, 
+           BLOOD_FURY,
+           WAR_STOMP,
+           BERSERKING,
+           WILL_OF_THE_FORSAKEN;
 
     // totem buffs
     uint32 STRENGTH_OF_EARTH_EFFECT,
-        FLAMETONGUE_EFFECT,
-        MAGMA_TOTEM_EFFECT,
-        STONECLAW_EFFECT,
-        FIRE_RESISTANCE_EFFECT,
-        FROST_RESISTANCE_EFFECT,
-        GROUDNING_EFFECT,
-        NATURE_RESISTANCE_EFFECT,
-        STONESKIN_EFFECT,
-        WINDFURY_EFFECT,
-        WRATH_OF_AIR_EFFECT,
-        CLEANSING_TOTEM_EFFECT,
-        HEALING_STREAM_EFFECT,
-        MANA_SPRING_EFFECT,
-        TREMOR_TOTEM_EFFECT,
-        TOTEM_OF_WRATH_EFFECT,
-        EARTHBIND_EFFECT;
+           FLAMETONGUE_EFFECT,
+           MAGMA_TOTEM_EFFECT,
+           STONECLAW_EFFECT,
+           FIRE_RESISTANCE_EFFECT,
+           FROST_RESISTANCE_EFFECT,
+           GROUDNING_EFFECT,
+           NATURE_RESISTANCE_EFFECT,
+           STONESKIN_EFFECT,
+           WINDFURY_EFFECT,
+           WRATH_OF_AIR_EFFECT,
+           CLEANSING_TOTEM_EFFECT,
+           HEALING_STREAM_EFFECT,
+           MANA_SPRING_EFFECT,
+           TREMOR_TOTEM_EFFECT,
+           EARTHBIND_EFFECT;
 
     uint32 SpellSequence, LastSpellEnhancement, LastSpellRestoration, LastSpellElemental;
 };
