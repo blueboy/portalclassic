@@ -134,7 +134,7 @@ private:
     // racial
     uint32 STONEFORM,
            ESCAPE_ARTIST,
-           EVERY_MAN_FOR_HIMSELF,
+           PERCEPTION,
            SHADOWMELD,
            WAR_STOMP,
            BERSERKING,

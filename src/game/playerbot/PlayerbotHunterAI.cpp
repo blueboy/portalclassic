@@ -61,7 +61,7 @@ PlayerbotHunterAI::PlayerbotHunterAI(Player* const master, Player* const bot, Pl
     // racial
     STONEFORM                     = m_ai->initSpell(STONEFORM_ALL); // dwarf
     SHADOWMELD                    = m_ai->initSpell(SHADOWMELD_ALL);
-    BLOOD_FURY                    = m_ai->initSpell(BLOOD_FURY_MELEE_CLASSES); // orc
+    BLOOD_FURY                    = m_ai->initSpell(BLOOD_FURY_ALL); // orc
     WAR_STOMP                     = m_ai->initSpell(WAR_STOMP_ALL); // tauren
     BERSERKING                    = m_ai->initSpell(BERSERKING_ALL); // troll
 

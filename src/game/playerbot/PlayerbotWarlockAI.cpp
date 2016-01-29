@@ -61,8 +61,8 @@ PlayerbotWarlockAI::PlayerbotWarlockAI(Player* const master, Player* const bot, 
 
     // racial
     ESCAPE_ARTIST         = m_ai->initSpell(ESCAPE_ARTIST_ALL); // gnome
-    EVERY_MAN_FOR_HIMSELF = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
-    BLOOD_FURY            = m_ai->initSpell(BLOOD_FURY_WARLOCK); // orc
+    PERCEPTION            = m_ai->initSpell(PERCEPTION_ALL); // human
+    BLOOD_FURY            = m_ai->initSpell(BLOOD_FURY_ALL); // orc
     WILL_OF_THE_FORSAKEN  = m_ai->initSpell(WILL_OF_THE_FORSAKEN_ALL); // undead
 
     m_lastDemon           = 0;

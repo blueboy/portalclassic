@@ -60,9 +60,9 @@ PlayerbotWarriorAI::PlayerbotWarriorAI(Player* const master, Player* const bot, 
     // racial
     STONEFORM               = m_ai->initSpell(STONEFORM_ALL); // dwarf
     ESCAPE_ARTIST           = m_ai->initSpell(ESCAPE_ARTIST_ALL); // gnome
-    EVERY_MAN_FOR_HIMSELF   = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
+    PERCEPTION              = m_ai->initSpell(PERCEPTION_ALL); // human
     SHADOWMELD              = m_ai->initSpell(SHADOWMELD_ALL); // night elf
-    BLOOD_FURY              = m_ai->initSpell(BLOOD_FURY_MELEE_CLASSES); // orc
+    BLOOD_FURY              = m_ai->initSpell(BLOOD_FURY_ALL); // orc
     WAR_STOMP               = m_ai->initSpell(WAR_STOMP_ALL); // tauren
     BERSERKING              = m_ai->initSpell(BERSERKING_ALL); // troll
     WILL_OF_THE_FORSAKEN    = m_ai->initSpell(WILL_OF_THE_FORSAKEN_ALL); // undead

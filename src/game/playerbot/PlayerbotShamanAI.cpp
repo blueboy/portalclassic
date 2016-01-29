@@ -56,7 +56,7 @@ PlayerbotShamanAI::PlayerbotShamanAI(Player* const master, Player* const bot, Pl
     RECENTLY_BANDAGED        = 11196; // first aid check
 
     // racial
-    BLOOD_FURY               = m_ai->initSpell(BLOOD_FURY_SHAMAN); // orc
+    BLOOD_FURY               = m_ai->initSpell(BLOOD_FURY_ALL); // orc
     WAR_STOMP                = m_ai->initSpell(WAR_STOMP_ALL); // tauren
     BERSERKING               = m_ai->initSpell(BERSERKING_ALL); // troll
 

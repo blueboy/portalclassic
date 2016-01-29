@@ -157,7 +157,7 @@ public:
     // racial
     uint32 STONEFORM,
            ESCAPE_ARTIST,
-           EVERY_MAN_FOR_HIMSELF,
+           PERCEPTION,
            SHADOWMELD,
            BLOOD_FURY,
            WAR_STOMP,

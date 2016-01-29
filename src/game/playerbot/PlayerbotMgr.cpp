@@ -323,14 +323,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 
                 case TEXTEMOTE_EAT:
                 case TEXTEMOTE_DRINK:
-                {
-                    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
-                    {
-                        Player* const bot = it->second;
-                        bot->GetPlayerbotAI()->Feast();
-                    }
-                    return;
-                }
+					return;
 
                 // emote to attack selected target
                 case TEXTEMOTE_POINT:
@@ -575,7 +568,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                 // check that the bot did not already vote
                 if (rollType >= ROLL_NOT_EMITED_YET)
                     return;
-                    
+
                 Loot* loot = sLootMgr.GetLoot(bot, Guid);
 
                 if (!loot)
@@ -998,7 +991,7 @@ uint32 Player::GetSpec()
 
         if (!talentTabInfo)
             continue;
-            
+
         if ((classMask & talentTabInfo->ClassMask) == 0)
             continue;
 
@@ -1009,7 +1002,7 @@ uint32 Player::GetSpec()
             {
                 if (row == 0 && spec == 0)
                     spec = talentInfo->TalentTab;
-                    
+
                 if (talentInfo->Row > row)
                 {
                     row = talentInfo->Row;

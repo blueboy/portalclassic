@@ -42,9 +42,9 @@ PlayerbotRogueAI::PlayerbotRogueAI(Player* const master, Player* const bot, Play
     // racial
     STONEFORM                = m_ai->initSpell(STONEFORM_ALL); // dwarf
     ESCAPE_ARTIST            = m_ai->initSpell(ESCAPE_ARTIST_ALL); // gnome
-    EVERY_MAN_FOR_HIMSELF    = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
+    PERCEPTION               = m_ai->initSpell(PERCEPTION_ALL); // human
     SHADOWMELD               = m_ai->initSpell(SHADOWMELD_ALL);
-    BLOOD_FURY               = m_ai->initSpell(BLOOD_FURY_MELEE_CLASSES); // orc
+    BLOOD_FURY               = m_ai->initSpell(BLOOD_FURY_ALL); // orc
     BERSERKING               = m_ai->initSpell(BERSERKING_ALL); // troll
     WILL_OF_THE_FORSAKEN     = m_ai->initSpell(WILL_OF_THE_FORSAKEN_ALL); // undead
 }
@@ -307,8 +307,6 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
             if (GHOSTLY_STRIKE > 0 && m_ai->CastSpell(GHOSTLY_STRIKE, *pTarget))
                 return RETURN_CONTINUE;
             if (HEMORRHAGE > 0 && m_ai->CastSpell(HEMORRHAGE, *pTarget))
-                return RETURN_CONTINUE;
-            if (m_bot->getRace() == RACE_HUMAN && (m_bot->hasUnitState(UNIT_STAT_STUNNED) || m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM)) && m_ai->CastSpell(EVERY_MAN_FOR_HIMSELF, *m_bot))
                 return RETURN_CONTINUE;
             if (m_bot->getRace() == RACE_UNDEAD && (m_bot->HasAuraType(SPELL_AURA_MOD_FEAR) || m_bot->HasAuraType(SPELL_AURA_MOD_CHARM)) && m_ai->CastSpell(WILL_OF_THE_FORSAKEN, *m_bot))
                 return RETURN_CONTINUE;

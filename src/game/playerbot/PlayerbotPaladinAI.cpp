@@ -60,7 +60,7 @@ PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, 
 
     // racial
     STONEFORM                     = m_ai->initSpell(STONEFORM_ALL); // dwarf
-    EVERY_MAN_FOR_HIMSELF         = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
+    PERCEPTION                    = m_ai->initSpell(PERCEPTION_ALL); // human
 
     //The check doesn't work for now
     //PRAYER_OF_SHADOW_PROTECTION   = m_ai->initSpell(PriestSpells::PRAYER_OF_SHADOW_PROTECTION_1);

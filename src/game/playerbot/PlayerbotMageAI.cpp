@@ -43,7 +43,7 @@ PlayerbotMageAI::PlayerbotMageAI(Player* const master, Player* const bot, Player
 
     // racial
     ESCAPE_ARTIST           = m_ai->initSpell(ESCAPE_ARTIST_ALL); // gnome
-    EVERY_MAN_FOR_HIMSELF   = m_ai->initSpell(EVERY_MAN_FOR_HIMSELF_ALL); // human
+    PERCEPTION              = m_ai->initSpell(PERCEPTION_ALL); // human
     BERSERKING              = m_ai->initSpell(BERSERKING_ALL); // troll
     WILL_OF_THE_FORSAKEN    = m_ai->initSpell(WILL_OF_THE_FORSAKEN_ALL); // undead
 }

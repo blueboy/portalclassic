@@ -959,7 +959,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
             p >> spellId >> result;
             p.resize(5);
-            
+
             SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
             if (!spellInfo)
                 return;
@@ -1402,7 +1402,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
             return;
         }
-        
+
         case SMSG_LOOT_ROLL_WON:
         {
             WorldPacket p(packet);   // (8+4+4+4+4+8+1+1)
@@ -1904,56 +1904,6 @@ void PlayerbotAI::InterruptCurrentCastingSpell()
     m_bot->GetSession()->QueuePacket(packet);
 }
 
-void PlayerbotAI::Feast()
-{
-    // stand up if we are done feasting
-    if (!(m_bot->GetHealth() < m_bot->GetMaxHealth() || (m_bot->GetPowerType() == POWER_MANA && m_bot->GetPower(POWER_MANA) < m_bot->GetMaxPower(POWER_MANA))))
-    {
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-        return;
-    }
-
-    // wait 3 seconds before checking if we need to drink more or eat more
-    SetIgnoreUpdateTime(3);
-
-    // should we drink another
-    if (m_bot->GetPowerType() == POWER_MANA && CurrentTime() > m_TimeDoneDrinking
-        && ((static_cast<float> (m_bot->GetPower(POWER_MANA)) / m_bot->GetMaxPower(POWER_MANA)) < 0.8))
-    {
-        Item* pItem = FindDrink();
-        if (pItem != nullptr)
-        {
-            TellMaster("drinking %s now...",pItem->GetProto()->Name1);
-            UseItem(pItem);
-            m_TimeDoneDrinking = CurrentTime() + 30;
-            return;
-        }
-        TellMaster("I need water.");
-    }
-
-    // should we eat another
-    if (CurrentTime() > m_TimeDoneEating && ((static_cast<float> (m_bot->GetHealth()) / m_bot->GetMaxHealth()) < 0.8))
-    {
-        Item* pItem = FindFood();
-        if (pItem != nullptr)
-        {
-            TellMaster("drinking %s now...",pItem->GetProto()->Name1);
-            UseItem(pItem);
-            m_TimeDoneEating = CurrentTime() + 30;
-            return;
-        }
-        TellMaster("I need food.");
-    }
-
-    // if we are no longer eating or drinking
-    // because we are out of items or we are above 80% in both stats
-    if (CurrentTime() > m_TimeDoneEating && CurrentTime() > m_TimeDoneDrinking)
-    {
-        TellMaster("done feasting!");
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-    }
-}
-
 // intelligently sets a reasonable combat order for this bot
 // based on its class / level / etc
 void PlayerbotAI::Attack(Unit* forcedTarget)
@@ -2007,7 +1957,7 @@ void PlayerbotAI::GetCombatTarget(Unit* forcedTarget)
     // we already have a target and we are not forced to change it
     if (m_targetCombat && !forcedTarget)
         return;
-        
+
     // forced to change target to current target == null operation
     if (forcedTarget && forcedTarget == m_targetCombat)
         return;
@@ -3594,7 +3544,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
 
             return;
         }
-        
+
         if (m_botState == BOTSTATE_DEADRELEASED)
         {
             // get bot's corpse
@@ -3659,7 +3609,7 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
         InterruptCurrentCastingSpell();
         return;
     }
-        
+
     // direct cast command from master
     if (m_spellIdCommand != 0)
     {
@@ -4000,7 +3950,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
     }
 
     SetIgnoreUpdateTime(CastTime + 1);
-    
+
     return true;
 }
 
@@ -4228,10 +4178,6 @@ Item* PlayerbotAI::FindKeyForLockValue(uint32 reqSkillValue)
         return FindItem(TRUESILVER_SKELETON_KEY);
     if (reqSkillValue <= 300 && m_bot->HasItemCount(ARCANITE_SKELETON_KEY, 1))
         return FindItem(ARCANITE_SKELETON_KEY);
-    if (reqSkillValue <= 375 && m_bot->HasItemCount(TITANIUM_SKELETON_KEY, 1))
-        return FindItem(TITANIUM_SKELETON_KEY);
-    if (reqSkillValue <= 400 && m_bot->HasItemCount(COBALT_SKELETON_KEY, 1))
-        return FindItem(COBALT_SKELETON_KEY);
 
     return nullptr;
 }
@@ -4244,8 +4190,6 @@ Item* PlayerbotAI::FindBombForLockValue(uint32 reqSkillValue)
         return FindItem(LARGE_SEAFORIUM_CHARGE);
     if (reqSkillValue <= 300 && m_bot->HasItemCount(POWERFUL_SEAFORIUM_CHARGE, 1))
         return FindItem(POWERFUL_SEAFORIUM_CHARGE);
-    if (reqSkillValue <= 350 && m_bot->HasItemCount(ELEMENTAL_SEAFORIUM_CHARGE, 1))
-        return FindItem(ELEMENTAL_SEAFORIUM_CHARGE);
 
     return nullptr;
 }
@@ -4990,17 +4934,17 @@ bool PlayerbotAI::IsElite(Unit* pTarget) const
 {
     if (!pTarget)
         return false;
-        
+
     if (Creature * pCreature = (Creature*) pTarget)
     {
         return (pCreature->IsElite() || pCreature->IsWorldBoss());
     }
-    
+
     return false;
 }
 
 // Check if bot target has one of the following auras: Sap, Polymorph, Shackle Undead, Banish, Seduction, Freezing Trap, Hibernate
-// This is used by the AI to prevent bots from attacking crowd control targets 
+// This is used by the AI to prevent bots from attacking crowd control targets
 
 static const uint32 uAurasIds[21] =
 {
@@ -5597,7 +5541,7 @@ void PlayerbotAI::ListQuests(WorldObject * questgiver)
                 if (!AddQuest(questID, questgiver))
                     continue;
             }
-        }    
+        }
     }
     if (!out.str().empty())
         TellMaster(out.str());
@@ -6422,14 +6366,14 @@ void PlayerbotAI::_HandleCommandCast(std::string &text, Player &fromPlayer)
     if (spellId == 0)
     {
         spellId = getSpellId(spellStr.c_str(), true);
- 
+
         // try link if text NOT (spellid OR spellname)
         if (spellId == 0)
             extractSpellId(text, spellId);
     }
 
     if (m_bot->HasAura(spellId))
-    {            
+    {
         m_bot->RemoveAurasByCasterSpell(spellId, m_bot->GetObjectGuid());
         return;
     }
@@ -6590,10 +6534,10 @@ void PlayerbotAI::_HandleCommandEquip(std::string &text, Player& /*fromPlayer*/)
 void PlayerbotAI::_HandleCommandFind(std::string &text, Player& /*fromPlayer*/)
 {
     extractGOinfo(text, m_lootTargets);
- 
+
     m_lootCurrent = m_lootTargets.front();
     m_lootTargets.pop_front();
- 
+
     GameObject *go = m_bot->GetMap()->GetGameObject(m_lootCurrent);
     if (!go)
     {
@@ -6601,13 +6545,13 @@ void PlayerbotAI::_HandleCommandFind(std::string &text, Player& /*fromPlayer*/)
          m_lootCurrent = ObjectGuid();
          return;
      }
- 
+
     SetMovementOrder(MOVEMENT_STAY);
     m_bot->GetMotionMaster()->MovePoint(go->GetMapId(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ());
     m_lootTargets.clear();
     m_lootCurrent = ObjectGuid();
 }
- 
+
 void PlayerbotAI::_HandleCommandGet(std::string &text, Player &fromPlayer)
 {
     if (text != "")
@@ -6624,11 +6568,11 @@ void PlayerbotAI::_HandleCommandGet(std::string &text, Player &fromPlayer)
         Creature *c = m_bot->GetMap()->GetCreature(getOnGuid);
         if (!c)
             return;
- 
+
         uint32 skillId = 0;
         if (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
             skillId = c->GetCreatureInfo()->GetRequiredLootSkill();
- 
+
         if (c->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE) ||
             (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE) && m_bot->HasSkill(skillId)))
         {
@@ -6945,7 +6889,7 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
         for (PetSpellMap::iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
         {
             const uint32 spellId = itr->first;
- 
+
             if (itr->second.state == PETSPELL_REMOVED || IsPassiveSpell(spellId))
                 continue;
 
@@ -6989,18 +6933,18 @@ void PlayerbotAI::_HandleCommandSpells(std::string& /*text*/, Player &fromPlayer
     typedef std::map<std::string, uint32> spellMap;
     spellMap posSpells, negSpells;
     std::string spellName;
- 
+
     uint32 ignoredSpells[] = {1843, 5019, 2479, 6603, 3365, 8386, 21651, 21652, 6233, 6246, 6247,
                                 61437, 22810, 22027, 45927, 7266, 7267, 6477, 6478, 7355, 68398};
     uint32 ignoredSpellsCount = sizeof(ignoredSpells) / sizeof(uint32);
- 
+
     for (PlayerSpellMap::iterator itr = m_bot->GetSpellMap().begin(); itr != m_bot->GetSpellMap().end(); ++itr)
     {
         const uint32 spellId = itr->first;
- 
+
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
             continue;
- 
+
         const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
             continue;
@@ -7019,7 +6963,7 @@ void PlayerbotAI::_HandleCommandSpells(std::string& /*text*/, Player &fromPlayer
         }
         if (isProfessionOrRidingSpell)
             continue;
- 
+
         bool isIgnoredSpell = false;
         for (uint8 i = 0; i < ignoredSpellsCount; ++i)
          {
@@ -7050,7 +6994,7 @@ void PlayerbotAI::_HandleCommandSpells(std::string& /*text*/, Player &fromPlayer
     {
         posOut << " |cffffffff|Hspell:" << iter->second << "|h[" << iter->first << "]|h|r";
     }
- 
+
     for (spellMap::const_iterator iter = negSpells.begin(); iter != negSpells.end(); ++iter)
     {
         negOut << " |cffffffff|Hspell:" << iter->second << "|h[" << iter->first << "]|h|r";
@@ -7112,7 +7056,7 @@ void PlayerbotAI::_HandleCommandSurvey(std::string& /*text*/, Player &fromPlayer
             detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry  << ":" <<  "|h[" << go->GetGOInfo()->name << "]|h|r";
             ++count;
         } while (result->NextRow());
- 
+
         delete result;
     }
     SendWhisper(detectout.str().c_str(), fromPlayer);
@@ -7139,7 +7083,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
             SendWhisper("Please select the trainer!", fromPlayer);
             return;
         }
- 
+
         if (!unit->isTrainer())
         {
             SendWhisper("This is not a trainer!", fromPlayer);
@@ -7149,13 +7093,13 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
         Creature *creature =  m_bot->GetMap()->GetCreature(fromPlayer.GetSelectionGuid());
         if (!creature)
             return;
- 
+
         if (!creature->IsTrainerOf(m_bot, false))
         {
             SendWhisper("This trainer can not teach me anything!", fromPlayer);
             return;
         }
- 
+
         // check present spell in trainer spell list
         TrainerSpellData const* cSpells = creature->GetTrainerSpells();
         TrainerSpellData const* tSpells = creature->GetTrainerTemplateSpells();
@@ -7164,10 +7108,10 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
             SendWhisper("No spells can be learnt from this trainer", fromPlayer);
             return;
         }
- 
+
         // reputation discount
         float fDiscountMod =  m_bot->GetReputationPriceDiscount(creature);
- 
+
         // Handle: Learning class or profession (primary or secondary) skill & spell(s) for selected trainer, skill learn [HLINK][HLINK][HLINK].. ([HLINK] from skill train)
         if (text.size() > 0)
         {
@@ -7182,14 +7126,14 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
 
                 if (!spellId)
                     break;
- 
+
                 TrainerSpell const* trainer_spell = cSpells->Find(spellId);
                 if (!trainer_spell)
                     trainer_spell = tSpells->Find(spellId);
- 
+
                 if (!trainer_spell || !trainer_spell->learnedSpell)
                     continue;
- 
+
                 // apply reputation discount
                 uint32 cost = uint32(floor(trainer_spell->spellCost * fDiscountMod));
                 // check money requirement
@@ -7198,7 +7142,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                     Announce(CANT_AFFORD);
                     continue;
                 }
- 
+
                 m_bot->ModifyMoney(-int32(cost));
                 // learn explicitly or cast explicitly
                 if (trainer_spell->IsCastable())
@@ -7210,7 +7154,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                 const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
                 if (!pSpellInfo)
                     continue;
- 
+
                 if (visuals)
                 {
                     visuals = false;
@@ -7264,34 +7208,34 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
             TrainerSpellData const* trainer_spells = cSpells;
             if (!trainer_spells)
                 trainer_spells = tSpells;
- 
+
             for (TrainerSpellMap::const_iterator itr =  trainer_spells->spellList.begin(); itr !=  trainer_spells->spellList.end(); ++itr)
             {
                 TrainerSpell const* tSpell = &itr->second;
- 
+
                 if (!tSpell)
                     break;
- 
+
                 uint32 reqLevel = 0;
                 if (!tSpell->learnedSpell && !m_bot->IsSpellFitByClassAndRace(tSpell->learnedSpell, &reqLevel))
                     continue;
- 
+
                 if  (sSpellMgr.IsPrimaryProfessionFirstRankSpell(tSpell->learnedSpell) && m_bot->HasSpell(tSpell->learnedSpell))
                     continue;
- 
+
                 reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
 
                 TrainerSpellState state =  m_bot->GetTrainerSpellState(tSpell,reqLevel);
                 if (state != TRAINER_SPELL_GREEN)
                     continue;
- 
+
                 uint32 spellId = tSpell->spell;
                 const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
                 if (!pSpellInfo)
                     continue;
                 uint32 cost = uint32(floor(tSpell->spellCost *  fDiscountMod));
                 totalCost += cost;
- 
+
                 uint32 gold = uint32(cost / 10000);
                 cost -= (gold * 10000);
                 uint32 silver = uint32(cost / 100);
@@ -7385,7 +7329,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                         SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
                         if (!spellInfo)
                             continue;
- 
+
                         if (m_bot->GetSkillValue(*it) <= rank[sSpellMgr.GetSpellRank(skillLine->spellId)] && m_bot->HasSpell(skillLine->spellId))
                         {
                             // DEBUG_LOG ("[PlayerbotAI]: HandleCommand - skill (%u)(%u)(%u):",skillLine->spellId, rank[sSpellMgr.GetSpellRank(skillLine->spellId)], m_bot->GetSkillValue(*it));
@@ -7395,7 +7339,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                     }
                 }
         }
- 
+
         msg << "\nMy Weapon skills: ";
         for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
         {
