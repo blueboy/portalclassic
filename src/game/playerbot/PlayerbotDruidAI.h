@@ -38,6 +38,7 @@ enum DruidSpells
     MOONKIN_FORM_1                  = 24858,
     NATURES_GRASP_1                 = 16689,
     NATURES_SWIFTNESS_DRUID_1       = 17116,
+    OMEN_OF_CLARITY_1				= 16864,
     POUNCE_1                        = 9005,
     PROWL_1                         = 5215,
     RAKE_1                          = 1822,
@@ -95,7 +96,6 @@ private:
 
     // Heals the target based off its hps
     CombatManeuverReturns HealPlayer (Player* target);
-    Player* GetHealTarget() { return PlayerbotClassAI::GetHealTarget(); }
 
     static bool BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target);
     // Callback method to reset shapeshift forms blocking buffs and heals
@@ -141,6 +141,7 @@ private:
     uint32 MOONFIRE,
            ROOTS,
            WRATH,
+           OMEN_OF_CLARITY,
            STARFIRE,
            INSECT_SWARM,
            FAERIE_FIRE;
@@ -150,6 +151,7 @@ private:
            GIFT_OF_THE_WILD,
            THORNS,
            INNERVATE,
+           NATURES_SWIFTNESS,
            BARKSKIN;
 
     // druid heals
