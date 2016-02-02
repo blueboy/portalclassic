@@ -229,8 +229,8 @@ CombatManeuverReturns PlayerbotDruidAI::DoNextCombatManeuverPVE(Unit* pTarget)
     }
 
     if (m_ai->IsHealer())
-		if (_DoNextPVECombatManeuverHeal() & RETURN_CONTINUE)
-			return RETURN_CONTINUE;
+        if (_DoNextPVECombatManeuverHeal() & RETURN_CONTINUE)
+            return RETURN_CONTINUE;
 
     switch (spec)
     {
@@ -379,9 +379,9 @@ CombatManeuverReturns PlayerbotDruidAI::_DoNextPVECombatManeuverSpellDPS(Unit* p
     if (INSECT_SWARM > 0 && m_ai->In_Reach(pTarget,INSECT_SWARM) && !pTarget->HasAura(INSECT_SWARM, EFFECT_INDEX_0) && CastSpell(INSECT_SWARM, pTarget))
         return RETURN_CONTINUE;
 
-	// Healer? Don't waste more mana on DPS
-	if (m_ai->IsHealer())
-		return RETURN_NO_ACTION_OK;
+    // Healer? Don't waste more mana on DPS
+    if (m_ai->IsHealer())
+        return RETURN_NO_ACTION_OK;
 
     if (MOONFIRE > 0 && m_ai->In_Reach(pTarget,MOONFIRE) && !pTarget->HasAura(MOONFIRE, EFFECT_INDEX_0) && CastSpell(MOONFIRE, pTarget))
         return RETURN_CONTINUE;
@@ -497,10 +497,10 @@ CombatManeuverReturns PlayerbotDruidAI::HealPlayer(Player* target)
     {
         // first try Nature's Swiftness + Healing Touch: instant heal
         if (NATURES_SWIFTNESS > 0 && !m_bot->HasSpellCooldown(NATURES_SWIFTNESS) && CastSpell(NATURES_SWIFTNESS, m_bot))
-        	return RETURN_CONTINUE;
+            return RETURN_CONTINUE;
 
         if (HEALING_TOUCH > 0 && m_bot->HasAura(NATURES_SWIFTNESS, EFFECT_INDEX_0) && m_ai->In_Reach(target,HEALING_TOUCH) && CastSpell(HEALING_TOUCH, target))
-			return RETURN_CONTINUE;
+            return RETURN_CONTINUE;
 
         // Else try to Swiftmend the target if druid HoT is active on it
         if (SWIFTMEND > 0 && !m_bot->HasSpellCooldown(SWIFTMEND) && m_ai->In_Reach(target,SWIFTMEND) && (target->HasAura(REJUVENATION) || target->HasAura(REGROWTH)) && CastSpell(SWIFTMEND, target))
@@ -515,11 +515,11 @@ CombatManeuverReturns PlayerbotDruidAI::HealPlayer(Player* target)
         if (REJUVENATION > 0 && m_ai->In_Reach(target,REJUVENATION) && target->HasAura(REGROWTH) && !target->HasAura(REJUVENATION) && CastSpell(REJUVENATION, target))
             return RETURN_CONTINUE;
         if (SWIFTMEND > 0 && !m_bot->HasSpellCooldown(SWIFTMEND) && m_ai->In_Reach(target,SWIFTMEND) && (target->HasAura(REJUVENATION) || target->HasAura(REGROWTH)) && CastSpell(SWIFTMEND, target))
-                return RETURN_CONTINUE;
+            return RETURN_CONTINUE;
     }
 
     if (hp < 60 && HEALING_TOUCH > 0 && m_ai->In_Reach(target,HEALING_TOUCH) && CastSpell(HEALING_TOUCH, target))
-            return RETURN_CONTINUE;
+        return RETURN_CONTINUE;
 
     if (hp < 80 && REJUVENATION > 0 && m_ai->In_Reach(target,REJUVENATION) && !target->HasAura(REJUVENATION) && CastSpell(REJUVENATION, target))
         return RETURN_CONTINUE;
