@@ -18,6 +18,7 @@ enum PriestSpells
     DEVOURING_PLAGUE_1              = 2944,
     DISPEL_MAGIC_1                  = 527,
     DIVINE_SPIRIT_1                 = 14752,
+    ELUNES_GRACE_1                  = 2651,
     FADE_1                          = 586,
     FEAR_WARD_1                     = 6346,
     FLASH_HEAL_1                    = 2061,
@@ -133,6 +134,7 @@ private:
 
     // racial
     uint32 STONEFORM,
+           ELUNES_GRACE,
            ESCAPE_ARTIST,
            PERCEPTION,
            SHADOWMELD,

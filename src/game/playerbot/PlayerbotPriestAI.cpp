@@ -53,6 +53,7 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
 
     // racial
     STONEFORM                     = m_ai->initSpell(STONEFORM_ALL); // dwarf
+    ELUNES_GRACE                  = m_ai->initSpell(ELUNES_GRACE_1); // night elf
     PERCEPTION                    = m_ai->initSpell(PERCEPTION_ALL); // human
     SHADOWMELD                    = m_ai->initSpell(SHADOWMELD_ALL);
     BERSERKING                    = m_ai->initSpell(BERSERKING_ALL); // troll
@@ -155,7 +156,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     // Define a tank bot will look at
     Unit* pMainTank = GetHealTarget(JOB_TANK);
-   	
+
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
     // if in melee range OR can't shoot OR have no ranged (wand) equipped
@@ -168,7 +169,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
     if (newTarget) // TODO: && party has a tank
     {
-        if (newTarget && FADE > 0 && !m_bot->HasAura(FADE, EFFECT_INDEX_0))
+        if (FADE > 0 && !m_bot->HasAura(FADE, EFFECT_INDEX_0) && !m_bot->HasSpellCooldown(FADE))
         {
             if (CastSpell(FADE, m_bot))
             {
@@ -196,6 +197,9 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
             m_ai->TellMaster("I'm casting desperate prayer.");
             return RETURN_CONTINUE;
         }
+        // Night Elves priest bot can also cast Elune's Grace to improve his/her dodge rating
+        if (ELUNES_GRACE && !m_bot->HasAura(ELUNES_GRACE, EFFECT_INDEX_0) && !m_bot->HasSpellCooldown(ELUNES_GRACE) && CastSpell(ELUNES_GRACE, m_bot))
+            return RETURN_CONTINUE;
 
         // Already healed self or tank. If healer, do nothing else to anger mob.
         if (m_ai->IsHealer())
@@ -400,6 +404,11 @@ CombatManeuverReturns PlayerbotPriestAI::HealPlayer(Player* target)
         m_bot->GetMotionMaster()->MoveFollow(target, 39.0f, m_bot->GetOrientation());
         return RETURN_CONTINUE;
     }
+
+    // Get a free and more efficient heal if needed: low mana for bot or average health for target
+    if (hp < 50 || m_ai->GetManaPercent() < 40)
+        if (INNER_FOCUS > 0 && !m_bot->HasSpellCooldown(INNER_FOCUS) && !m_bot->HasAura(INNER_FOCUS, EFFECT_INDEX_0) && CastSpell(INNER_FOCUS, m_bot))
+            return RETURN_CONTINUE;
 
     if (hp < 25 && POWER_WORD_SHIELD > 0 && m_ai->In_Reach(target,POWER_WORD_SHIELD) && !m_bot->HasAura(POWER_WORD_SHIELD, EFFECT_INDEX_0) && !target->HasAura(WEAKNED_SOUL,EFFECT_INDEX_0) && m_ai->CastSpell(POWER_WORD_SHIELD, *target))
         return RETURN_CONTINUE;
