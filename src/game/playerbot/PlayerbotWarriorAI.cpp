@@ -338,7 +338,7 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
             }
 
             // If tank is on the verge of dying but "I DON'T WANT TO DIE !!! :'-(("
-            // TODO: should behaviour (or treshold) be different between elite and normal mobs? We don't want bots to burn such precious cooldown needlessly 
+            // TODO: should behaviour (or treshold) be different between elite and normal mobs? We don't want bots to burn such precious cooldown needlessly
             if (m_bot->GetHealthPercent() < 10)
             {
                 // Cast Last Stand first because it has lower cooldown
@@ -355,9 +355,14 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 }
             }
 
-            // No way to tell if revenge is active (yet)
-            /*if (REVENGE > 0 && m_ai->CastSpell(REVENGE, *pTarget))
-                return RETURN_CONTINUE;*/
+            if (REVENGE > 0 && !m_bot->HasSpellCooldown(REVENGE))
+            {
+                uint8 base = pTarget->RollMeleeOutcomeAgainst(m_bot, BASE_ATTACK);
+                uint8 off = pTarget->RollMeleeOutcomeAgainst(m_bot, OFF_ATTACK);
+                if (base == MELEE_HIT_PARRY || base == MELEE_HIT_DODGE || base == MELEE_HIT_BLOCK || off == MELEE_HIT_PARRY || off == MELEE_HIT_DODGE || off == MELEE_HIT_BLOCK)
+                    if (m_ai->CastSpell(REVENGE, *pTarget))
+                        return RETURN_CONTINUE;
+            }
             if (REND > 0 && !pTarget->HasAura(REND, EFFECT_INDEX_0) && m_ai->CastSpell(REND, *pTarget))
                 return RETURN_CONTINUE;
             //Do not waste rage applying Sunder Armor if it is already stacked 5 times
