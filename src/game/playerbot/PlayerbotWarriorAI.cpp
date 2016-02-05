@@ -292,6 +292,15 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
     else if (BLOODRAGE > 0 && m_ai->GetRageAmount() <= 10)
         m_ai->CastSpell(BLOODRAGE);
 
+    Creature * pCreature = (Creature*) pTarget;
+
+    // Prevent low health humanoid from fleeing with Hamstring
+    if (pCreature && (m_bot->HasAura(BATTLE_STANCE, EFFECT_INDEX_0) || m_bot->HasAura(BERSERKER_STANCE, EFFECT_INDEX_0)) && pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_HUMANOID && pTarget->GetHealthPercent() < 20 && !pCreature->IsWorldBoss())
+    {
+        if (HAMSTRING > 0 && !pTarget->HasAura(HAMSTRING, EFFECT_INDEX_0) && m_ai->CastSpell(HAMSTRING, *pTarget))
+            return RETURN_CONTINUE;
+    }
+
     CheckShouts();
 
     switch (spec)
@@ -306,6 +315,8 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 return RETURN_CONTINUE;
             // No way to tell if overpower is active (yet), however taste for blood works
             if (OVERPOWER > 0 && m_ai->CastSpell(OVERPOWER, *pTarget))
+                return RETURN_CONTINUE;
+            if (THUNDER_CLAP > 0 && !pTarget->HasAura(THUNDER_CLAP) && m_ai->CastSpell(THUNDER_CLAP, *pTarget))
                 return RETURN_CONTINUE;
             if (HEROIC_STRIKE > 0 && m_ai->CastSpell(HEROIC_STRIKE, *pTarget))
                 return RETURN_CONTINUE;
@@ -331,9 +342,6 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
             {
                 // Cast taunt on bot current target if the mob is targeting someone else
                 if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK && TAUNT > 0 && !m_bot->HasSpellCooldown(TAUNT) && m_ai->CastSpell(TAUNT, *pTarget))
-                    return RETURN_CONTINUE;
-                // for some reason bot can't taunt: try to hamstring the target to give some time to the tank and the new victim of the target
-                else if (HAMSTRING > 0 && !pTarget->HasAura(HAMSTRING, EFFECT_INDEX_0) && m_ai->CastSpell(HAMSTRING, *pTarget))
                     return RETURN_CONTINUE;
             }
 
@@ -384,8 +392,6 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 return RETURN_CONTINUE;
             // check that target is dangerous (elite) before casting shield block: preserve bot cooldowns
             if (SHIELD_BLOCK > 0 && m_ai->IsElite(pTarget) && !m_bot->HasAura(SHIELD_BLOCK, EFFECT_INDEX_0) && m_ai->CastSpell(SHIELD_BLOCK, *m_bot))
-                return RETURN_CONTINUE;
-            if (THUNDER_CLAP > 0 && !pTarget->HasAura(THUNDER_CLAP) && m_ai->CastSpell(THUNDER_CLAP, *pTarget))
                 return RETURN_CONTINUE;
             if (CONCUSSION_BLOW > 0 && !m_bot->HasSpellCooldown(CONCUSSION_BLOW) && m_ai->CastSpell(CONCUSSION_BLOW, *pTarget))
                 return RETURN_CONTINUE;
