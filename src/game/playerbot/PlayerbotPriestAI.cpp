@@ -165,6 +165,23 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
             && !m_ai->IsHealer())
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
 
+    // Dwarves priests will try to buff with Fear Ward
+    if (FEAR_WARD > 0 && !m_bot->HasSpellCooldown(FEAR_WARD))
+    {
+        // Buff tank first
+        if (pMainTank)
+        {
+            if (m_ai->In_Reach(pMainTank, FEAR_WARD) && !pMainTank->HasAura(FEAR_WARD, EFFECT_INDEX_0) && CastSpell(FEAR_WARD, pMainTank))
+                return RETURN_CONTINUE;
+        }
+        // Else try to buff master
+        else if (GetMaster())
+        {
+            if (m_ai->In_Reach(GetMaster(), FEAR_WARD) && !GetMaster()->HasAura(FEAR_WARD, EFFECT_INDEX_0) && CastSpell(FEAR_WARD, GetMaster()))
+                return RETURN_CONTINUE;
+        }
+    }
+
     //Used to determine if this bot is highest on threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
     if (newTarget) // TODO: && party has a tank
