@@ -34,8 +34,8 @@ enum PaladinSpells
     HAMMER_OF_JUSTICE_1             = 853,
     HAMMER_OF_WRATH_1               = 24275,
     HAND_OF_FREEDOM_1               = 1044,
-    HAND_OF_PROTECTION_1            = 1022,
-    HAND_OF_SACRIFICE_1             = 6940,
+    BLESSING_OF_PROTECTION_1        = 1022,
+    BLESSING_OF_SACRIFICE_1         = 6940,
     HAND_OF_SALVATION_1             = 1038,
     HOLY_LIGHT_1                    = 635,
     HOLY_SHIELD_1                   = 20925,
@@ -85,7 +85,6 @@ private:
 
     // Heals the target based off its hps
     CombatManeuverReturns HealPlayer(Player* target);
-    Player* GetHealTarget() { return PlayerbotClassAI::GetHealTarget(); }
 
     //Changes aura according to spec/orders
     void CheckAuras();
@@ -130,7 +129,7 @@ public:
     // Protection
     uint32 GREATER_BLESSING_OF_KINGS,
            BLESSING_OF_KINGS,
-           HAND_OF_PROTECTION,
+           BLESSING_OF_PROTECTION,
            SHADOW_RESISTANCE_AURA,
            DEVOTION_AURA,
            FIRE_RESISTANCE_AURA,
@@ -146,7 +145,7 @@ public:
            RIGHTEOUS_DEFENSE,
            BLESSING_OF_SANCTUARY,
            GREATER_BLESSING_OF_SANCTUARY,
-           HAND_OF_SACRIFICE,
+           BLESSING_OF_SACRIFICE,
            SHIELD_OF_RIGHTEOUSNESS,
            HAND_OF_RECKONING,
            HAMMER_OF_THE_RIGHTEOUS;

@@ -44,12 +44,12 @@ PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, 
     DEVOTION_AURA                 = m_ai->initSpell(DEVOTION_AURA_1);
     FIRE_RESISTANCE_AURA          = m_ai->initSpell(FIRE_RESISTANCE_AURA_1);
     FROST_RESISTANCE_AURA         = m_ai->initSpell(FROST_RESISTANCE_AURA_1);
-    HAND_OF_PROTECTION            = m_ai->initSpell(HAND_OF_PROTECTION_1);
+    BLESSING_OF_PROTECTION        = m_ai->initSpell(BLESSING_OF_PROTECTION_1);
     DIVINE_PROTECTION             = m_ai->initSpell(DIVINE_PROTECTION_1);
     DIVINE_INTERVENTION           = m_ai->initSpell(DIVINE_INTERVENTION_1);
     DIVINE_SHIELD                 = m_ai->initSpell(DIVINE_SHIELD_1);
     HOLY_SHIELD                   = m_ai->initSpell(HOLY_SHIELD_1);
-    HAND_OF_SACRIFICE             = m_ai->initSpell(HAND_OF_SACRIFICE_1);
+    BLESSING_OF_SACRIFICE         = m_ai->initSpell(BLESSING_OF_SACRIFICE_1);
     REDEMPTION                    = m_ai->initSpell(REDEMPTION_1);
     PURIFY                        = m_ai->initSpell(PURIFY_1);
     CLEANSE                       = m_ai->initSpell(CLEANSE_1);
@@ -196,7 +196,9 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
     }
 
     //Used to determine if this bot has highest threat
-    Unit *newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
+    Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
+
+    // Damage rotation
     switch (spec)
     {
         case PALADIN_SPEC_HOLY:
@@ -212,9 +214,7 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 return RETURN_CONTINUE;*/
             /*if (HOLY_WRATH > 0 && m_ai->GetAttackerCount() >= 3 && meleeReach && m_ai->CastSpell (HOLY_WRATH, *pTarget))
                 return RETURN_CONTINUE;*/
-            /*if (HAND_OF_SACRIFICE > 0 && pVictim == GetMaster() && !GetMaster()->HasAura(HAND_OF_SACRIFICE, EFFECT_INDEX_0) && m_ai->CastSpell (HAND_OF_SACRIFICE, *GetMaster()))
-                return RETURN_CONTINUE;*/
-            /*if (DIVINE_PROTECTION > 0 && pVictim == m_bot && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && m_ai->GetHealthPercent() < 30 && m_ai->CastSpell (DIVINE_PROTECTION, *m_bot))
+            /*if (BLESSING_OF_SACRIFICE > 0 && pVictim == GetMaster() && !GetMaster()->HasAura(BLESSING_OF_SACRIFICE, EFFECT_INDEX_0) && m_ai->CastSpell (BLESSING_OF_SACRIFICE, *GetMaster()))
                 return RETURN_CONTINUE;*/
             /*if (DIVINE_FAVOR > 0 && !m_bot->HasAura(DIVINE_FAVOR, EFFECT_INDEX_0) && m_ai->CastSpell (DIVINE_FAVOR, *m_bot))
                 return RETURN_CONTINUE;*/
@@ -230,9 +230,6 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
                 return RETURN_CONTINUE;
             return RETURN_NO_ACTION_OK;
     }
-
-    //if (DIVINE_SHIELD > 0 && m_ai->GetHealthPercent() < 30 && pVictim == m_bot && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && !m_bot->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0))
-    //    m_ai->CastSpell(DIVINE_SHIELD, *m_bot);
 
     return RETURN_NO_ACTION_OK;
 }
@@ -303,30 +300,49 @@ CombatManeuverReturns PlayerbotPaladinAI::HealPlayer(Player* target)
         }
     }
 
+    // Define a tank bot will look at
+    Unit* pMainTank = GetHealTarget(JOB_TANK);
+
+    // If target is out of range (40 yards) and is a tank: move towards it
+    // Other classes have to adjust their position to the healers
+    // TODO: This code should be common to all healers and will probably
+    // move to a more suitable place
+    if (pMainTank && !m_ai->In_Reach(pMainTank, FLASH_OF_LIGHT))
+    {
+        m_bot->GetMotionMaster()->MoveFollow(target, 39.0f, m_bot->GetOrientation());
+        return RETURN_CONTINUE;
+    }
+
     uint8 hp = target->GetHealthPercent();
 
     // Everyone is healthy enough, return OK. MUST correlate to highest value below (should be last HP check)
     if (hp >= 90)
         return RETURN_NO_ACTION_OK;
 
-    if (hp < 25 && m_ai->CastSpell(LAY_ON_HANDS, *target))
+    if (hp < 10 && LAY_ON_HANDS && !m_bot->HasSpellCooldown(LAY_ON_HANDS) && m_ai->In_Reach(target,LAY_ON_HANDS) && m_ai->CastSpell(LAY_ON_HANDS, *target))
         return RETURN_CONTINUE;
 
-    // You probably want to save this for tank/healer trouble
-    if (hp < 30 && HAND_OF_PROTECTION > 0 && !target->HasAura(FORBEARANCE, EFFECT_INDEX_0)
-        && !target->HasAura(HAND_OF_PROTECTION, EFFECT_INDEX_0) && !target->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0)
-        && !target->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0) && (GetTargetJob(target) & (JOB_HEAL | JOB_TANK))
-        && m_ai->CastSpell(HAND_OF_PROTECTION, *target))
+    // Target is a moderately wounded healer or a badly wounded not tank? Blessing of Protection!
+    if (BLESSING_OF_PROTECTION > 0
+        && ((hp < 25 && (GetTargetJob(target) & JOB_HEAL)) || (hp < 15 && !(GetTargetJob(target) & JOB_TANK)))
+        && !m_bot->HasSpellCooldown(BLESSING_OF_PROTECTION) && m_ai->In_Reach(target,BLESSING_OF_PROTECTION)
+        && !target->HasAura(FORBEARANCE, EFFECT_INDEX_0)
+        && !target->HasAura(BLESSING_OF_PROTECTION, EFFECT_INDEX_0) && !target->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0)
+        && !target->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0)
+        && m_ai->CastSpell(BLESSING_OF_PROTECTION, *target))
         return RETURN_CONTINUE;
 
-    // Isn't this more of a group heal spell?
-    if (hp < 40 && m_ai->CastSpell(FLASH_OF_LIGHT, *target))
+    // Low HP : activate Divine Favor to make next heal a critical heal
+    if (hp < 25 && DIVINE_FAVOR > 0 && !m_bot->HasAura(DIVINE_FAVOR, EFFECT_INDEX_0) && !m_bot->HasSpellCooldown(DIVINE_FAVOR) && m_ai->CastSpell (DIVINE_FAVOR, *m_bot))
         return RETURN_CONTINUE;
 
-    if (hp < 60 && m_ai->CastSpell(HOLY_SHOCK, *target))
+    if (hp < 40 && FLASH_OF_LIGHT && m_ai->In_Reach(target,FLASH_OF_LIGHT) && m_ai->CastSpell(FLASH_OF_LIGHT, *target))
         return RETURN_CONTINUE;
 
-    if (hp < 90 && m_ai->CastSpell(HOLY_LIGHT, *target))
+    if (hp < 60 && HOLY_SHOCK && m_ai->In_Reach(target,HOLY_SHOCK) && m_ai->CastSpell(HOLY_SHOCK, *target))
+        return RETURN_CONTINUE;
+
+    if (hp < 90 && HOLY_LIGHT && m_ai->In_Reach(target,HOLY_LIGHT) && m_ai->CastSpell(HOLY_LIGHT, *target))
         return RETURN_CONTINUE;
 
     return RETURN_NO_ACTION_UNKNOWN;
@@ -360,17 +376,36 @@ void PlayerbotPaladinAI::CheckAuras()
         return;
     }
 
-    // If we have no resist orders, adjust aura based on spec
-    if (spec == PALADIN_SPEC_HOLY)
+    // if there is a tank in the group, use concentration aura
+    bool tankInGroup = false;
+    if (m_bot->GetGroup())
     {
-        if (CONCENTRATION_AURA > 0 && !m_bot->HasAura(CONCENTRATION_AURA))
-            m_ai->CastSpell(CONCENTRATION_AURA);
-        return;
+        Group::MemberSlotList const& groupSlot = m_bot->GetGroup()->GetMemberSlots();
+        for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+        {
+            Player *groupMember = sObjectMgr.GetPlayer(itr->guid);
+            if (!groupMember)
+                continue;
+
+            if (GetTargetJob(groupMember) & JOB_TANK)
+            {
+                tankInGroup = true;
+                break;
+            }
+        }
     }
-    else if (spec == PALADIN_SPEC_PROTECTION)
+
+    // If we have no resist orders, adjust aura based on spec or tank
+    if (spec == PALADIN_SPEC_PROTECTION || tankInGroup)
     {
         if (DEVOTION_AURA > 0 && !m_bot->HasAura(DEVOTION_AURA))
             m_ai->CastSpell(DEVOTION_AURA);
+        return;
+    }
+    else if (spec == PALADIN_SPEC_HOLY)
+    {
+        if (CONCENTRATION_AURA > 0 && !m_bot->HasAura(CONCENTRATION_AURA))
+            m_ai->CastSpell(CONCENTRATION_AURA);
         return;
     }
     else if (spec == PALADIN_SPEC_RETRIBUTION)
@@ -379,7 +414,6 @@ void PlayerbotPaladinAI::CheckAuras()
             m_ai->CastSpell(RETRIBUTION_AURA);
         return;
     }
-
 }
 
 bool PlayerbotPaladinAI::CheckSeals()
