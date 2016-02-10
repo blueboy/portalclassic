@@ -19,6 +19,7 @@ PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, 
     SEAL_OF_JUSTICE               = m_ai->initSpell(SEAL_OF_JUSTICE_1);
     SEAL_OF_LIGHT                 = m_ai->initSpell(SEAL_OF_LIGHT_1);
     SEAL_OF_WISDOM                = m_ai->initSpell(SEAL_OF_WISDOM_1);
+    SEAL_OF_THE_CRUSADER          = m_ai->initSpell(SEAL_OF_THE_CRUSADER_1);
     JUDGEMENT                     = m_ai->initSpell(JUDGEMENT_1);
     BLESSING_OF_MIGHT             = m_ai->initSpell(BLESSING_OF_MIGHT_1);
     GREATER_BLESSING_OF_MIGHT     = m_ai->initSpell(GREATER_BLESSING_OF_MIGHT_1);
@@ -114,6 +115,10 @@ CombatManeuverReturns PlayerbotPaladinAI::DoFirstCombatManeuver(Unit* pTarget)
             m_ai->ClearGroupCombatOrder(PlayerbotAI::ORDERS_TEMP_WAIT_OOC);
     }
 
+    // Check if bot needs to cast seal on self
+    m_CurrentSeal      = 0;
+    m_CurrentJudgement = 0;
+
     switch (m_ai->GetScenarioType())
     {
         case PlayerbotAI::SCENARIO_PVP_DUEL:
@@ -144,9 +149,6 @@ CombatManeuverReturns PlayerbotPaladinAI::DoFirstCombatManeuverPVP(Unit* /*pTarg
 
 CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuver(Unit *pTarget)
 {
-
-    if (CheckSeals())
-        return RETURN_CONTINUE;
     switch (m_ai->GetScenarioType())
     {
         case PlayerbotAI::SCENARIO_PVP_DUEL:
@@ -180,6 +182,10 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
     else if (!m_ai->IsHealer() && m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
+
+    // Check if bot needs to cast a seal on self or judge the target
+    if (CheckSealAndJudgement(pTarget))
+        return RETURN_CONTINUE;
 
     // Heal
     if (m_ai->IsHealer())
@@ -416,32 +422,106 @@ void PlayerbotPaladinAI::CheckAuras()
     }
 }
 
-bool PlayerbotPaladinAI::CheckSeals()
+// Check if the paladin bot needs to cast/refresh a seal on him/herself
+// also check if the paladin bot needs to judge its target and first buff
+// him/herself with the relevant seal
+// TODO: handle other paladins in group/raid, for example to cast Seal/Judgement of Light
+bool PlayerbotPaladinAI::CheckSealAndJudgement(Unit* pTarget)
 {
-    if (!m_ai)  return false;
-    if (!m_bot) return false;
+    if (!m_ai)      return false;
+    if (!m_bot)     return false;
+    if (!pTarget)   return false;
 
+    Creature * pCreature = (Creature*) pTarget;
+
+    // Prevent low health humanoid from fleeing by judging them with Seal of Justice
+    if (pCreature && pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_HUMANOID && pTarget->GetHealthPercent() < 20 && !pCreature->IsWorldBoss())
+    {
+        if (SEAL_OF_JUSTICE > 0 && !m_bot->HasAura(SEAL_OF_JUSTICE, EFFECT_INDEX_0) && m_ai->CastSpell(SEAL_OF_JUSTICE, *m_bot))
+        {
+            m_CurrentSeal = SEAL_OF_JUSTICE;
+            m_CurrentJudgement = 0;
+            return true;
+        }
+    }
+
+    // Bot already defined a seal and a judgement and each is active on bot and target: don't waste time to go further
+    if (m_CurrentSeal > 0 && m_bot->HasAura(m_CurrentSeal, EFFECT_INDEX_0) && m_CurrentJudgement > 0 && pTarget->HasAura(m_CurrentJudgement, EFFECT_INDEX_0))
+        return false;
+
+    // Refresh judgement if needed by forcing paladin bot to cast seal and judgement anew
+    // But first, unleash current seal if bot can do extra damage to the target in the process
+    if (m_CurrentJudgement > 0 && !pTarget->HasAura(m_CurrentJudgement, EFFECT_INDEX_0))
+    {
+        if (m_bot->HasAura(SEAL_OF_COMMAND, EFFECT_INDEX_0) || m_bot->HasAura(SEAL_OF_RIGHTEOUSNESS, EFFECT_INDEX_0))
+            if (JUDGEMENT > 0 && !m_bot->HasSpellCooldown(JUDGEMENT) && m_ai->In_Reach(pTarget, JUDGEMENT))
+                m_ai->CastSpell(JUDGEMENT, *pTarget);
+
+        m_CurrentJudgement = 0;
+        m_CurrentSeal = 0;
+        return false;
+    }
+
+    // Judgement is still active on target: refresh seal on bot if needed
+    if (m_CurrentJudgement > 0 && m_CurrentSeal > 0 && !m_bot->HasAura(m_CurrentSeal, EFFECT_INDEX_0))
+        if (m_CurrentSeal > 0 && !m_bot->HasAura(m_CurrentSeal, EFFECT_INDEX_0) && m_ai->CastSpell(m_CurrentSeal, *m_bot))
+            return true;
+
+    // No judgement on target but bot has seal active: time to judge the target
+    if (m_CurrentJudgement == 0 && m_CurrentSeal > 0 && m_bot->HasAura(m_CurrentSeal, EFFECT_INDEX_0))
+    {
+        if (JUDGEMENT > 0 && !m_bot->HasSpellCooldown(JUDGEMENT) && m_ai->In_Reach(pTarget, JUDGEMENT) && m_ai->CastSpell(JUDGEMENT, *pTarget))
+        {
+            if (m_CurrentSeal == SEAL_OF_JUSTICE)
+                m_CurrentJudgement = JUDGEMENT_OF_JUSTICE;
+            else if (m_CurrentSeal == SEAL_OF_WISDOM)
+                m_CurrentJudgement = JUDGEMENT_OF_WISDOM;
+            else if (m_CurrentSeal == SEAL_OF_THE_CRUSADER)
+                m_CurrentJudgement = JUDGEMENT_OF_THE_CRUSADER;
+            else
+                return false;
+
+            // Set current seal to 0 to force the bot to seal him/herself for combat now that the target is judged
+            m_CurrentSeal = 0;
+            return true;
+        }
+
+        return false;
+    }
+
+    // Now bot casts seal on him/herself
+    // No judgement on target: look for best seal to judge target next
+    // Target already judged: bot will buff him/herself for combat according to spec/orders
     uint32 spec = m_bot->GetSpec();
 
-    switch(spec)
+    // Bypass spec if combat orders were given
+    if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_HEAL) spec = PALADIN_SPEC_HOLY;
+    if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK) spec = PALADIN_SPEC_PROTECTION;
+    if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_ASSIST) spec = PALADIN_SPEC_RETRIBUTION;
+    
+    if (m_CurrentJudgement == 0)
     {
-        case PALADIN_SPEC_HOLY:
-            if (SEAL_OF_WISDOM > 0 && !m_bot->HasAura(SEAL_OF_WISDOM, EFFECT_INDEX_0) && m_ai->CastSpell(SEAL_OF_WISDOM, *m_bot))
-                return true;
-            break;
-
-        case PALADIN_SPEC_PROTECTION:
-            if (SEAL_OF_RIGHTEOUSNESS > 0 && !m_bot->HasAura(SEAL_OF_RIGHTEOUSNESS, EFFECT_INDEX_0) && m_ai->CastSpell(SEAL_OF_RIGHTEOUSNESS, *m_bot))
-                return true;
-            break;
-
-        case PALADIN_SPEC_RETRIBUTION:
-            if (SEAL_OF_COMMAND > 0 && !m_bot->HasAura(SEAL_OF_COMMAND, EFFECT_INDEX_0) && m_ai->CastSpell(SEAL_OF_COMMAND, *m_bot))
-                return true;
-            else if (SEAL_OF_RIGHTEOUSNESS > 0 && !m_bot->HasAura(SEAL_OF_RIGHTEOUSNESS, EFFECT_INDEX_0) && !m_bot->HasAura(SEAL_OF_COMMAND, EFFECT_INDEX_0) && m_ai->CastSpell(SEAL_OF_RIGHTEOUSNESS, *m_bot))
-                return true;
-            break;
+        if (spec == PALADIN_SPEC_HOLY || m_ai->IsHealer())
+            m_CurrentSeal = SEAL_OF_WISDOM;
+        else
+            m_CurrentSeal = SEAL_OF_THE_CRUSADER;
     }
+    else
+    {
+        if (spec == PALADIN_SPEC_HOLY)
+            m_CurrentSeal = SEAL_OF_WISDOM;
+        else if (spec == PALADIN_SPEC_PROTECTION)
+            m_CurrentSeal = SEAL_OF_RIGHTEOUSNESS;
+        else if (spec == PALADIN_SPEC_RETRIBUTION && SEAL_OF_COMMAND > 0)
+            m_CurrentSeal = SEAL_OF_COMMAND;
+        // no spec: try Seal of Righteouness
+        else
+            m_CurrentSeal = SEAL_OF_RIGHTEOUSNESS;
+    }
+
+    if (m_CurrentSeal > 0 && !m_bot->HasAura(m_CurrentSeal, EFFECT_INDEX_0) && m_ai->CastSpell(m_CurrentSeal, *m_bot))
+        return true;
+
     return false;
 }
 

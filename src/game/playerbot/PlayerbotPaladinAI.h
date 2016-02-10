@@ -53,9 +53,15 @@ enum PaladinSpells
     SEAL_OF_LIGHT_1                 = 20165,
     SEAL_OF_RIGHTEOUSNESS_1         = 21084,
     SEAL_OF_WISDOM_1                = 20166,
+    SEAL_OF_THE_CRUSADER_1          = 21082,
     SENSE_UNDEAD_1                  = 5502,
     SHADOW_RESISTANCE_AURA_1        = 19876,
-    TURN_EVIL_1                     = 10326
+    TURN_EVIL_1                     = 10326,
+    
+    // Judgement auras on target
+    JUDGEMENT_OF_WISDOM             = 20355, // rank 2: 20354, rank 1: 20186
+    JUDGEMENT_OF_JUSTICE            = 20184,
+    JUDGEMENT_OF_THE_CRUSADER       = 20303  // rank 5: 20302, rank 4: 20301, rank 3: 20300, rank 2: 20188, rank 1: 21183
 };
 //class Player;
 
@@ -89,7 +95,9 @@ private:
     //Changes aura according to spec/orders
     void CheckAuras();
     //Changes Seal according to spec
-    bool CheckSeals();
+    bool CheckSealAndJudgement(Unit* target);
+    uint32 m_CurrentSeal;
+    uint32 m_CurrentJudgement;
 
     static bool BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target);
 
@@ -123,6 +131,7 @@ public:
            SEAL_OF_LIGHT,
            SEAL_OF_RIGHTEOUSNESS,
            SEAL_OF_WISDOM,
+           SEAL_OF_THE_CRUSADER,
            PURIFY,
            CLEANSE;
 
