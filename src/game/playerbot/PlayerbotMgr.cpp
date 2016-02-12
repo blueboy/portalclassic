@@ -323,7 +323,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 
                 case TEXTEMOTE_EAT:
                 case TEXTEMOTE_DRINK:
-					return;
+                    return;
 
                 // emote to attack selected target
                 case TEXTEMOTE_POINT:

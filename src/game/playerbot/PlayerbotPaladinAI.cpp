@@ -498,7 +498,7 @@ bool PlayerbotPaladinAI::CheckSealAndJudgement(Unit* pTarget)
     if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_HEAL) spec = PALADIN_SPEC_HOLY;
     if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK) spec = PALADIN_SPEC_PROTECTION;
     if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_ASSIST) spec = PALADIN_SPEC_RETRIBUTION;
-    
+
     if (m_CurrentJudgement == 0)
     {
         if (spec == PALADIN_SPEC_HOLY || m_ai->IsHealer())

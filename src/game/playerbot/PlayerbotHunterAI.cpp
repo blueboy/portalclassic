@@ -14,7 +14,7 @@ PlayerbotHunterAI::PlayerbotHunterAI(Player* const master, Player* const bot, Pl
     PET_MEND                      = m_ai->initSpell(MEND_PET_1);
     PET_FEED                      = 1539;
     BESTIAL_WRATH                 = m_ai->initSpell(BESTIAL_WRATH_1);
-    
+
     INTIMIDATION                  = m_ai->initSpell(INTIMIDATION_1); // (generic)
 
     // PET SKILLS must be initialized by pets

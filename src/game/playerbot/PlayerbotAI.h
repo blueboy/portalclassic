@@ -360,8 +360,6 @@ public:
     uint8 GetRageAmount() const;
     uint8 GetEnergyAmount(const Unit& target) const;
     uint8 GetEnergyAmount() const;
-    uint8 GetRunicPower(const Unit& target) const;
-    uint8 GetRunicPower() const;
 
     Item* FindFood() const;
     Item* FindDrink() const;

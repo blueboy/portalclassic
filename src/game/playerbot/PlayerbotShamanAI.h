@@ -18,7 +18,7 @@ enum
     CHAIN_HEAL_1                    = 1064,
     CHAIN_LIGHTNING_1               = 421,
     CLEANSING_TOTEM_1               = 8170,
-    CURE_DISEASE_SHAMAN_1           = 2870,                 
+    CURE_DISEASE_SHAMAN_1           = 2870,
     CURE_POISON_SHAMAN_1            = 526,
     EARTH_ELEMENTAL_TOTEM_1         = 2062,
     EARTH_SHIELD_1                  = 974,
@@ -165,9 +165,9 @@ private:
 
     // racial
     uint32 STONEFORM,
-           ESCAPE_ARTIST, 
+           ESCAPE_ARTIST,
            EVERY_MAN_FOR_HIMSELF,
-           SHADOWMELD, 
+           SHADOWMELD,
            BLOOD_FURY,
            WAR_STOMP,
            BERSERKING,

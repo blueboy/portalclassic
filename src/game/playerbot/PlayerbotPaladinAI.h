@@ -57,7 +57,7 @@ enum PaladinSpells
     SENSE_UNDEAD_1                  = 5502,
     SHADOW_RESISTANCE_AURA_1        = 19876,
     TURN_EVIL_1                     = 10326,
-    
+
     // Judgement auras on target
     JUDGEMENT_OF_WISDOM             = 20355, // rank 2: 20354, rank 1: 20186
     JUDGEMENT_OF_JUSTICE            = 20184,

@@ -335,7 +335,7 @@ bool PlayerbotWarlockAI::CheckCurse(Unit* pTarget)
 {
     Creature * pCreature = (Creature*) pTarget;
     uint32 CurseToCast = 0;
-    
+
     // Prevent low health humanoid from fleeing or fleeing too fast
     // Curse of Exhaustion first to avoid increasing damage output on tank
     if (pCreature && pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_HUMANOID && pTarget->GetHealthPercent() < 20 && !pCreature->IsWorldBoss())
@@ -357,7 +357,7 @@ bool PlayerbotWarlockAI::CheckCurse(Unit* pTarget)
             return true;
         }
     }
-    
+
     // If bot already put a curse and curse is still active on target: no need to go further
     if (m_CurrentCurse > 0 && pTarget->HasAura(m_CurrentCurse))
         return false;
@@ -402,7 +402,7 @@ bool PlayerbotWarlockAI::CheckCurse(Unit* pTarget)
     else if (pCreature && pCreature->GetCreatureInfo()->UnitClass == 8)
         CurseToCast = CURSE_OF_TONGUES;
     // Default case: Curse of Agony
-    else 
+    else
         CurseToCast = CURSE_OF_AGONY;
 
     // Try to curse the target with the selected curse

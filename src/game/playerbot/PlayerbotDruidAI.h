@@ -38,7 +38,7 @@ enum DruidSpells
     MOONKIN_FORM_1                  = 24858,
     NATURES_GRASP_1                 = 16689,
     NATURES_SWIFTNESS_DRUID_1       = 17116,
-    OMEN_OF_CLARITY_1				= 16864,
+    OMEN_OF_CLARITY_1               = 16864,
     POUNCE_1                        = 9005,
     PROWL_1                         = 5215,
     RAKE_1                          = 1822,

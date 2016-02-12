@@ -38,7 +38,7 @@ PlayerbotRogueAI::PlayerbotRogueAI(Player* const master, Player* const bot, Play
     AMBUSH                   = m_ai->initSpell(AMBUSH_1);
     MUTILATE                 = m_ai->initSpell(MUTILATE_1);
 
-    RECENTLY_BANDAGED   = 11196; // first aid check
+    RECENTLY_BANDAGED        = 11196; // first aid check
     // racial
     STONEFORM                = m_ai->initSpell(STONEFORM_ALL); // dwarf
     ESCAPE_ARTIST            = m_ai->initSpell(ESCAPE_ARTIST_ALL); // gnome
