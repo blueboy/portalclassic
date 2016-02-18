@@ -145,6 +145,10 @@ CombatManeuverReturns PlayerbotHunterAI::DoFirstCombatManeuverPVP(Unit* /*pTarge
 
 CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuver(Unit *pTarget)
 {
+    // Face enemy, make sure bot is attacking
+    if (!m_bot->HasInArc(M_PI_F, pTarget))
+        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+
     switch (m_ai->GetScenarioType())
     {
         case PlayerbotAI::SCENARIO_PVP_DUEL:
