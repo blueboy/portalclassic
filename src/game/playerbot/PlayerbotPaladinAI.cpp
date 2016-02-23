@@ -187,6 +187,18 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
     else if (!m_ai->IsHealer() && m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
 
+    // Emergency check: bot is about to die: use Divine Shield (first)
+    // Use Divine Protection if Divine Shield is not available and bot is not tanking because of the pacify effect
+    // TODO adjust treshold (may be too low)
+    if (m_ai->GetHealthPercent() < 8)
+    {
+        if (DIVINE_SHIELD > 0 && !m_bot->HasSpellCooldown(DIVINE_SHIELD) && !m_bot->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0) && !m_bot->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0) && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && m_ai->CastSpell(DIVINE_SHIELD, *m_bot))
+            return RETURN_CONTINUE;
+
+        if (DIVINE_PROTECTION > 0 && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK) && !m_bot->HasSpellCooldown(DIVINE_PROTECTION) && !m_bot->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0) && !m_bot->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0) && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && m_ai->CastSpell(DIVINE_PROTECTION, *m_bot))
+            return RETURN_CONTINUE;
+    }
+
     // Check if bot needs to cast a seal on self or judge the target
     if (CheckSealAndJudgement(pTarget))
         return RETURN_CONTINUE;
@@ -207,6 +219,33 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     //Used to determine if this bot has highest threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
+    if (newTarget && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK)) // TODO: && party has a tank
+    {
+        if (HealPlayer(m_bot) == RETURN_CONTINUE)
+            return RETURN_CONTINUE;
+
+        // Aggroed by an elite
+        if (m_ai->IsElite(newTarget))
+        {
+            // Try to stun the mob
+            m_ai->TellMaster("hammer of justice: %u", HAMMER_OF_JUSTICE);
+            if (HAMMER_OF_JUSTICE > 0 && m_ai->In_Reach(newTarget, HAMMER_OF_JUSTICE) && !m_bot->HasSpellCooldown(HAMMER_OF_JUSTICE) && !newTarget->HasAura(HAMMER_OF_JUSTICE) && m_ai->CastSpell(HAMMER_OF_JUSTICE, *newTarget))
+                return RETURN_CONTINUE;
+
+            // Bot has low life: use divine powers to protect him/herself
+            if (m_ai->GetHealthPercent() < 15)
+            {
+                if (DIVINE_SHIELD > 0 && !m_bot->HasSpellCooldown(DIVINE_SHIELD) && !m_bot->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0) && !m_bot->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0) && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && m_ai->CastSpell(DIVINE_SHIELD, *m_bot))
+                    return RETURN_CONTINUE;
+
+                if (DIVINE_PROTECTION > 0 && !m_bot->HasSpellCooldown(DIVINE_PROTECTION) && !m_bot->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0) && !m_bot->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0) && !m_bot->HasAura(FORBEARANCE, EFFECT_INDEX_0) && m_ai->CastSpell(DIVINE_PROTECTION, *m_bot))
+                    return RETURN_CONTINUE;
+            }
+
+            // Else: do nothing and pray for tank to pick aggro from mob
+            return RETURN_NO_ACTION_OK;
+        }
+    }
 
     // Damage rotation
     switch (spec)
