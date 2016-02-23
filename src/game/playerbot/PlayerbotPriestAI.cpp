@@ -427,7 +427,7 @@ CombatManeuverReturns PlayerbotPriestAI::HealPlayer(Player* target)
     }
 
     // Get a free and more efficient heal if needed: low mana for bot or average health for target
-    if (hp < 50 || m_ai->GetManaPercent() < 40)
+    if (m_ai->IsInCombat() && (hp < 50 || m_ai->GetManaPercent() < 40))
         if (INNER_FOCUS > 0 && !m_bot->HasSpellCooldown(INNER_FOCUS) && !m_bot->HasAura(INNER_FOCUS, EFFECT_INDEX_0) && CastSpell(INNER_FOCUS, m_bot))
             return RETURN_CONTINUE;
 
