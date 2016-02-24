@@ -32,6 +32,7 @@ PlayerbotWarlockAI::PlayerbotWarlockAI(Player* const master, Player* const bot, 
     DARK_PACT             = m_ai->initSpell(DARK_PACT_1);
     HOWL_OF_TERROR        = m_ai->initSpell(HOWL_OF_TERROR_1);
     FEAR                  = m_ai->initSpell(FEAR_1);
+    SIPHON_LIFE           = m_ai->initSpell(SIPHON_LIFE_1);
     // DEMONOLOGY
     BANISH                = m_ai->initSpell(BANISH_1);
     ENSLAVE_DEMON         = m_ai->initSpell(ENSLAVE_DEMON_1);
@@ -258,6 +259,8 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
             if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
                 return RETURN_CONTINUE;
             if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
+                return RETURN_CONTINUE;
+            if (SIPHON_LIFE > 0 && m_ai->In_Reach(pTarget,SIPHON_LIFE) && !pTarget->HasAura(SIPHON_LIFE) && CastSpell(SIPHON_LIFE, pTarget))
                 return RETURN_CONTINUE;
             if (SHADOW_BOLT && m_ai->In_Reach(pTarget,SHADOW_BOLT) && CastSpell(SHADOW_BOLT, pTarget))
                 return RETURN_CONTINUE;

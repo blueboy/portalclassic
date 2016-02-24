@@ -102,6 +102,7 @@ enum WarlockSpells
     SHADOW_WARD_1                   = 6229,
     SHADOWBURN_1                    = 17877,
     SHOOT_3                         = 5019,
+    SIPHON_LIFE_1                   = 18265,
     SOUL_FIRE_1                     = 6353,
     SOUL_LINK_1                     = 19028,
     SUMMON_FELHUNTER_1              = 691,
@@ -161,7 +162,8 @@ private:
            LIFE_TAP,
            DARK_PACT,
            HOWL_OF_TERROR,
-           FEAR;
+           FEAR,
+           SIPHON_LIFE;
 
     // DESTRUCTION
     uint32 SHADOW_BOLT,
