@@ -15,8 +15,10 @@ enum
 enum RoguePoisonDisplayId
 {
     DEADLY_POISON_DISPLAYID         = 13707,
+    CRIPPLING_POISON_DISPLAYID      = 13708,
+    MIND_NUMBLING_POISON_DISPLAYID  = 13709,
     INSTANT_POISON_DISPLAYID        = 13710,
-    WOUND_POISON_DISPLAYID          = 37278
+    WOUND_POISON_DISPLAYID          = 13708
 };
 
 enum RogueSpells
@@ -40,7 +42,6 @@ enum RogueSpells
     HEMORRHAGE_1                    = 16511,
     KICK_1                          = 1766,
     KIDNEY_SHOT_1                   = 408,
-    MUTILATE_1                      = 1329,
     PICK_LOCK_1                     = 1804,
     PICK_POCKET_1                   = 921,
     PREMEDITATION_1                 = 14183,
@@ -48,7 +49,6 @@ enum RogueSpells
     RIPOSTE_1                       = 14251,
     RUPTURE_1                       = 1943,
     SAP_1                           = 6770,
-    SHIV_1                          = 5938,
     SINISTER_STRIKE_1               = 1752,
     SLICE_AND_DICE_1                = 5171,
     SPRINT_1                        = 2983,
@@ -77,14 +77,14 @@ private:
     CombatManeuverReturns DoNextCombatManeuverPVP(Unit* pTarget);
 
     // COMBAT
-    uint32 SINISTER_STRIKE,
+    uint32 ADRENALINE_RUSH,
+           SINISTER_STRIKE,
            BACKSTAB,
            GOUGE,
            EVASION,
            SPRINT,
            KICK,
-           FEINT,
-           SHIV;
+           FEINT;
 
     // SUBTLETY
     uint32 STEALTH,
@@ -101,15 +101,15 @@ private:
            PREMEDITATION;
 
     // ASSASSINATION
-    uint32 EVISCERATE,
+    uint32 COLD_BLOOD,
+           EVISCERATE,
            SLICE_DICE,
            GARROTE,
            EXPOSE_ARMOR,
            AMBUSH,
            RUPTURE,
            CHEAP_SHOT,
-           KIDNEY_SHOT,
-           MUTILATE;
+           KIDNEY_SHOT;
 
     // racial
     uint32 STONEFORM,
