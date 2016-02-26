@@ -21,6 +21,7 @@ PlayerbotMageAI::PlayerbotMageAI(Player* const master, Player* const bot, Player
     FIRE_BLAST              = m_ai->initSpell(FIRE_BLAST_1);
     FLAMESTRIKE             = m_ai->initSpell(FLAMESTRIKE_1);
     SCORCH                  = m_ai->initSpell(SCORCH_1);
+    POLYMORPH               = m_ai->initSpell(POLYMORPH_1);
     PYROBLAST               = m_ai->initSpell(PYROBLAST_1);
     BLAST_WAVE              = m_ai->initSpell(BLAST_WAVE_1);
     COMBUSTION              = m_ai->initSpell(COMBUSTION_1);
@@ -313,4 +314,25 @@ bool PlayerbotMageAI::BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target)
         return true;
 
     return false;
+}
+
+// Return to UpdateAI the spellId usable to neutralize a target with creaturetype
+uint32 PlayerbotMageAI::Neutralize(uint8 creatureType)
+{
+    if (!m_bot)         return 0;
+    if (!m_ai)          return 0;
+    if (!creatureType)  return 0;
+
+    if (creatureType != CREATURE_TYPE_HUMANOID && creatureType != CREATURE_TYPE_BEAST)
+    {
+        m_ai->TellMaster("I can't polymorph that target.");
+        return 0;
+    }
+
+    if (POLYMORPH)
+        return POLYMORPH;
+    else
+        return 0;
+
+    return 0;
 }

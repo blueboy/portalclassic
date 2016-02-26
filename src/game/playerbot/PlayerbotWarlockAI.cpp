@@ -665,3 +665,25 @@ void PlayerbotWarlockAI::DoNonCombatActions()
     if (pet && pet->GetEntry() == DEMON_IMP && BLOOD_PACT && !m_bot->HasAura(BLOOD_PACT) && m_ai->CastPetSpell(BLOOD_PACT))
         return;
 } // end DoNonCombatActions
+
+// Return to UpdateAI the spellId usable to neutralize a target with creaturetype
+uint32 PlayerbotWarlockAI::Neutralize(uint8 creatureType)
+{
+    if (!m_bot)         return 0;
+    if (!m_ai)          return 0;
+    if (!creatureType)  return 0;
+
+	// TODO: add a way to handle spell cast by pet like Seduction 
+    if (creatureType != CREATURE_TYPE_DEMON && creatureType != CREATURE_TYPE_ELEMENTAL)
+    {
+        m_ai->TellMaster("I can't banish that target.");
+        return 0;
+    }
+
+    if (BANISH)
+        return BANISH;
+    else
+        return 0;
+
+    return 0;
+}

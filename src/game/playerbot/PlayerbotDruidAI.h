@@ -72,6 +72,7 @@ public:
     CombatManeuverReturns DoFirstCombatManeuver(Unit* pTarget);
     CombatManeuverReturns DoNextCombatManeuver(Unit* pTarget);
     bool Pull();
+    uint32 Neutralize(uint8 creatureType);
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
@@ -144,7 +145,8 @@ private:
            OMEN_OF_CLARITY,
            STARFIRE,
            INSECT_SWARM,
-           FAERIE_FIRE;
+           FAERIE_FIRE,
+           HIBERNATE;
 
     // druid buffs
     uint32 MARK_OF_THE_WILD,

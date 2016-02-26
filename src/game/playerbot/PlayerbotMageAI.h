@@ -44,6 +44,7 @@ enum MageSpells
     INVISIBILITY_1                  = 66,
     MAGE_ARMOR_1                    = 6117,
     MANA_SHIELD_1                   = 1463,
+    POLYMORPH_1                     = 118,
     PRESENCE_OF_MIND_1              = 12043,
     PYROBLAST_1                     = 11366,
     REMOVE_CURSE_MAGE_1             = 475,
@@ -62,6 +63,7 @@ public:
     // all combat actions go here
     CombatManeuverReturns DoFirstCombatManeuver(Unit* pTarget);
     CombatManeuverReturns DoNextCombatManeuver(Unit* pTarget);
+    uint32 Neutralize(uint8 creatureType);
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();
@@ -81,6 +83,7 @@ private:
            ARCANE_EXPLOSION,
            COUNTERSPELL,
            SLOW,
+           POLYMORPH,
            ARCANE_POWER;
 
     // RANGED

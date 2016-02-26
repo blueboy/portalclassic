@@ -21,6 +21,7 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     DESPERATE_PRAYER              = m_ai->initSpell(DESPERATE_PRAYER_1);
     PRAYER_OF_HEALING             = m_ai->initSpell(PRAYER_OF_HEALING_1);
     CURE_DISEASE                  = m_ai->initSpell(CURE_DISEASE_1);
+    SHACKLE_UNDEAD                = m_ai->initSpell(SHACKLE_UNDEAD_1);
 
     // SHADOW
     FADE                          = m_ai->initSpell(FADE_1);
@@ -537,4 +538,25 @@ bool PlayerbotPriestAI::CastHoTOnTank()
         return (RETURN_CONTINUE & CastSpell(RENEW, m_ai->GetGroupTank()));
 
     return false;
+}
+
+// Return to UpdateAI the spellId usable to neutralize a target with creaturetype
+uint32 PlayerbotPriestAI::Neutralize(uint8 creatureType)
+{
+    if (!m_bot)         return 0;
+    if (!m_ai)          return 0;
+    if (!creatureType)  return 0;
+
+    if (creatureType != CREATURE_TYPE_UNDEAD)
+    {
+        m_ai->TellMaster("I can't shackle that target.");
+        return 0;
+    }
+
+    if (SHACKLE_UNDEAD)
+        return SHACKLE_UNDEAD;
+    else
+        return 0;
+
+    return 0;
 }

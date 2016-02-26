@@ -122,6 +122,7 @@ public:
     // all combat actions go here
     CombatManeuverReturns DoFirstCombatManeuver(Unit* pTarget);
     CombatManeuverReturns DoNextCombatManeuver(Unit* pTarget);
+    uint32 Neutralize(uint8 creatureType);
 
     // all non combat actions go here, ex buffs, heals, rezzes
     void DoNonCombatActions();

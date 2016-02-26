@@ -20,6 +20,7 @@ PlayerbotDruidAI::PlayerbotDruidAI(Player* const master, Player* const bot, Play
     GIFT_OF_THE_WILD              = m_ai->initSpell(GIFT_OF_THE_WILD_1);
     THORNS                        = m_ai->initSpell(THORNS_1);
     BARKSKIN                      = m_ai->initSpell(BARKSKIN_1);
+    HIBERNATE                     = m_ai->initSpell(HIBERNATE_1);
     INNERVATE                     = m_ai->initSpell(INNERVATE_1);
     FAERIE_FIRE                   = m_ai->initSpell(FAERIE_FIRE_1); // debuffs
     FAERIE_FIRE_FERAL             = m_ai->initSpell(FAERIE_FIRE_FERAL_1);
@@ -745,4 +746,25 @@ bool PlayerbotDruidAI::CastHoTOnTank()
         return (RETURN_CONTINUE & CastSpell(REJUVENATION, m_ai->GetGroupTank()));
 
     return false;
+}
+
+// Return to UpdateAI the spellId usable to neutralize a target with creaturetype
+uint32 PlayerbotDruidAI::Neutralize(uint8 creatureType)
+{
+    if (!m_bot)         return 0;
+    if (!m_ai)          return 0;
+    if (!creatureType)  return 0;
+
+    if (creatureType != CREATURE_TYPE_DRAGONKIN && creatureType != CREATURE_TYPE_BEAST)
+    {
+        m_ai->TellMaster("I can't make that target hibernate.");
+        return 0;
+    }
+
+    if (HIBERNATE)
+        return HIBERNATE;
+    else
+        return 0;
+
+    return 0;
 }
