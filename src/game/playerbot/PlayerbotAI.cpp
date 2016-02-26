@@ -2372,6 +2372,38 @@ bool PlayerbotAI::GroupTankHoldsAggro()
     return true;
 }
 
+// Wrapper for the UpdateAI cast subfunction
+// Each bot class neutralize function will return a spellId
+// depending on the creatureType of the target
+bool PlayerbotAI::CastNeutralize()
+{
+    if (!m_bot) return false;
+    if (!GetClassAI()) return false;
+    if (!m_targetGuidCommand) return false;
+
+    Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, m_targetGuidCommand);
+    if (!pTarget) return false;
+
+    Creature * pCreature = (Creature*) pTarget;
+    if (!pCreature) return false;
+
+    // Define the target's creature type, so the bot AI will now if
+    // it can neutralize it
+    uint8 creatureType = 0;
+    creatureType = pCreature->GetCreatureInfo()->CreatureType;
+
+    switch (m_bot->getClass())
+    {
+        default:
+            return false;
+    }
+
+    // A spellId was found
+    if (m_spellIdCommand != 0)
+        return true;
+
+    return false;
+}
 
 void PlayerbotAI::SetQuestNeedCreatures()
 {
@@ -5934,6 +5966,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     else if (ExtractCommand("pull", input))
         _HandleCommandPull(input, fromPlayer);
 
+    else if (ExtractCommand("neutralize", input) || ExtractCommand("neutral", input))
+        _HandleCommandNeutralize(input, fromPlayer);
+
     else if (ExtractCommand("cast", input, true)) // true -> "cast" OR "c"
         _HandleCommandCast(input, fromPlayer);
 
@@ -6349,6 +6384,62 @@ void PlayerbotAI::_HandleCommandPull(std::string &text, Player &fromPlayer)
     //(4b) if dps, wait until the target is in melee range of the tank +2seconds or until tank no longer holds aggro
     //(4c) if healer, do healing checks
     //(5) when target is in melee range of tank, wait 2 seconds (healers continue to do group heal checks, all do self-heal checks), then return to normal functioning
+}
+
+void PlayerbotAI::_HandleCommandNeutralize(std::string &text, Player &fromPlayer)
+{
+    if (!m_bot) return;
+
+    if (text != "")
+    {
+        SendWhisper("See 'help neutralize' for details on using the neutralize command.", fromPlayer);
+        return;
+    }
+
+    // Check for valid target
+    m_bot->SetSelectionGuid(fromPlayer.GetSelectionGuid());
+    ObjectGuid selectOnGuid = m_bot->GetSelectionGuid();
+    if (!selectOnGuid)
+    {
+        SendWhisper("No target is selected.", fromPlayer);
+        return;
+    }
+
+    Unit* thingToNeutralize = ObjectAccessor::GetUnit(*m_bot, selectOnGuid);
+    if (!thingToNeutralize)
+    {
+        SendWhisper("No valid target is selected.", fromPlayer);
+        return;
+    }
+
+    if (m_bot->IsFriendlyTo(thingToNeutralize))
+    {
+        SendWhisper("I can't neutralize that target: this is a friend to me.", fromPlayer);
+        return;
+    }
+
+    if (!m_bot->IsWithinLOSInMap(thingToNeutralize))
+    {
+        SendWhisper("I can't see that target!", fromPlayer);
+        return;
+    }
+    
+    if (IsNeutralized(thingToNeutralize))
+    {
+        SendWhisper("Target is already neutralized.", fromPlayer);
+        return;
+    }
+
+    m_targetGuidCommand = selectOnGuid;
+
+    // All checks passed: call the Neutralize function of each bot class
+    // to define what spellid to use if available and if creature type is correct
+    // m_spellIdCommand will be defined there and UpdateAI will then handle the cast
+    if (!CastNeutralize())
+    {
+        SendWhisper("Something went wrong: I can't neutralize that target.", fromPlayer);
+        return;
+    }
 }
 
 void PlayerbotAI::_HandleCommandCast(std::string &text, Player &fromPlayer)
@@ -7526,6 +7617,16 @@ void PlayerbotAI::_HandleCommandHelp(std::string &text, Player &fromPlayer)
         {
             SendWhisper(_HandleCommandHelpHelper("pull test", "I'll tell you if I could pull at all. Can be used anywhere."), fromPlayer);
             SendWhisper(_HandleCommandHelpHelper("pull ready", "I'll tell you if I'm ready to pull *right now*. To be used on location with valid target."), fromPlayer);
+            if (text != "") SendWhisper(sInvalidSubcommand, fromPlayer);
+            return;
+        }
+    }
+    if (bMainHelp || ExtractCommand("neutralize", text))
+    {
+        SendWhisper(_HandleCommandHelpHelper("neutralize|neutral", "The bot will try to put its master's target out of combat with crowd control abilities like polymorph, banish, hibernate, shackles and the like.", HL_TARGET), fromPlayer);
+
+        if (!bMainHelp)
+        {
             if (text != "") SendWhisper(sInvalidSubcommand, fromPlayer);
             return;
         }

@@ -465,6 +465,7 @@ public:
     bool CanPull(Player &fromPlayer);
     bool CastPull();
     bool GroupTankHoldsAggro();
+    bool CastNeutralize();
     void UpdateAttackerInfo();
     Unit* FindAttacker(ATTACKERINFOTYPE ait = AIT_NONE, Unit *victim = 0);
     uint32 GetAttackerCount() { return m_attackerInfo.size(); };
@@ -512,6 +513,7 @@ private:
     void _HandleCommandStay(std::string &text, Player &fromPlayer);
     void _HandleCommandAttack(std::string &text, Player &fromPlayer);
     void _HandleCommandPull(std::string &text, Player &fromPlayer);
+    void _HandleCommandNeutralize(std::string &text, Player &fromPlayer);
     void _HandleCommandCast(std::string &text, Player &fromPlayer);
     void _HandleCommandSell(std::string &text, Player &fromPlayer);
     void _HandleCommandRepair(std::string &text, Player &fromPlayer);
