@@ -67,7 +67,6 @@ PlayerbotWarlockAI::PlayerbotWarlockAI(Player* const master, Player* const bot, 
     WILL_OF_THE_FORSAKEN  = m_ai->initSpell(WILL_OF_THE_FORSAKEN_ALL); // undead
 
     m_lastDemon           = 0;
-    m_demonOfChoice       = DEMON_IMP;
     m_isTempImp           = false;
     m_CurrentCurse        = 0;
 }
@@ -458,22 +457,27 @@ void PlayerbotWarlockAI::CheckDemon()
     uint32 spec = m_bot->GetSpec();
     uint8 shardCount = m_bot->GetItemCount(SOUL_SHARD, false, nullptr);
     Pet *pet = m_bot->GetPet();
+    uint32 demonOfChoice;
+
+    // If pet other than imp is active: return
+    if (pet && pet->GetEntry() != DEMON_IMP)
+        return;
 
     //Assign demon of choice
     if (spec == WARLOCK_SPEC_AFFLICTION)
-        m_demonOfChoice = DEMON_FELHUNTER;
+        demonOfChoice = DEMON_FELHUNTER;
     else if (spec == WARLOCK_SPEC_DEMONOLOGY)
-        m_demonOfChoice = DEMON_SUCCUBUS;
+        demonOfChoice = DEMON_SUCCUBUS;
     else if (spec == WARLOCK_SPEC_DESTRUCTION)
-        m_demonOfChoice = DEMON_IMP;
+        demonOfChoice = DEMON_IMP;
 
     // Summon demon
-    if (!pet || m_isTempImp || pet->GetEntry() != m_demonOfChoice)
+    if (!pet || m_isTempImp)
     {
         uint32 summonSpellId;
-        if (m_demonOfChoice != DEMON_IMP && shardCount > 0)
+        if (demonOfChoice != DEMON_IMP && shardCount > 0)
         {
-            switch (m_demonOfChoice)
+            switch (demonOfChoice)
             {
                 case DEMON_VOIDWALKER:
                     summonSpellId = SUMMON_VOIDWALKER;
@@ -491,22 +495,27 @@ void PlayerbotWarlockAI::CheckDemon()
                     summonSpellId = 0;
             }
 
-            if (m_ai->CastSpell(summonSpellId))
+            if (summonSpellId && m_ai->CastSpell(summonSpellId))
             {
                 //m_ai->TellMaster("Summoning favorite demon...");
                 m_isTempImp = false;
                 return;
             }
         }
-        else if (!pet && SUMMON_IMP && m_ai->CastSpell(SUMMON_IMP))
+
+        if (!pet && SUMMON_IMP && m_ai->CastSpell(SUMMON_IMP))
         {
-            if (m_demonOfChoice != DEMON_IMP)
+            if (demonOfChoice != DEMON_IMP)
                 m_isTempImp = true;
+            else
+                m_isTempImp = false;
 
             //m_ai->TellMaster("Summoning Imp...");
             return;
         }
     }
+
+    return;
 }
 
 void PlayerbotWarlockAI::DoNonCombatActions()
@@ -548,9 +557,6 @@ void PlayerbotWarlockAI::DoNonCombatActions()
         }
 
         m_lastDemon = pet->GetEntry();
-
-        //if (!m_isTempImp)
-        //    m_demonOfChoice = pet->GetEntry();
     }
 
     // Destroy extra soul shards
@@ -673,7 +679,7 @@ uint32 PlayerbotWarlockAI::Neutralize(uint8 creatureType)
     if (!m_ai)          return 0;
     if (!creatureType)  return 0;
 
-	// TODO: add a way to handle spell cast by pet like Seduction 
+    // TODO: add a way to handle spell cast by pet like Seduction
     if (creatureType != CREATURE_TYPE_DEMON && creatureType != CREATURE_TYPE_ELEMENTAL)
     {
         m_ai->TellMaster("I can't banish that target.");
