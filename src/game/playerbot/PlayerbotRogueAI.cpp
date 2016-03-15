@@ -182,7 +182,7 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuverPVE(Unit *pTarget)
     // If bot is stealthed: pre-combat actions
     if (m_bot->HasAura(STEALTH, EFFECT_INDEX_0))
     {
-        if (PICK_POCKET > 0 && (pTarget->GetCreatureTypeMask() & CREATURE_TYPEMASK_HUMANOID_OR_UNDEAD) != 0 && m_ai->PickPocket(pTarget))
+        if (PICK_POCKET > 0 && m_ai->In_Reach(pTarget,PICK_POCKET) && (pTarget->GetCreatureTypeMask() & CREATURE_TYPEMASK_HUMANOID_OR_UNDEAD) != 0 && m_ai->PickPocket(pTarget))
             return RETURN_CONTINUE;
         if (PREMEDITATION > 0 && m_ai->CastSpell(PREMEDITATION, *pTarget))
             return RETURN_CONTINUE;
