@@ -7160,7 +7160,11 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                 if (!trainer_spell)
                     trainer_spell = tSpells->Find(spellId);
 
-                if (!trainer_spell || !trainer_spell->learnedSpell)
+                if (!trainer_spell)
+                    continue;
+
+                TrainerSpellState state = m_bot->GetTrainerSpellState(trainer_spell, trainer_spell->reqLevel);
+                if (state != TRAINER_SPELL_GREEN)
                     continue;
 
                 // apply reputation discount
