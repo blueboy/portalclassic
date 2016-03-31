@@ -228,7 +228,6 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
         if (m_ai->IsElite(newTarget))
         {
             // Try to stun the mob
-            m_ai->TellMaster("hammer of justice: %u", HAMMER_OF_JUSTICE);
             if (HAMMER_OF_JUSTICE > 0 && m_ai->In_Reach(newTarget, HAMMER_OF_JUSTICE) && !m_bot->HasSpellCooldown(HAMMER_OF_JUSTICE) && !newTarget->HasAura(HAMMER_OF_JUSTICE) && m_ai->CastSpell(HAMMER_OF_JUSTICE, *newTarget))
                 return RETURN_CONTINUE;
 
