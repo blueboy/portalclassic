@@ -1922,56 +1922,6 @@ void PlayerbotAI::InterruptCurrentCastingSpell()
     m_bot->GetSession()->QueuePacket(packet);
 }
 
-void PlayerbotAI::Feast()
-{
-    // stand up if we are done feasting
-    if (!(m_bot->GetHealth() < m_bot->GetMaxHealth() || (m_bot->GetPowerType() == POWER_MANA && m_bot->GetPower(POWER_MANA) < m_bot->GetMaxPower(POWER_MANA))))
-    {
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-        return;
-    }
-
-    // wait 3 seconds before checking if we need to drink more or eat more
-    SetIgnoreUpdateTime(3);
-
-    // should we drink another
-    if (m_bot->GetPowerType() == POWER_MANA && CurrentTime() > m_TimeDoneDrinking
-        && ((static_cast<float> (m_bot->GetPower(POWER_MANA)) / m_bot->GetMaxPower(POWER_MANA)) < 0.8))
-    {
-        Item* pItem = FindDrink();
-        if (pItem != nullptr)
-        {
-            TellMaster("drinking %s now...",pItem->GetProto()->Name1);
-            UseItem(pItem);
-            m_TimeDoneDrinking = CurrentTime() + 30;
-            return;
-        }
-        TellMaster("I need water.");
-    }
-
-    // should we eat another
-    if (CurrentTime() > m_TimeDoneEating && ((static_cast<float> (m_bot->GetHealth()) / m_bot->GetMaxHealth()) < 0.8))
-    {
-        Item* pItem = FindFood();
-        if (pItem != nullptr)
-        {
-            TellMaster("drinking %s now...",pItem->GetProto()->Name1);
-            UseItem(pItem);
-            m_TimeDoneEating = CurrentTime() + 30;
-            return;
-        }
-        TellMaster("I need food.");
-    }
-
-    // if we are no longer eating or drinking
-    // because we are out of items or we are above 80% in both stats
-    if (CurrentTime() > m_TimeDoneEating && CurrentTime() > m_TimeDoneDrinking)
-    {
-        TellMaster("done feasting!");
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-    }
-}
-
 // intelligently sets a reasonable combat order for this bot
 // based on its class / level / etc
 void PlayerbotAI::Attack(Unit* forcedTarget)
@@ -2440,6 +2390,38 @@ bool PlayerbotAI::GroupTankHoldsAggro()
     return true;
 }
 
+// Wrapper for the UpdateAI cast subfunction
+// Each bot class neutralize function will return a spellId
+// depending on the creatureType of the target
+bool PlayerbotAI::CastNeutralize()
+{
+    if (!m_bot) return false;
+    if (!GetClassAI()) return false;
+    if (!m_targetGuidCommand) return false;
+
+    Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, m_targetGuidCommand);
+    if (!pTarget) return false;
+
+    Creature * pCreature = (Creature*) pTarget;
+    if (!pCreature) return false;
+
+    // Define the target's creature type, so the bot AI will now if
+    // it can neutralize it
+    uint8 creatureType = 0;
+    creatureType = pCreature->GetCreatureInfo()->CreatureType;
+
+    switch (m_bot->getClass())
+    {
+        default:
+            return false;
+    }
+
+    // A spellId was found
+    if (m_spellIdCommand != 0)
+        return true;
+
+    return false;
+}
 
 void PlayerbotAI::SetQuestNeedCreatures()
 {
@@ -4246,10 +4228,6 @@ Item* PlayerbotAI::FindKeyForLockValue(uint32 reqSkillValue)
         return FindItem(TRUESILVER_SKELETON_KEY);
     if (reqSkillValue <= 300 && m_bot->HasItemCount(ARCANITE_SKELETON_KEY, 1))
         return FindItem(ARCANITE_SKELETON_KEY);
-    if (reqSkillValue <= 375 && m_bot->HasItemCount(TITANIUM_SKELETON_KEY, 1))
-        return FindItem(TITANIUM_SKELETON_KEY);
-    if (reqSkillValue <= 400 && m_bot->HasItemCount(COBALT_SKELETON_KEY, 1))
-        return FindItem(COBALT_SKELETON_KEY);
 
     return nullptr;
 }
@@ -4262,8 +4240,6 @@ Item* PlayerbotAI::FindBombForLockValue(uint32 reqSkillValue)
         return FindItem(LARGE_SEAFORIUM_CHARGE);
     if (reqSkillValue <= 300 && m_bot->HasItemCount(POWERFUL_SEAFORIUM_CHARGE, 1))
         return FindItem(POWERFUL_SEAFORIUM_CHARGE);
-    if (reqSkillValue <= 350 && m_bot->HasItemCount(ELEMENTAL_SEAFORIUM_CHARGE, 1))
-        return FindItem(ELEMENTAL_SEAFORIUM_CHARGE);
 
     return nullptr;
 }
@@ -4999,6 +4975,51 @@ void PlayerbotAI::findNearbyCreature()
             m_bot->GetMotionMaster()->MoveIdle();
         }
     }
+}
+
+// Playerbot wrapper to know if a target is elite or not
+// This is used by the AI to switch from one action to another
+// if creature is dangerous (elite)
+bool PlayerbotAI::IsElite(Unit* pTarget) const
+{
+    if (!pTarget)
+        return false;
+
+    if (Creature * pCreature = (Creature*) pTarget)
+    {
+        return (pCreature->IsElite() || pCreature->IsWorldBoss());
+    }
+
+    return false;
+}
+
+// Check if bot target has one of the following auras: Sap, Polymorph, Shackle Undead, Banish, Seduction, Freezing Trap, Hibernate
+// This is used by the AI to prevent bots from attacking crowd control targets
+
+static const uint32 uAurasIds[21] =
+{
+    118, 12824, 12825, 12826,   // polymorph
+    28272, 28271,               // polymorph pig, turtle
+    9484, 9485, 10955,          // shackle
+    6358,                       // seduction
+    710, 18647,                 // banish
+    6770, 2070, 11297,          // sap
+    3355, 14308, 14309,         // freezing trap (effect auras IDs, not spell IDs)
+    2637, 18657, 18658          // hibernate
+};
+
+bool PlayerbotAI::IsNeutralized(Unit* pTarget)
+{
+    if (!pTarget)
+        return false;
+
+    for (uint8 i = 0; i < countof(uAurasIds); ++i)
+    {
+        if (pTarget->HasAura(uAurasIds[i], EFFECT_INDEX_0))
+            return true;
+    }
+
+    return false;
 }
 
 bool PlayerbotAI::CanStore()
@@ -5963,6 +5984,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     else if (ExtractCommand("pull", input))
         _HandleCommandPull(input, fromPlayer);
 
+    else if (ExtractCommand("neutralize", input) || ExtractCommand("neutral", input))
+        _HandleCommandNeutralize(input, fromPlayer);
+
     else if (ExtractCommand("cast", input, true)) // true -> "cast" OR "c"
         _HandleCommandCast(input, fromPlayer);
 
@@ -6378,6 +6402,62 @@ void PlayerbotAI::_HandleCommandPull(std::string &text, Player &fromPlayer)
     //(4b) if dps, wait until the target is in melee range of the tank +2seconds or until tank no longer holds aggro
     //(4c) if healer, do healing checks
     //(5) when target is in melee range of tank, wait 2 seconds (healers continue to do group heal checks, all do self-heal checks), then return to normal functioning
+}
+
+void PlayerbotAI::_HandleCommandNeutralize(std::string &text, Player &fromPlayer)
+{
+    if (!m_bot) return;
+
+    if (text != "")
+    {
+        SendWhisper("See 'help neutralize' for details on using the neutralize command.", fromPlayer);
+        return;
+    }
+
+    // Check for valid target
+    m_bot->SetSelectionGuid(fromPlayer.GetSelectionGuid());
+    ObjectGuid selectOnGuid = m_bot->GetSelectionGuid();
+    if (!selectOnGuid)
+    {
+        SendWhisper("No target is selected.", fromPlayer);
+        return;
+    }
+
+    Unit* thingToNeutralize = ObjectAccessor::GetUnit(*m_bot, selectOnGuid);
+    if (!thingToNeutralize)
+    {
+        SendWhisper("No valid target is selected.", fromPlayer);
+        return;
+    }
+
+    if (m_bot->IsFriendlyTo(thingToNeutralize))
+    {
+        SendWhisper("I can't neutralize that target: this is a friend to me.", fromPlayer);
+        return;
+    }
+
+    if (!m_bot->IsWithinLOSInMap(thingToNeutralize))
+    {
+        SendWhisper("I can't see that target!", fromPlayer);
+        return;
+    }
+    
+    if (IsNeutralized(thingToNeutralize))
+    {
+        SendWhisper("Target is already neutralized.", fromPlayer);
+        return;
+    }
+
+    m_targetGuidCommand = selectOnGuid;
+
+    // All checks passed: call the Neutralize function of each bot class
+    // to define what spellid to use if available and if creature type is correct
+    // m_spellIdCommand will be defined there and UpdateAI will then handle the cast
+    if (!CastNeutralize())
+    {
+        SendWhisper("Something went wrong: I can't neutralize that target.", fromPlayer);
+        return;
+    }
 }
 
 void PlayerbotAI::_HandleCommandCast(std::string &text, Player &fromPlayer)
@@ -7559,6 +7639,16 @@ void PlayerbotAI::_HandleCommandHelp(std::string &text, Player &fromPlayer)
         {
             SendWhisper(_HandleCommandHelpHelper("pull test", "I'll tell you if I could pull at all. Can be used anywhere."), fromPlayer);
             SendWhisper(_HandleCommandHelpHelper("pull ready", "I'll tell you if I'm ready to pull *right now*. To be used on location with valid target."), fromPlayer);
+            if (text != "") SendWhisper(sInvalidSubcommand, fromPlayer);
+            return;
+        }
+    }
+    if (bMainHelp || ExtractCommand("neutralize", text))
+    {
+        SendWhisper(_HandleCommandHelpHelper("neutralize|neutral", "The bot will try to put its master's target out of combat with crowd control abilities like polymorph, banish, hibernate, shackles and the like.", HL_TARGET), fromPlayer);
+
+        if (!bMainHelp)
+        {
             if (text != "") SendWhisper(sInvalidSubcommand, fromPlayer);
             return;
         }

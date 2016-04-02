@@ -20,23 +20,11 @@ class PlayerbotMgr;
 
 enum RacialTraits
 {
-    ARCANE_TORRENT_MANA_CLASSES    = 28730,
-    ARCANE_TORRENT_DEATH_KNIGHT    = 50613,
-    ARCANE_TORRENT_ROGUE           = 25046,
     BERSERKING_ALL                 = 26297,
-    BLOOD_FURY_MELEE_CLASSES       = 20572,
-    BLOOD_FURY_WARLOCK             = 33702,
-    BLOOD_FURY_SHAMAN              = 33697,
+    BLOOD_FURY_ALL                 = 20572,
     ESCAPE_ARTIST_ALL              = 20589,
-    EVERY_MAN_FOR_HIMSELF_ALL      = 59752,
-    GIFT_OF_THE_NAARU_DEATH_KNIGHT = 59545,
-    GIFT_OF_THE_NAARU_HUNTER       = 59543,
-    GIFT_OF_THE_NAARU_MAGE         = 59548,
-    GIFT_OF_THE_NAARU_PALADIN      = 59542,
-    GIFT_OF_THE_NAARU_PRIEST       = 59544,
-    GIFT_OF_THE_NAARU_SHAMAN       = 59547,
-    GIFT_OF_THE_NAARU_WARRIOR      = 28880,
-    SHADOWMELD_ALL                 = 58984,
+    PERCEPTION_ALL                 = 20600,
+    SHADOWMELD_ALL                 = 20580,
     STONEFORM_ALL                  = 20594,
     WAR_STOMP_ALL                  = 20549,
     WILL_OF_THE_FORSAKEN_ALL       = 7744
@@ -52,8 +40,6 @@ enum ProfessionSpells
     FIRST_AID_1                    = 3273,
     FISHING_1                      = 7620,
     HERB_GATHERING_1               = 2366,
-    INSCRIPTION_1                  = 45357,
-    JEWELCRAFTING_1                = 25229,
     MINING_1                       = 2575,
     SKINNING_1                     = 8613,
     TAILORING_1                    = 3908
@@ -62,17 +48,14 @@ enum ProfessionSpells
 enum NotableItems
 {
     // Skeleton Keys
-    SILVER_SKELETON_KEY = 15869,
-    GOLDEN_SKELETON_KEY = 15870,
-    TRUESILVER_SKELETON_KEY = 15871,
-    ARCANITE_SKELETON_KEY = 15872,
-    TITANIUM_SKELETON_KEY = 43853,
-    COBALT_SKELETON_KEY = 43854,
+    SILVER_SKELETON_KEY            = 15869,
+    GOLDEN_SKELETON_KEY            = 15870,
+    TRUESILVER_SKELETON_KEY        = 15871,
+    ARCANITE_SKELETON_KEY          = 15872,
     // Lock Charges
-    SMALL_SEAFORIUM_CHARGE = 4367,
-    LARGE_SEAFORIUM_CHARGE = 4398,
-    POWERFUL_SEAFORIUM_CHARGE = 18594,
-    ELEMENTAL_SEAFORIUM_CHARGE = 23819
+    SMALL_SEAFORIUM_CHARGE         = 4367,
+    LARGE_SEAFORIUM_CHARGE         = 4398,
+    POWERFUL_SEAFORIUM_CHARGE      = 18594
 };
 
 enum MainSpec
@@ -270,8 +253,8 @@ public:
         HL_TARGET,
         HL_NAME,
         HL_AUCTION
-    };  
-    
+    };
+
 public:
     PlayerbotAI(PlayerbotMgr * const mgr, Player * const bot);
     virtual ~PlayerbotAI();
@@ -343,6 +326,9 @@ public:
     void findNearbyGO();
     // finds nearby creatures, whose UNIT_NPC_FLAGS match the flags specified in item list m_itemIds
     void findNearbyCreature();
+    bool IsElite(Unit* pTarget) const;
+    // Used by bots to check if their target is neutralized (polymorph, shackle or the like). Useful to avoid breaking crowd control
+    bool IsNeutralized(Unit* pTarget);
 
     void MakeSpellLink(const SpellEntry *sInfo, std::ostringstream &out);
     void MakeWeaponSkillLink(const SpellEntry *sInfo, std::ostringstream &out, uint32 skillid);
@@ -374,8 +360,6 @@ public:
     uint8 GetRageAmount() const;
     uint8 GetEnergyAmount(const Unit& target) const;
     uint8 GetEnergyAmount() const;
-    uint8 GetRunicPower(const Unit& target) const;
-    uint8 GetRunicPower() const;
 
     Item* FindFood() const;
     Item* FindDrink() const;
@@ -427,7 +411,6 @@ public:
     uint32 gQuestFetch;
     void BotDataRestore();
     void CombatOrderRestore();
-    void Feast();
     void InterruptCurrentCastingSpell();
     void Attack(Unit* forcedTarget = nullptr);
     void GetCombatTarget(Unit* forcedTarget = 0);
@@ -482,6 +465,7 @@ public:
     bool CanPull(Player &fromPlayer);
     bool CastPull();
     bool GroupTankHoldsAggro();
+    bool CastNeutralize();
     void UpdateAttackerInfo();
     Unit* FindAttacker(ATTACKERINFOTYPE ait = AIT_NONE, Unit *victim = 0);
     uint32 GetAttackerCount() { return m_attackerInfo.size(); };
@@ -529,6 +513,7 @@ private:
     void _HandleCommandStay(std::string &text, Player &fromPlayer);
     void _HandleCommandAttack(std::string &text, Player &fromPlayer);
     void _HandleCommandPull(std::string &text, Player &fromPlayer);
+    void _HandleCommandNeutralize(std::string &text, Player &fromPlayer);
     void _HandleCommandCast(std::string &text, Player &fromPlayer);
     void _HandleCommandSell(std::string &text, Player &fromPlayer);
     void _HandleCommandRepair(std::string &text, Player &fromPlayer);
