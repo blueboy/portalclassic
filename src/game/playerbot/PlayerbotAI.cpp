@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "../ItemPrototype.h"
@@ -6441,7 +6442,7 @@ void PlayerbotAI::_HandleCommandNeutralize(std::string &text, Player &fromPlayer
         SendWhisper("I can't see that target!", fromPlayer);
         return;
     }
-    
+
     if (IsNeutralized(thingToNeutralize))
     {
         SendWhisper("Target is already neutralized.", fromPlayer);
