@@ -194,8 +194,8 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     CreatureInfo const* cinfo = GetCreatureInfo();
     if (cinfo->CreatureType == CREATURE_TYPE_CRITTER)
     {
-        AIM_Initialize();
         pos.GetMap()->Add((Creature*)this);
+        AIM_Initialize();
         delete result;
         return true;
     }
@@ -323,8 +323,8 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
         SetPower(powerType, savedpower > GetMaxPower(powerType) ? GetMaxPower(powerType) : savedpower);
     }
 
-    AIM_Initialize();
     map->Add((Creature*)this);
+    AIM_Initialize();
 
     // Spells should be loaded after pet is added to map, because in CheckCast is check on it
     _LoadSpells();
@@ -1266,7 +1266,7 @@ bool Pet::HaveInDiet(ItemPrototype const* item) const
 
     uint32 diet = cFamily->petFoodMask;
     uint32 FoodMask = 1 << (item->FoodType - 1);
-    return diet & FoodMask;
+    return !!(diet & FoodMask);
 }
 
 uint32 Pet::GetCurrentFoodBenefitLevel(uint32 itemlevel)

@@ -418,7 +418,7 @@ bool ChatHandler::HandleGoTriggerCommand(char* args)
         return false;
     }
 
-    bool to_target = ExtractLiteralArg(&args, "target");
+    const bool to_target = !!ExtractLiteralArg(&args, "target");
     if (!to_target && *args)                                // can be fail also at syntax error
         return false;
 
@@ -1433,9 +1433,6 @@ bool ChatHandler::HandleNpcAddCommand(char* args)
 
     // To call _LoadGoods(); _LoadQuests(); CreateTrainerSpells();
     pCreature->LoadFromDB(db_guid, map);
-
-    map->Add(pCreature);
-    sObjectMgr.AddCreatureToGrid(db_guid, sObjectMgr.GetCreatureData(db_guid));
     return true;
 }
 
