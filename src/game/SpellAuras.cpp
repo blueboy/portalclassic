@@ -22,7 +22,6 @@
 #include "WorldSession.h"
 #include "Opcodes.h"
 #include "Log.h"
-#include "UpdateMask.h"
 #include "World.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
@@ -36,7 +35,6 @@
 #include "Policies/Singleton.h"
 #include "Totem.h"
 #include "Creature.h"
-#include "Formulas.h"
 #include "BattleGround/BattleGround.h"
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "CreatureAI.h"
@@ -45,6 +43,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "Language.h"
 #include "MapManager.h"
 #include "LootMgr.h"
 
@@ -1173,8 +1172,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     case 28834:                             // Mark of Rivendare
                     case 28835:                             // Mark of Zeliek
                     {
-                        int32 damage = 0;
-
+                        int32 damage;
                         switch (GetStackAmount())
                         {
                             case 1:
@@ -2410,8 +2408,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
             if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
                 return;
 
-            uint32 spell_id = 0;
-
+            uint32 spell_id;
             switch (GetId())
             {
                 case 19386: spell_id = 24131; break;
@@ -4172,7 +4169,13 @@ void Aura::HandleSpiritOfRedemption(bool apply, bool Real)
                 target->SetStandState(UNIT_STAND_STATE_STAND);
         }
 
-        target->SetHealth(1);
+        // interrupt casting when entering Spirit of Redemption
+        if (target->IsNonMeleeSpellCasted(false))
+            target->InterruptNonMeleeSpells(false);
+
+        // set health and mana to maximum
+        target->SetHealth(target->GetMaxHealth());
+        target->SetPower(POWER_MANA, target->GetMaxPower(POWER_MANA));
     }
     // die at aura end
     else
@@ -4568,8 +4571,8 @@ void Aura::PeriodicTick()
             if (target->GetMaxPower(power) == 0)
                 break;
 
-            SpellPeriodicAuraLogInfo pInfo(this, pdamage, 0, 0, 0.0f);
-            target->SendPeriodicAuraLog(&pInfo);
+            SpellPeriodicAuraLogInfo info(this, pdamage, 0, 0, 0.0f);
+            target->SendPeriodicAuraLog(&info);
 
             int32 gain = target->ModifyPower(power, pdamage);
 
@@ -5232,6 +5235,21 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
 
     switch (GetSpellProto()->SpellFamilyName)
     {
+        case SPELLFAMILY_GENERIC:
+        {
+            switch (GetId())
+            {
+                // Stoneform (dwarven racial)
+                case 20594:
+                {
+                    spellId1 = 20612;
+                    break;
+                }
+                default:
+                    return;
+            }
+            break;
+        }
         case SPELLFAMILY_MAGE:
         {
             switch (GetId())

@@ -24,7 +24,6 @@
 #include "GridNotifiersImpl.h"
 #include "Opcodes.h"
 #include "Log.h"
-#include "UpdateMask.h"
 #include "World.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
@@ -34,7 +33,6 @@
 #include "DynamicObject.h"
 #include "Group.h"
 #include "UpdateData.h"
-#include "MapManager.h"
 #include "ObjectAccessor.h"
 #include "CellImpl.h"
 #include "Policies/Singleton.h"
@@ -767,7 +765,7 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
     if (speed > 0.0f && affectiveObject && (pVictim != affectiveObject || (m_targets.m_targetMask & (TARGET_FLAG_SOURCE_LOCATION | TARGET_FLAG_DEST_LOCATION))))
     {
         // calculate spell incoming interval
-        float dist = 0.0f;                                  // distance to impact
+        float dist;                                         // distance to impact
         if (pVictim == affectiveObject)                     // Calculate dist to destination target also for self-cast spells
         {
             if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
@@ -2888,7 +2886,9 @@ void Spell::_handle_immediate_phase()
     for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
     {
         // persistent area auras target only the ground
-        if (m_spellInfo->Effect[j] == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+        if (m_spellInfo->Effect[j] == SPELL_EFFECT_PERSISTENT_AREA_AURA ||
+                //summon a gameobject at the spell's destination xyz
+                (m_spellInfo->Effect[j] == SPELL_EFFECT_TRANS_DOOR && m_spellInfo->EffectImplicitTargetA[j] == TARGET_AREAEFFECT_GO_AROUND_DEST))
             HandleEffects(nullptr, nullptr, nullptr, SpellEffectIndex(j));
     }
 }
@@ -4172,6 +4172,10 @@ SpellCastResult Spell::CheckCast(bool strict)
         // check if target is in combat
         if (non_caster_target && m_spellInfo->HasAttribute(SPELL_ATTR_EX_NOT_IN_COMBAT_TARGET) && target->isInCombat())
             return SPELL_FAILED_TARGET_AFFECTING_COMBAT;
+
+        // check if target is affected by Spirit of Redemption (Aura: 27827)
+        if (target->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
+            return SPELL_FAILED_BAD_TARGETS;
     }
     // zone check
     uint32 zone, area;
@@ -4672,7 +4676,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 }
 
                 // get the lock entry
-                uint32 lockId = 0;
+                uint32 lockId;
                 if (GameObject* go = m_targets.getGOTarget())
                 {
                     // In BattleGround players can use only flags and banners

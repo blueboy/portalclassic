@@ -25,11 +25,8 @@
 
 #include <Platform/Define.h>
 
-#include <stdexcept>
 #include <vector>
 #include <algorithm>
-#include <limits>
-#include <cmath>
 
 #define MAX_STACK_SIZE 64
 
@@ -102,7 +99,6 @@ class BIH
             for (uint32 i = 0; i < dat.numPrims; ++i)
             {
                 dat.indices[i] = i;
-                AABox tb;
                 getBounds(primitives[i], dat.primBound[i]);
                 bounds.merge(dat.primBound[i]);
             }

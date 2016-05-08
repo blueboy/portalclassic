@@ -39,7 +39,6 @@
 #include "CellImpl.h"
 #include "ObjectMgr.h"
 #include "ObjectAccessor.h"
-#include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
 #include "Guild.h"
@@ -376,7 +375,7 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
-    m_transport = 0;
+    m_transport = nullptr;
 
     // Playerbot mod:
     m_playerbotAI = 0;
@@ -953,7 +952,6 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
         default:
             return 0;
     }
-    return 0;
 }
 
 void Player::UpdateMirrorTimers()
@@ -3221,18 +3219,18 @@ void Player::removeSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
             PlayerSpellMap::iterator prev_itr = m_spells.find(prev_id);
             if (prev_itr != m_spells.end())
             {
-                PlayerSpell& playerSpell = prev_itr->second;
-                if (playerSpell.dependent != cur_dependent)
+                PlayerSpell& spell = prev_itr->second;
+                if (spell.dependent != cur_dependent)
                 {
-                    playerSpell.dependent = cur_dependent;
-                    if (playerSpell.state != PLAYERSPELL_NEW)
-                        playerSpell.state = PLAYERSPELL_CHANGED;
+                    spell.dependent = cur_dependent;
+                    if (spell.state != PLAYERSPELL_NEW)
+                        spell.state = PLAYERSPELL_CHANGED;
                 }
 
                 // now re-learn if need re-activate
-                if (cur_active && !playerSpell.active && learn_low_rank)
+                if (cur_active && !spell.active && learn_low_rank)
                 {
-                    if (addSpell(prev_id, true, false, playerSpell.dependent, playerSpell.disabled))
+                    if (addSpell(prev_id, true, false, spell.dependent, spell.disabled))
                     {
                         // downgrade spell ranks in spellbook and action bar
                         WorldPacket data(SMSG_SUPERCEDED_SPELL, 4);
@@ -3408,7 +3406,7 @@ bool Player::resetTalents(bool no_cost)
 
         if (GetMoney() < cost)
         {
-            SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
+            SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, nullptr, 0, 0);
             return false;
         }
     }
@@ -6308,7 +6306,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
     else                                                    // in friendly area
     {
         if (IsPvP() && !HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_IN_PVP) && pvpInfo.endTimer == 0)
-            pvpInfo.endTimer = time(0);                     // start toggle-off
+            pvpInfo.endTimer = time(nullptr);               // start toggle-off
     }
 
     if (zone->flags & AREA_FLAG_CAPITAL)                    // in capital city
@@ -8808,6 +8806,10 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
                     return EQUIP_ERR_CANT_DO_RIGHT_NOW;     // maybe exist better err
 
                 if (IsNonMeleeSpellCasted(false))
+                    return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+
+                // prevent equip item in Spirit of Redemption (Aura: 27827)
+                if (HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
                     return EQUIP_ERR_CANT_DO_RIGHT_NOW;
             }
 
@@ -12754,12 +12756,8 @@ void Player::TalkedToCreature(uint32 entry, ObjectGuid guid)
                     if (qInfo->ReqSpell[j] > 0 || qInfo->ReqCreatureOrGOId[j] < 0)
                         continue;
 
-                    uint32 reqTarget = 0;
-
-                    if (qInfo->ReqCreatureOrGOId[j] > 0)    // creature activate objectives
-                        // checked at quest_template loading
-                        reqTarget = qInfo->ReqCreatureOrGOId[j];
-                    else
+                    uint32 reqTarget = qInfo->ReqCreatureOrGOId[j];
+                    if (reqTarget <= 0)    // creature activate objectives
                         continue;
 
                     if (reqTarget == entry)
@@ -16073,13 +16071,11 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     uint32 totalcost = 0;
 
     uint32 prevnode = sourcenode;
-    uint32 lastnode = 0;
 
     for (uint32 i = 1; i < nodes.size(); ++i)
     {
         uint32 path, cost;
-
-        lastnode = nodes[i];
+        uint32 lastnode = nodes[i];
         sObjectMgr.GetTaxiPath(prevnode, lastnode, path, cost);
 
         if (!path)
@@ -16166,7 +16162,6 @@ void Player::ContinueTaxiFlight()
 
     TaxiPathNodeList const& nodeList = sTaxiPathNodesByPath[path];
 
-    float distPrev = MAP_SIZE * MAP_SIZE;
     float distNext =
         (nodeList[0].x - GetPositionX()) * (nodeList[0].x - GetPositionX()) +
         (nodeList[0].y - GetPositionY()) * (nodeList[0].y - GetPositionY()) +
@@ -16181,7 +16176,7 @@ void Player::ContinueTaxiFlight()
         if (node.mapid != GetMapId())
             continue;
 
-        distPrev = distNext;
+        float distPrev = distNext;
 
         distNext =
             (node.x - GetPositionX()) * (node.x - GetPositionX()) +
@@ -17394,8 +17389,8 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= nul
         if (abilityEntry->classmask && (abilityEntry->classmask & classmask) == 0)
             continue;
 
-        SkillRaceClassInfoMapBounds bounds = sSpellMgr.GetSkillRaceClassInfoMapBounds(abilityEntry->skillId);
-        for (SkillRaceClassInfoMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+        SkillRaceClassInfoMapBounds raceBounds = sSpellMgr.GetSkillRaceClassInfoMapBounds(abilityEntry->skillId);
+        for (SkillRaceClassInfoMap::const_iterator itr = raceBounds.first; itr != raceBounds.second; ++itr)
         {
             SkillRaceClassInfoEntry const* skillRCEntry = itr->second;
             if ((skillRCEntry->raceMask & racemask) && (skillRCEntry->classMask & classmask))

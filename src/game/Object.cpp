@@ -30,11 +30,6 @@
 #include "UpdateMask.h"
 #include "Util.h"
 #include "MapManager.h"
-#include "Log.h"
-#include "Transports.h"
-#include "TargetedMovementGenerator.h"
-#include "WaypointMovementGenerator.h"
-#include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -45,7 +40,7 @@
 #include "Chat.h"
 #include "LootMgr.h"
 
-Object::Object()
+Object::Object(): m_updateFlag(0)
 {
     m_objectTypeId      = TYPEID_OBJECT;
     m_objectType        = TYPEMASK_OBJECT;
@@ -1362,7 +1357,7 @@ namespace MaNGOS
                 : i_object(obj), i_msgtype(msgtype), i_textData(textData), i_language(language), i_target(target) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
-                char const* text = nullptr;
+                char const* text;
                 if ((int32)i_textData->Content.size() > loc_idx + 1 && !i_textData->Content[loc_idx + 1].empty())
                     text = i_textData->Content[loc_idx + 1].c_str();
                 else

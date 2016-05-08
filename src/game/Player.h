@@ -25,7 +25,6 @@
 #include "Item.h"
 
 #include "Database/DatabaseEnv.h"
-#include "NPCHandler.h"
 #include "QuestDef.h"
 #include "Group.h"
 #include "Bag.h"
@@ -39,7 +38,6 @@
 #include "SharedDefines.h"
 #include "Chat.h"
 
-#include<string>
 #include<vector>
 
 struct Mail;
@@ -252,7 +250,7 @@ typedef std::list<PlayerCreateInfoAction> PlayerCreateInfoActions;
 struct PlayerInfo
 {
     // existence checked by displayId != 0             // existence checked by displayId != 0
-    PlayerInfo() : displayId_m(0), displayId_f(0), levelInfo(nullptr)
+    PlayerInfo() : mapId(0), areaId(0), positionX(0.f), positionY(0.f), positionZ(0.f), orientation(0.f), displayId_m(0), displayId_f(0), levelInfo(nullptr)
     {
     }
 
@@ -1277,7 +1275,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SaveInventoryAndGoldToDB();                    // fast save function for item/money cheating preventing
         void SaveGoldToDB();
         static void SetUInt32ValueInArray(Tokens& data, uint16 index, uint32 value);
-        static void SetFloatValueInArray(Tokens& data, uint16 index, float value);
         static void SavePositionInDB(ObjectGuid guid, uint32 mapid, float x, float y, float z, float o, uint32 zone);
 
         static void DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRealmChars = true, bool deleteFinally = false);
@@ -1292,7 +1289,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendTalentWipeConfirm(ObjectGuid guid);
         void RewardRage(uint32 damage, bool attacker);
         void SendPetSkillWipeConfirm();
-        void CalcRage(uint32 damage, bool attacker);
         void RegenerateAll();
         void Regenerate(Powers power);
         void RegenerateHealth();
@@ -1525,8 +1521,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         uint32 GetBaseDefenseSkillValue() const { return GetBaseSkillValue(SKILL_DEFENSE); }
         uint32 GetBaseWeaponSkillValue(WeaponAttackType attType) const;
-
-        uint32 GetSpellByProto(ItemPrototype* proto);
 
         float GetHealthBonusFromStamina();
         float GetManaBonusFromIntellect();
@@ -1923,7 +1917,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void UpdateSpeakTime();
         bool CanSpeak() const;
-        void ChangeSpeakTime(int utime);
 
         /*********************************************************/
         /***                 VARIOUS SYSTEMS                   ***/
@@ -2127,7 +2120,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadGroup(QueryResult* result);
         void _LoadSkills(QueryResult* result);
         void _LoadSpells(QueryResult* result);
-        void _LoadFriendList(QueryResult* result);
         bool _LoadHomeBind(QueryResult* result);
         void _LoadBGData(QueryResult* result);
         void _LoadIntoDataField(const char* data, uint32 startOffset, uint32 count);

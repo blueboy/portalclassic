@@ -26,7 +26,6 @@
 #include "ObjectGuid.h"
 #include "ScriptMgr.h"
 #include "SpellMgr.h"
-#include "UpdateMask.h"
 #include "World.h"
 #include "Group.h"
 #include "Transports.h"
@@ -34,13 +33,10 @@
 #include "Language.h"
 #include "PoolManager.h"
 #include "GameEventMgr.h"
-#include "Spell.h"
 #include "Chat.h"
-#include "AccountMgr.h"
 #include "MapPersistentStateMgr.h"
 #include "SpellAuras.h"
 #include "Util.h"
-#include "WaypointManager.h"
 #include "GossipDef.h"
 #include "Mail.h"
 #include "Formulas.h"
@@ -428,22 +424,22 @@ void ObjectMgr::LoadCreatureTemplates()
         // used later for scale
         CreatureDisplayInfoEntry const* displayScaleEntry = nullptr;
 
-        for (int i = 0; i < MAX_CREATURE_MODEL; ++i)
+        for (int j = 0; j < MAX_CREATURE_MODEL; ++j)
         {
-            if (cInfo->ModelId[i])
+            if (cInfo->ModelId[j])
             {
-                CreatureDisplayInfoEntry const* displayEntry = sCreatureDisplayInfoStore.LookupEntry(cInfo->ModelId[i]);
+                CreatureDisplayInfoEntry const* displayEntry = sCreatureDisplayInfoStore.LookupEntry(cInfo->ModelId[j]);
                 if (!displayEntry)
                 {
-                    sLog.outErrorDb("Creature (Entry: %u) has nonexistent modelid_%d (%u), can crash client", cInfo->Entry, i + 1, cInfo->ModelId[i]);
-                    const_cast<CreatureInfo*>(cInfo)->ModelId[i] = 0;
+                    sLog.outErrorDb("Creature (Entry: %u) has nonexistent modelid_%d (%u), can crash client", cInfo->Entry, j + 1, cInfo->ModelId[j]);
+                    const_cast<CreatureInfo*>(cInfo)->ModelId[j] = 0;
                 }
                 else if (!displayScaleEntry)
                     displayScaleEntry = displayEntry;
 
-                CreatureModelInfo const* minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(cInfo->ModelId[i]);
+                CreatureModelInfo const* minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(cInfo->ModelId[j]);
                 if (!minfo)
-                    sLog.outErrorDb("Creature (Entry: %u) are using modelid_%d (%u), but creature_model_info are missing for this model.", cInfo->Entry, i + 1, cInfo->ModelId[i]);
+                    sLog.outErrorDb("Creature (Entry: %u) are using modelid_%d (%u), but creature_model_info are missing for this model.", cInfo->Entry, j + 1, cInfo->ModelId[j]);
             }
         }
 
@@ -4459,7 +4455,7 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
         m->checked = fields[8].GetUInt32();
         m->mailTemplateId = fields[9].GetInt16();
 
-        Player* pl = 0;
+        Player* pl = nullptr;
         if (serverUp)
             pl = GetPlayer(m->receiverGuid);
         if (pl)

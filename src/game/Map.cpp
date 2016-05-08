@@ -21,7 +21,6 @@
 #include "Player.h"
 #include "GridNotifiers.h"
 #include "Log.h"
-#include "GridStates.h"
 #include "CellImpl.h"
 #include "InstanceData.h"
 #include "GridNotifiersImpl.h"
@@ -35,9 +34,9 @@
 #include "MapPersistentStateMgr.h"
 #include "VMapFactory.h"
 #include "MoveMap.h"
-#include "BattleGround/BattleGroundMgr.h"
 #include "Chat.h"
 #include "Weather.h"
+#include "ObjectGridLoader.h"
 
 Map::~Map()
 {
@@ -2177,14 +2176,13 @@ bool Map::GetReachableRandomPointOnGround(float& x, float& y, float& z, float ra
     float ac = fabs(z - i_z);
 
     // slope represented by c angle (in radian)
-    float slope = 0;
     const float MAX_SLOPE_IN_RADIAN = 50.0f / 180.0f * M_PI_F;  // 50(degree) max seem best value for walkable slope
 
     // check ab vector to avoid divide by 0
     if (ab > 0.0f)
     {
         // compute c angle and convert it from radian to degree
-        slope = atan(ac / ab);
+        float slope = atan(ac / ab);
         if (slope < MAX_SLOPE_IN_RADIAN)
         {
             x = i_x;
@@ -2200,14 +2198,11 @@ bool Map::GetReachableRandomPointOnGround(float& x, float& y, float& z, float ra
 // Get random point by handling different situation depending of if the unit is flying/swimming/walking
 bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, float radius)
 {
-
     float i_x = x;
     float i_y = y;
     float i_z = z;
 
-    bool newDestAssigned = false;   // used to check if new random destination is found
-
-    bool isFlying = false;
+    bool isFlying;
     bool isSwimming = true;
     switch (unit->GetTypeId())
     {
@@ -2229,6 +2224,7 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
         return false;
     }
 
+    bool newDestAssigned;   // used to check if new random destination is found
     if (isFlying)
     {
         newDestAssigned = GetRandomPointInTheAir(i_x, i_y, i_z, radius);

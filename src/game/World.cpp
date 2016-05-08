@@ -47,7 +47,6 @@
 #include "Policies/Singleton.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "OutdoorPvP/OutdoorPvP.h"
-#include "TemporarySummon.h"
 #include "VMapFactory.h"
 #include "MoveMap.h"
 #include "GameEventMgr.h"
@@ -88,7 +87,7 @@ float  World::m_relocation_lower_limit_sq     = 10.f * 10.f;
 uint32 World::m_relocation_ai_notify_delay    = 1000u;
 
 /// World constructor
-World::World()
+World::World(): mail_timer(0), mail_timer_expires(0)
 {
     m_playerLimit = 0;
     m_allowMovement = true;
@@ -1591,7 +1590,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
     std::string safe_author = author;
     LoginDatabase.escape_string(safe_author);
 
-    QueryResult* resultAccounts = nullptr;                     // used for kicking
+    QueryResult* resultAccounts;                            // used for kicking
 
     ///- Update the database with ban information
     switch (mode)

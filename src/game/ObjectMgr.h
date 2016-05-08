@@ -20,13 +20,11 @@
 #define _OBJECTMGR_H
 
 #include "Common.h"
-#include "Log.h"
 #include "Object.h"
 #include "Bag.h"
 #include "Creature.h"
 #include "Player.h"
 #include "GameObject.h"
-#include "Corpse.h"
 #include "QuestDef.h"
 #include "ItemPrototype.h"
 #include "NPCHandler.h"
@@ -35,9 +33,7 @@
 #include "MapPersistentStateMgr.h"
 #include "ObjectAccessor.h"
 #include "ObjectGuid.h"
-#include "Policies/Singleton.h"
 
-#include <string>
 #include <map>
 #include <climits>
 
@@ -181,7 +177,8 @@ typedef std::pair<QuestRelationsMap::const_iterator, QuestRelationsMap::const_it
 
 struct PetLevelInfo
 {
-    PetLevelInfo() : health(0), mana(0) { for (int i = 0; i < MAX_STATS; ++i) stats[i] = 0; }
+    PetLevelInfo() : health(0), mana(0), armor(0)
+    { for (int i = 0; i < MAX_STATS; ++i) stats[i] = 0; }
 
     uint16 stats[MAX_STATS];
     uint16 health;
@@ -469,7 +466,6 @@ class ObjectMgr
         typedef std::unordered_map<uint32, PetCreateSpellEntry> PetCreateSpellMap;
 
         void LoadGameobjectInfo();
-        void AddGameobjectInfo(GameObjectInfo* goinfo);
 
         void PackGroupIds();
         Group* GetGroupById(uint32 id) const;

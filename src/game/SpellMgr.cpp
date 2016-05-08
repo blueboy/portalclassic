@@ -22,12 +22,10 @@
 #include "ProgressBar.h"
 #include "DBCStores.h"
 #include "SQLStorages.h"
-#include "World.h"
 #include "Chat.h"
 #include "Spell.h"
-#include "BattleGround/BattleGroundMgr.h"
-#include "MapManager.h"
 #include "Unit.h"
+#include "World.h"
 
 bool IsPrimaryProfessionSkill(uint32 skill)
 {
@@ -314,21 +312,20 @@ WeaponAttackType GetWeaponAttackType(SpellEntry const* spellInfo)
     switch (spellInfo->DmgClass)
     {
         case SPELL_DAMAGE_CLASS_MELEE:
+        {
             if (spellInfo->HasAttribute(SPELL_ATTR_EX3_REQ_OFFHAND))
                 return OFF_ATTACK;
-            else
-                return BASE_ATTACK;
-            break;
+            return BASE_ATTACK;
+        }
         case SPELL_DAMAGE_CLASS_RANGED:
             return RANGED_ATTACK;
-            break;
         default:
+        {
             // Wands
             if (spellInfo->HasAttribute(SPELL_ATTR_EX2_AUTOREPEAT_FLAG))
                 return RANGED_ATTACK;
-            else
-                return BASE_ATTACK;
-            break;
+            return BASE_ATTACK;
+        }
     }
 }
 
@@ -3778,7 +3775,6 @@ bool IsDiminishingReturnsGroupDurationLimited(DiminishingGroup group)
         default:
             return false;
     }
-    return false;
 }
 
 DiminishingReturnsType GetDiminishingReturnsGroupType(DiminishingGroup group)

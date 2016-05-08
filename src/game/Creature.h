@@ -21,11 +21,8 @@
 
 #include "Common.h"
 #include "Unit.h"
-#include "UpdateMask.h"
-#include "ItemPrototype.h"
 #include "SharedDefines.h"
 #include "DBCEnums.h"
-#include "Database/DatabaseEnv.h"
 #include "Cell.h"
 
 #include <list>
@@ -627,7 +624,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         void SetDeathState(DeathState s) override;          // overwrite virtual Unit::SetDeathState
 
         bool LoadFromDB(uint32 guid, Map* map);
-        void SaveToDB();
+        virtual void SaveToDB();
         // overwrited in Pet
         virtual void SaveToDB(uint32 mapid);
         virtual void DeleteFromDB();                        // overwrited in Pet
@@ -744,8 +741,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         // vendor items
         VendorItemCounts m_vendorItemCounts;
-
-        void _RealtimeSetCreatureInfo();
 
         uint32 m_lootMoney;
         ObjectGuid m_lootRecipientGuid;                     // player who will have rights for looting if m_lootGroupRecipient==0 or group disbanded

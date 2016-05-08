@@ -25,7 +25,6 @@
 #include "ObjectGuid.h"
 #include "SQLStorages.h"
 #include "SpellMgr.h"
-#include "QuestDef.h"
 #include "GossipDef.h"
 #include "Player.h"
 #include "GameEventMgr.h"
@@ -36,8 +35,6 @@
 #include "MapManager.h"
 #include "CreatureAI.h"
 #include "CreatureAISelector.h"
-#include "Formulas.h"
-#include "WaypointMovementGenerator.h"
 #include "InstanceData.h"
 #include "MapPersistentStateMgr.h"
 #include "BattleGround/BattleGroundMgr.h"
@@ -697,7 +694,7 @@ void Creature::RegenerateHealth()
     if (curValue >= maxValue)
         return;
 
-    uint32 addvalue = 0;
+    uint32 addvalue;
 
     // Not only pet, but any controlled creature
     if (GetCharmerOrOwnerGuid())

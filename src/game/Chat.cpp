@@ -27,7 +27,6 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "Player.h"
-#include "UpdateMask.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "AccountMgr.h"
@@ -795,9 +794,10 @@ ChatCommand* ChatHandler::getCommandTable()
     return commandTable;
 }
 
-ChatHandler::ChatHandler(WorldSession* session) : m_session(session) {}
+ChatHandler::ChatHandler(WorldSession* session) : m_session(session), sentErrorMessage(false)
+{}
 
-ChatHandler::ChatHandler(Player* player) : m_session(player->GetSession()) {}
+ChatHandler::ChatHandler(Player* player) : m_session(player->GetSession()), sentErrorMessage(false) {}
 
 ChatHandler::~ChatHandler() {}
 
@@ -2332,7 +2332,6 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
 
     // key:data...|h[name]|h|r
     char* keyStart = tail;                                  // remember key start for return
-    char* keyEnd   = tail;                                  // key end for truncate, will updated
 
     while (*tail && *tail != '|' && *tail != ':')
         ++tail;
@@ -2340,7 +2339,7 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
     if (!*tail)
         return nullptr;
 
-    keyEnd = tail;                                          // remember key end for truncate
+    char* keyEnd = tail;                                    // remember key end for truncate
 
     // |h[name]|h|r or :something...|h[name]|h|r
 
