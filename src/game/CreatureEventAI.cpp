@@ -122,9 +122,6 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
     }
     else
         sLog.outErrorEventAI("EventMap for Creature %u is empty but creature is using CreatureEventAI.", m_creature->GetEntry());
-
-    // Handle Spawned Events, also calls Reset()
-    JustRespawned();
 }
 
 #define LOG_PROCESS_EVENT                                                                                                       \
@@ -804,7 +801,14 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             m_creature->DoFleeToGetAssistance();
             break;
         case ACTION_T_QUEST_EVENT_ALL:
-            if (pActionInvoker && pActionInvoker->GetTypeId() == TYPEID_PLAYER)
+            if (action.quest_event_all.useThreatList)
+            {
+                ThreatList const& threatList = m_creature->getThreatManager().getThreatList();
+                for (ThreatList::const_iterator i = threatList.begin(); i != threatList.end(); ++i)
+                    if (Player* temp = m_creature->GetMap()->GetPlayer((*i)->getUnitGuid()))
+                        temp->GroupEventHappens(action.quest_event_all.questId, m_creature);
+            }
+            else if (pActionInvoker && pActionInvoker->GetTypeId() == TYPEID_PLAYER)
                 ((Player*)pActionInvoker)->GroupEventHappens(action.quest_event_all.questId, m_creature);
             break;
         case ACTION_T_CAST_EVENT_ALL:

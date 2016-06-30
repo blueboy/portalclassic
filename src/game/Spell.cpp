@@ -260,7 +260,6 @@ Spell::Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid or
     m_spellInfo = info;
     m_triggeredBySpellInfo = triggeredBy;
     m_caster = caster;
-    m_selfContainer = nullptr;
     m_referencedFromCurrentSpell = false;
     m_executedCurrently = false;
     m_delayStart = 0;
@@ -292,7 +291,7 @@ Spell::Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid or
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         m_currentBasePoints[i] = m_spellInfo->CalculateSimpleValue(SpellEffectIndex(i));
 
-    m_spellState = SPELL_STATE_PREPARING;
+    m_spellState = SPELL_STATE_CREATED;
 
     m_castPositionX = m_castPositionY = m_castPositionZ = 0;
     m_TriggerSpells.clear();
@@ -1107,7 +1106,7 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
     // Recheck immune (only for delayed spells)
     float speed = m_spellInfo->speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->speed : m_spellInfo->speed;
     if (speed && (
-                unit->IsImmunedToDamage(GetSpellSchoolMask(m_spellInfo)) ||
+                unit->IsImmuneToDamage(GetSpellSchoolMask(m_spellInfo)) ||
                 unit->IsImmuneToSpell(m_spellInfo, unit == realCaster)))
     {
         if (realCaster)
@@ -2406,8 +2405,11 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
     }
 
     // remove caster from the list if required by attribute
-    if (targetMode != TARGET_SELF && m_spellInfo->HasAttribute(SPELL_ATTR_EX_CANT_TARGET_SELF))
-        targetUnitMap.remove(m_caster);
+    if (m_spellInfo->HasAttribute(SPELL_ATTR_EX_CANT_TARGET_SELF))
+    {
+        if (targetMode != TARGET_SELF && m_spellInfo->Effect[effIndex] != SPELL_EFFECT_SUMMON)
+            targetUnitMap.remove(m_caster);
+    }
 
     if (unMaxTargets && targetUnitMap.size() > unMaxTargets)
     {
@@ -2484,34 +2486,11 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
     }
 }
 
-void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
+SpellCastResult Spell::PreCastCheck(Aura* triggeredByAura /*= nullptr*/)
 {
-    m_targets = *targets;
-
-    m_spellState = SPELL_STATE_PREPARING;
-
-    m_castPositionX = m_caster->GetPositionX();
-    m_castPositionY = m_caster->GetPositionY();
-    m_castPositionZ = m_caster->GetPositionZ();
-    m_castOrientation = m_caster->GetOrientation();
-
-    if (triggeredByAura)
-        m_triggeredByAuraSpell  = triggeredByAura->GetSpellProto();
-
-    // create and add update event for this spell
-    SpellEvent* Event = new SpellEvent(this);
-    m_caster->m_Events.AddEvent(Event, m_caster->m_Events.CalculateTime(1));
-
     // Prevent casting at cast another spell (ServerSide check)
     if (!m_IsTriggeredSpell && m_caster->IsNonMeleeSpellCasted(false, true, true))
-    {
-        SendCastResult(SPELL_FAILED_SPELL_IN_PROGRESS);
-        finish(false);
-        return;
-    }
-
-    // Fill cost data
-    m_powerCost = CalculatePowerCost(m_spellInfo, m_caster, this, m_CastItem);
+        return SPELL_FAILED_SPELL_IN_PROGRESS;
 
     SpellCastResult result = CheckCast(true);
     if (result != SPELL_CAST_OK && !IsAutoRepeat())         // always cast autorepeat dummy for triggering
@@ -2521,10 +2500,50 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
             SendChannelUpdate(0);
             triggeredByAura->GetHolder()->SetAuraDuration(0);
         }
+        return result;
+    }
+
+    return SPELL_CAST_OK;
+}
+
+void Spell::SpellStart(SpellCastTargets const* targets, Aura* triggeredByAura)
+{
+    m_spellState = SPELL_STATE_STARTING;
+    m_targets = *targets;
+
+    if (m_CastItem)
+        m_CastItemGuid = m_CastItem->GetObjectGuid();
+
+
+    m_castPositionX = m_caster->GetPositionX();
+    m_castPositionY = m_caster->GetPositionY();
+    m_castPositionZ = m_caster->GetPositionZ();
+    m_castOrientation = m_caster->GetOrientation();
+
+    if (triggeredByAura)
+        m_triggeredByAuraSpell = triggeredByAura->GetSpellProto();
+
+    // create and add update event for this spell
+    SpellEvent* Event = new SpellEvent(this);
+    m_caster->m_Events.AddEvent(Event, m_caster->m_Events.CalculateTime(1));
+
+    // Fill cost data
+    m_powerCost = CalculatePowerCost(m_spellInfo, m_caster, this, m_CastItem);
+
+    SpellCastResult result = PreCastCheck();
+    if (result != SPELL_CAST_OK)
+    {
         SendCastResult(result);
         finish(false);
         return;
     }
+    else
+        Prepare();
+}
+
+void Spell::Prepare()
+{
+    m_spellState = SPELL_STATE_PREPARING;
 
     // Prepare data for triggers
     prepareDataForTriggerSystem();
@@ -2536,13 +2555,8 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
     // set timer base at cast time
     ReSetTimer();
 
-    // stealth must be removed at cast starting (at show channel bar)
-    // skip triggered spell (item equip spell casting and other not explicit character casts/item uses)
-    if (!m_IsTriggeredSpell && isSpellBreakStealth(m_spellInfo))
-    {
-        m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
-        m_caster->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
-    }
+    if (!m_IsTriggeredSpell)
+        m_caster->RemoveAurasOnCast(m_spellInfo);
 
     // add non-triggered (with cast time and without)
     if (!m_IsTriggeredSpell)
@@ -2925,6 +2939,12 @@ void Spell::update(uint32 difftime)
         return;
     }
 
+    if (m_CastItemGuid && !m_CastItem)
+    {
+        cancel();
+        return;
+    }
+
     // check if the player or unit caster has moved before the spell finished (exclude casting on vehicles)
     if (((m_caster->GetTypeId() == TYPEID_PLAYER || m_caster->GetTypeId() == TYPEID_UNIT) && m_timer != 0) &&
             (m_castPositionX != m_caster->GetPositionX() || m_castPositionY != m_caster->GetPositionY() || m_castPositionZ != m_caster->GetPositionZ()) &&
@@ -3046,7 +3066,7 @@ void Spell::finish(bool ok)
     // remove/restore spell mods before m_spellState update
     if (Player* modOwner = m_caster->GetSpellModOwner())
     {
-        if (ok || m_spellState != SPELL_STATE_PREPARING)    // fail after start channeling or throw to target not affect spell mods
+        if (ok || (m_spellState > uint32(SPELL_STATE_PREPARING))) // fail after start channeling or throw to target not affect spell mods
             modOwner->RemoveSpellMods(this);
         else
             modOwner->ResetSpellModsDueToCanceledSpell(this);
@@ -3464,7 +3484,7 @@ void Spell::SendChannelUpdate(uint32 time)
     {
         // Reset farsight for some possessing auras of possessed summoned (as they might work with different aura types)
         if (m_spellInfo->HasAttribute(SPELL_ATTR_EX_FARSIGHT) && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->GetCharmGuid()
-                && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS) && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS_PET))
+            && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS) && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS_PET))
         {
             Player* player = (Player*)m_caster;
             // These Auras are applied to self, so get the possessed first
@@ -3489,8 +3509,10 @@ void Spell::SendChannelUpdate(uint32 time)
                     ((Creature*)possessed)->ForcedDespawn();
             }
         }
-
-
+ 
+        //pets should be temporarily removed when possesing a target
+        if (m_caster->GetTypeId() == TYPEID_PLAYER)
+            ((Player*)m_caster)->ResummonPetTemporaryUnSummonedIfAny();
 
         m_caster->RemoveAurasByCasterSpell(m_spellInfo->Id, m_caster->GetObjectGuid());
 
@@ -3735,6 +3757,7 @@ void Spell::TakeReagents()
                 }
 
                 m_CastItem = nullptr;
+                m_CastItemGuid.Clear();
             }
         }
 
@@ -3866,7 +3889,7 @@ void Spell::CastTriggerSpells()
     for (SpellInfoList::const_iterator si = m_TriggerSpells.begin(); si != m_TriggerSpells.end(); ++si)
     {
         Spell* spell = new Spell(m_caster, (*si), true, m_originalCasterGUID);
-        spell->prepare(&m_targets);                         // use original spell original targets
+        spell->SpellStart(&m_targets);                      // use original spell original targets
     }
 }
 
@@ -4655,7 +4678,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     return SPELL_FAILED_SKILL_NOT_HIGH_ENOUGH;
 
                 // chance for fail at orange skinning attempt
-                if ((m_selfContainer && (*m_selfContainer) == this) &&
+                if (m_spellState != SPELL_STATE_CREATED &&
                         skillValue < sWorld.GetConfigMaxSkillValue() &&
                         (ReqValue < 0 ? 0 : ReqValue) > irand(skillValue - 25, skillValue + 37))
                     return SPELL_FAILED_TRY_AGAIN;
@@ -4718,7 +4741,7 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 // chance for fail at orange mining/herb/LockPicking gathering attempt
                 // second check prevent fail at rechecks
-                if (skillId != SKILL_NONE && (!m_selfContainer || ((*m_selfContainer) != this)))
+                if (m_spellState != SPELL_STATE_CREATED && skillId != SKILL_NONE)
                 {
                     bool canFailAtMax = skillId != SKILL_HERBALISM && skillId != SKILL_MINING;
 
@@ -5053,6 +5076,7 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
             target = m_targets.getUnitTarget();
 
         bool need = false;
+        bool script = false;
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
             if (m_spellInfo->EffectImplicitTargetA[i] == TARGET_CHAIN_DAMAGE ||
@@ -5067,9 +5091,16 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
                     return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
                 break;
             }
+            else if (m_spellInfo->EffectImplicitTargetA[i] == TARGET_SCRIPT_COORDINATES)
+            {
+                script = true;
+                continue;
+            }
         }
         if (need)
             m_targets.setUnitTarget(target);
+        else if (script == true)
+            return CheckCast(true);
 
         Unit* _target = m_targets.getUnitTarget();
 
@@ -5879,6 +5910,11 @@ void Spell::UpdatePointers()
     UpdateOriginalCasterPointer();
 
     m_targets.Update(m_caster);
+
+    if (m_caster->GetTypeId() == TYPEID_PLAYER)
+        m_CastItem = ((Player *)m_caster)->GetItemByGuid(m_CastItemGuid);
+    else
+        m_CastItem = nullptr;
 }
 
 bool Spell::CheckTargetCreatureType(Unit* target) const
@@ -6307,6 +6343,7 @@ void Spell::ClearCastItem()
         m_targets.setItemTarget(nullptr);
 
     m_CastItem = nullptr;
+    m_CastItemGuid.Clear();
 }
 
 bool Spell::HasGlobalCooldown()

@@ -85,16 +85,27 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
             switch (spellid)
             {
                 case COMMAND_STAY:                          // flat=1792  // STAY
+                {
                     pet->StopMoving();
+                    pet->AttackStop();
                     pet->GetMotionMaster()->Clear(false);
                     pet->GetMotionMaster()->MoveIdle();
+                    ((Pet*)pet)->SetStayPosition();
+                    ((Pet*)pet)->SetIsRetreating();
+                    ((Pet*)pet)->SetSpellOpener();
                     charmInfo->SetCommandState(COMMAND_STAY);
                     break;
+                }
                 case COMMAND_FOLLOW:                        // spellid=1792  // FOLLOW
+                {
+                    ((Pet*)pet)->ClearStayPosition();
                     pet->AttackStop();
                     pet->GetMotionMaster()->MoveFollow(_player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                    ((Pet*)pet)->SetIsRetreating(true);
+                    ((Pet*)pet)->SetSpellOpener();
                     charmInfo->SetCommandState(COMMAND_FOLLOW);
                     break;
+                }
                 case COMMAND_ATTACK:                        // spellid=1792  // ATTACK
                 {
                     Unit* TargetUnit = _player->GetMap()->GetUnit(targetGuid);
@@ -104,41 +115,32 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                     // not let attack friendly units.
                     if (GetPlayer()->IsFriendlyTo(TargetUnit))
                         return;
-                    // Not let attack through obstructions
-                    if (!pet->IsWithinLOSInMap(TargetUnit))
-                        return;
+
+                    ((Pet*)pet)->SetIsRetreating();
+                    ((Pet*)pet)->SetSpellOpener();
 
                     // This is true if pet has no target or has target but targets differs.
                     if (pet->getVictim() != TargetUnit)
+                        pet->AttackStop();
+
+                    pet->GetMotionMaster()->Clear();
+
+                    if (((Creature*)pet)->AI())
                     {
-                        if (pet->getVictim())
-                            pet->AttackStop();
+                        ((Creature*)pet)->AI()->AttackStart(TargetUnit);
+                        // 10% chance to play special warlock pet attack talk, else growl
+                        if (((Creature*)pet)->IsPet() && ((Pet*)pet)->getPetType() == SUMMON_PET && pet != TargetUnit && roll_chance_i(10))
+                            pet->SendPetTalk((uint32)PET_TALK_ATTACK);
 
-                        if (pet->hasUnitState(UNIT_STAT_CONTROLLED))
-                        {
-                            pet->Attack(TargetUnit, true);
-                            pet->SendPetAIReaction();
-                        }
-                        else
-                        {
-                            pet->GetMotionMaster()->Clear();
-
-                            if (((Creature*)pet)->AI())
-                                ((Creature*)pet)->AI()->AttackStart(TargetUnit);
-
-                            // 10% chance to play special pet attack talk, else growl
-                            if (((Creature*)pet)->IsPet() && ((Pet*)pet)->getPetType() == SUMMON_PET && pet != TargetUnit && roll_chance_i(10))
-                                pet->SendPetTalk((uint32)PET_TALK_ATTACK);
-                            else
-                            {
-                                // 90% chance for pet and 100% chance for charmed creature
-                                pet->SendPetAIReaction();
-                            }
-                        }
+                        pet->SendPetAIReaction();
                     }
+                    else
+                        pet->Attack(TargetUnit, true);
+
                     break;
                 }
                 case COMMAND_ABANDON:                       // abandon (hunter pet) or dismiss (summoned pet)
+                {
                     if (((Creature*)pet)->IsPet())
                     {
                         Pet* p = (Pet*)pet;
@@ -150,7 +152,10 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                     }
                     else                                    // charmed
                         _player->Uncharm();
+
+                    ((Pet*)pet)->ClearStayPosition();
                     break;
+                }
                 default:
                     sLog.outError("WORLD: unknown PET flag Action %i and spellid %i.", uint32(flag), spellid);
             }
@@ -159,10 +164,18 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
             switch (spellid)
             {
                 case REACT_PASSIVE:                         // passive
+                {
+                    pet->AttackStop();
+                    ((Pet*)pet)->SetSpellOpener();
+                    if (!charmInfo->GetCommandState() == COMMAND_STAY)
+                        pet->GetMotionMaster()->MoveFollow(_player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+                }
                 case REACT_DEFENSIVE:                       // recovery
                 case REACT_AGGRESSIVE:                      // activete
+                {
                     charmInfo->SetReactState(ReactStates(spellid));
                     break;
+                }
             }
             break;
         case ACT_DISABLED:                                  // 0x81    spell (disabled), ignore
@@ -186,7 +199,9 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
 
             for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
             {
-                if (spellInfo->EffectImplicitTargetA[i] == TARGET_ALL_ENEMY_IN_AREA || spellInfo->EffectImplicitTargetA[i] == TARGET_ALL_ENEMY_IN_AREA_INSTANT || spellInfo->EffectImplicitTargetA[i] == TARGET_ALL_ENEMY_IN_AREA_CHANNELED)
+                if (spellInfo->EffectImplicitTargetA[i] == TARGET_ALL_ENEMY_IN_AREA
+                    || spellInfo->EffectImplicitTargetA[i] == TARGET_ALL_ENEMY_IN_AREA_INSTANT
+                    || spellInfo->EffectImplicitTargetA[i] == TARGET_ALL_ENEMY_IN_AREA_CHANNELED)
                     return;
             }
 
@@ -199,6 +214,28 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
             Spell* spell = new Spell(pet, spellInfo, false);
 
             SpellCastResult result = spell->CheckPetCast(unit_target);
+
+            const SpellRangeEntry* sRange = sSpellRangeStore.LookupEntry(spellInfo->rangeIndex);
+
+            if (unit_target && !(pet->IsWithinDistInMap(unit_target, sRange->maxRange) && pet->IsWithinLOSInMap(unit_target)) 
+                && !(GetPlayer()->IsFriendlyTo(unit_target) || pet->HasAuraType(SPELL_AURA_MOD_POSSESS)))
+            {
+                ((Pet*)pet)->SetSpellOpener(spellid, sRange->minRange, sRange->maxRange);
+                spell->finish(false);
+                delete spell;
+
+                pet->AttackStop();
+                pet->GetMotionMaster()->Clear();
+
+                ((Creature*)pet)->AI()->AttackStart(unit_target);
+                 // 10% chance to play special warlock pet attack talk, else growl
+                if (((Creature*)pet)->IsPet() && ((Pet*)pet)->getPetType() == SUMMON_PET && pet != unit_target && roll_chance_i(10))
+                    pet->SendPetTalk((uint32)PET_TALK_ATTACK);
+
+                pet->SendPetAIReaction();
+
+                return;
+            }
 
             // auto turn to target unless possessed
             if (result == SPELL_FAILED_UNIT_NOT_INFRONT && !pet->HasAuraType(SPELL_AURA_MOD_POSSESS))
@@ -229,29 +266,31 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
 
                 unit_target = spell->m_targets.getUnitTarget();
 
-                // 10% chance to play special pet attack talk, else growl
-                // actually this only seems to happen on special spells, fire shield for imp, torment for voidwalker, but it's stupid to check every spell
-                if (((Creature*)pet)->IsPet() && (((Pet*)pet)->getPetType() == SUMMON_PET) && (pet != unit_target) && (urand(0, 100) < 10))
-                    pet->SendPetTalk((uint32)PET_TALK_SPECIAL_SPELL);
-                else
-                {
-                    pet->SendPetAIReaction();
-                }
-
                 if (unit_target && !GetPlayer()->IsFriendlyTo(unit_target) && !pet->HasAuraType(SPELL_AURA_MOD_POSSESS))
                 {
                     // This is true if pet has no target or has target but targets differs.
                     if (pet->getVictim() != unit_target)
                     {
-                        if (pet->getVictim())
-                            pet->AttackStop();
+                        pet->AttackStop();
                         pet->GetMotionMaster()->Clear();
+
                         if (((Creature*)pet)->AI())
+                        {
                             ((Creature*)pet)->AI()->AttackStart(unit_target);
+                             // 10% chance to play special warlock pet attack talk, else growl
+                            if (((Creature*)pet)->IsPet() && ((Pet*)pet)->getPetType() == SUMMON_PET && pet != unit_target && roll_chance_i(10))
+                                pet->SendPetTalk((uint32)PET_TALK_ATTACK);
+
+                            pet->SendPetAIReaction();
+                        }
+
+                        else
+                            pet->Attack(unit_target, true);
                     }
                 }
 
-                spell->prepare(&(spell->m_targets));
+                ((Pet*)pet)->SetSpellOpener();
+                spell->SpellStart(&(spell->m_targets));
             }
             else
             {
@@ -263,6 +302,7 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                 if (!((Creature*)pet)->HasSpellCooldown(spellid))
                     GetPlayer()->SendClearCooldown(spellid, pet);
 
+                ((Pet*)pet)->SetSpellOpener();
                 spell->finish(false);
                 delete spell;
             }
@@ -661,18 +701,9 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
     {
         pet->AddCreatureSpellCooldown(spellid);
         if (pet->IsPet())
-        {
             ((Pet*)pet)->CheckLearning(spellid);
 
-            // 10% chance to play special pet attack talk, else growl
-            // actually this only seems to happen on special spells, fire shield for imp, torment for voidwalker, but it's stupid to check every spell
-            if (((Pet*)pet)->getPetType() == SUMMON_PET && (urand(0, 100) < 10))
-                pet->SendPetTalk((uint32)PET_TALK_SPECIAL_SPELL);
-            else
-                pet->SendPetAIReaction();
-        }
-
-        spell->prepare(&(spell->m_targets));
+        spell->SpellStart(&(spell->m_targets));
     }
     else
     {

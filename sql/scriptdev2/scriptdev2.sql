@@ -150,7 +150,6 @@ UPDATE creature_template SET ScriptName='npc_loramus_thalipedes' WHERE entry=778
 /* BADLANDS */
 
 /* BARRENS */
-UPDATE creature_template SET ScriptName='npc_beaten_corpse' WHERE entry=10668;
 UPDATE creature_template SET ScriptName='npc_gilthares' WHERE entry=3465;
 UPDATE creature_template SET ScriptName='npc_taskmaster_fizzule' WHERE entry=7233;
 UPDATE creature_template SET ScriptName='npc_twiggy_flathead' WHERE entry=6248;
@@ -454,6 +453,7 @@ UPDATE creature_template SET ScriptName='boss_dathrohan_balnazzar' WHERE entry=1
 UPDATE creature_template SET ScriptName='boss_maleki_the_pallid' WHERE entry=10438;
 UPDATE creature_template SET ScriptName='boss_cannon_master_willey' WHERE entry=10997;
 UPDATE creature_template SET ScriptName='boss_baroness_anastari' WHERE entry=10436;
+UPDATE creature_template SET ScriptName='npc_aurius' WHERE entry=10917;
 UPDATE creature_template SET ScriptName='mobs_spectral_ghostly_citizen' WHERE entry IN (10384,10385);
 UPDATE creature_template SET ScriptName='mob_restless_soul' WHERE entry=11122;
 UPDATE gameobject_template SET ScriptName='go_gauntlet_gate' WHERE entry=175357;
@@ -2010,7 +2010,19 @@ INSERT INTO script_texts (entry,content_default,sound,type,language,emote,commen
 
 (-1329016,'Today you have unmade what took me years to create! For this you shall all die by my hand!',0,1,0,0,'dathrohan SAY_AGGRO'),
 (-1329017,'You fools think you can defeat me so easily? Face the true might of the Nathrezim!',0,1,0,0,'dathrohan SAY_TRANSFORM'),
-(-1329018,'Damn you mortals! All my plans of revenge, all my hate... all burned to ash...',0,0,0,0,'dathrohan SAY_DEATH');
+(-1329018,'Damn you mortals! All my plans of revenge, all my hate... all burned to ash...',0,0,0,0,'dathrohan SAY_DEATH'),
+(-1329019,'Don\'t worry about me!  Slay this dreadful beast and cleanse this world of his foul taint!',0,6,0,0,'ysida YSIDA_SAY_RUN_5_MIN'),
+(-1329020,'My death means nothing.... light... will... prevail!',0,6,0,0,'ysida YSIDA_SAY_RUN_FAIL'),
+
+(-1329021,'Rivendare! I come for you!',0,1,0,0,'aurius YELL_AURIUS_AGGRO'),
+(-1329022,'Argh!',0,0,0,0,'aurius SAY_AURIUS_DEATH'),
+
+(-1329023,'Move back and hold the line! We cannot fail or all will be lost!',0,1,0,0,'YELL_BASTION_BARRICADE'),
+(-1329024,'Move to the stairs and defend!',0,1,0,0,'YELL_BASTION_STAIRS'),
+(-1329025,'The Scourge have broken into the Bastion! Redouble your efforts! We must not fail!',0,1,0,0,'YELL_BASTION_ENTRANCE'),
+(-1329026,'They have broken into the Hall of Lights! We must stop the intruders!',0,1,0,0,'YELL_BASTION_HALL_LIGHTS'),
+(-1329027,'The Scourge have broken through in all wings! May the light defeat these foul creatures! We shall fight to the last!',0,1,0,0,'YELL_BASTION_INNER_1'),
+(-1329028,'This will not be the end of the Scarlet Crusade! You will not break our line!',0,1,0,0,'YELL_BASTION_INNER_2');
 
 -- -1 349 000 MARAUDON
 

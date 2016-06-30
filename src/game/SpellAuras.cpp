@@ -2016,6 +2016,15 @@ void Aura::HandleModPossess(bool apply, bool Real)
 
     if (apply)
     {
+        if (caster->GetTypeId() == TYPEID_PLAYER)
+        {
+            //remove any existing charm just in case
+            caster->Uncharm();
+
+            //pets should be removed when possesing a target if somehow check was bypassed
+            ((Player*)caster)->UnsummonPetIfAny();
+        }
+         
         target->addUnitState(UNIT_STAT_CONTROLLED);
 
         target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
@@ -2118,6 +2127,15 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
 
     if (apply)
     {
+        if (caster->GetTypeId() == TYPEID_PLAYER)
+        {
+            //remove any existing charm just in case
+            caster->Uncharm();
+
+            //pets should be removed when possesing a target if somehow check was bypassed
+            ((Player*)caster)->UnsummonPetIfAny();
+        }
+
         pet->addUnitState(UNIT_STAT_CONTROLLED);
 
         // target should became visible at SetView call(if not visible before):
@@ -2183,6 +2201,15 @@ void Aura::HandleModCharm(bool apply, bool Real)
 
     if (apply)
     {
+        if (caster->GetTypeId() == TYPEID_PLAYER)
+        {
+            //remove any existing charm just in case
+            caster->Uncharm();
+ 
+            //pets should be removed when possesing a target if somehow check was bypassed
+            ((Player*)caster)->UnsummonPetIfAny();
+        }
+
         // is it really need after spell check checks?
         target->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM, GetHolder());
         target->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS, GetHolder());
@@ -2501,8 +2528,14 @@ void Aura::HandleInvisibility(bool apply, bool Real)
 
         if (Real && target->GetTypeId() == TYPEID_PLAYER)
         {
-            // apply glow vision
-            target->SetByteFlag(PLAYER_FIELD_BYTES2, 1, PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
+            if (Player* player = (Player*)target)
+            {
+                if (player->GetMover() == nullptr) // check if the player doesnt have a mover, when player is hidden during MC of creature
+                {
+                    // apply glow vision
+                    target->SetByteFlag(PLAYER_FIELD_BYTES2, 1, PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
+                }
+            }
         }
 
         // apply only if not in GM invisibility and not stealth
@@ -4205,8 +4238,8 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     // Power Word: Shield
                     if (spellProto->SpellFamilyFlags & uint64(0x0000000000000001))
                     {
-                        //+30% from +healing bonus
-                        DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto)) * 0.3f;
+                        //+10% from +healing bonus
+                        DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto)) * 0.1f;
                         break;
                     }
                     break;
@@ -4256,7 +4289,7 @@ void Aura::PeriodicTick()
                 return;
 
             // Check for immune (not use charges)
-            if (target->IsImmunedToDamage(GetSpellSchoolMask(spellProto)))
+            if (target->IsImmuneToDamage(GetSpellSchoolMask(spellProto)))
                 return;
 
             uint32 absorb = 0;
@@ -4347,7 +4380,7 @@ void Aura::PeriodicTick()
                 return;
 
             // Check for immune
-            if (target->IsImmunedToDamage(GetSpellSchoolMask(spellProto)))
+            if (target->IsImmuneToDamage(GetSpellSchoolMask(spellProto)))
                 return;
 
             uint32 absorb = 0;
@@ -4504,7 +4537,7 @@ void Aura::PeriodicTick()
                 return;
 
             // Check for immune (not use charges)
-            if (target->IsImmunedToDamage(GetSpellSchoolMask(spellProto)))
+            if (target->IsImmuneToDamage(GetSpellSchoolMask(spellProto)))
                 return;
 
             // ignore non positive values (can be result apply spellmods to aura damage
@@ -4617,7 +4650,7 @@ void Aura::PeriodicTick()
                 return;
 
             // Check for immune (not use charges)
-            if (target->IsImmunedToDamage(GetSpellSchoolMask(spellProto)))
+            if (target->IsImmuneToDamage(GetSpellSchoolMask(spellProto)))
                 return;
 
             int32 pdamage = m_modifier.m_amount > 0 ? m_modifier.m_amount : 0;

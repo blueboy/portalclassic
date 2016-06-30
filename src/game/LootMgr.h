@@ -96,6 +96,12 @@ enum ClientLootType
     CLIENT_LOOT_DISENCHANTING   = 4
 };
 
+enum LootStatus
+{
+    LOOT_STATUS_NOT_FULLY_LOOTED = 0x01,
+    LOOT_STATUS_CONTAIN_FFA      = 0x02,
+    LOOT_STATUS_CONTAIN_GOLD     = 0x04
+};
 
 struct PlayerRollVote
 {
@@ -171,6 +177,8 @@ struct LootItem
     bool         freeForAll        : 1;                             // free for all
     bool         isUnderThreshold  : 1;
     bool         currentLooterPass : 1;
+    bool         isNotVisibleForML : 1;                             // true when in master loot the leader do not have the condition to see the item
+    bool         checkRollNeed     : 1;                             // true if for this item we need to check if roll is needed
 
     // storing item prototype for fast access
     ItemPrototype const* itemProto;
@@ -305,13 +313,16 @@ private:
     void NotifyItemRemoved(uint32 lootIndex);
     void NotifyItemRemoved(Player* player, uint32 lootIndex);
     void GroupCheck();
+    void CheckIfRollIsNeeded(Player const* plr);
     void SetGroupLootRight(Player* player);
     void GenerateMoneyLoot(uint32 minAmount, uint32 maxAmount);
     bool FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError = false);
     void ForceLootAnimationCLientUpdate();
     void SetPlayerIsLooting(Player* player);
     void SetPlayerIsNotLooting(Player* player);
-    bool GetLootContentFor(Player* player, ByteBuffer& buffer);
+    void GetLootContentFor(Player* player, ByteBuffer& buffer);
+    uint32 GetLootStatusFor(Player const* player) const;
+
     // What is looted
     WorldObject*     m_lootTarget;
     Item*            m_itemTarget;

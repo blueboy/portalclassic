@@ -753,6 +753,9 @@ bool Creature::AIM_Initialize()
     i_motionMaster.Initialize();
     i_AI = FactorySelector::selectAI(this);
     delete oldAI;
+
+    // Handle Spawned Events, also calls Reset()
+    i_AI->JustRespawned();
     return true;
 }
 
@@ -1654,10 +1657,24 @@ bool Creature::IsImmuneToSpell(SpellEntry const* spellInfo, bool castOnSelf)
     if (!spellInfo)
         return false;
 
-    if (!castOnSelf && GetCreatureInfo()->MechanicImmuneMask & (1 << (spellInfo->Mechanic - 1)))
-        return true;
+    if (!castOnSelf)
+    {
+        if (GetCreatureInfo()->MechanicImmuneMask & (1 << (spellInfo->Mechanic - 1)))
+            return true;
+        
+        if (GetCreatureInfo()->SchoolImmuneMask & (1 << spellInfo->School))
+            return true;
+    }
 
     return Unit::IsImmuneToSpell(spellInfo, castOnSelf);
+}
+
+bool Creature::IsImmuneToDamage(SpellSchoolMask meleeSchoolMask)
+{
+    if (GetCreatureInfo()->SchoolImmuneMask & meleeSchoolMask)
+        return true;
+
+    return Unit::IsImmuneToDamage(meleeSchoolMask);
 }
 
 bool Creature::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const
@@ -1953,8 +1970,9 @@ bool Creature::IsOutOfThreatArea(Unit* pVictim) const
 
 CreatureDataAddon const* Creature::GetCreatureAddon() const
 {
-    if (CreatureDataAddon const* addon = ObjectMgr::GetCreatureAddon(GetGUIDLow()))
-        return addon;
+    if (!(GetObjectGuid().GetHigh() == HIGHGUID_PET)) // pets have guidlow that is conflicting with normal guidlows hence GetGUIDLow() gives wrong info
+        if (CreatureDataAddon const* addon = ObjectMgr::GetCreatureAddon(GetGUIDLow()))
+            return addon;
 
     return ObjectMgr::GetCreatureTemplateAddon(GetCreatureInfo()->Entry);
 }
@@ -2386,6 +2404,8 @@ void Creature::SetFactionTemporary(uint32 factionId, uint32 tempFactionFlags)
 {
     m_temporaryFactionFlags = tempFactionFlags;
     setFaction(factionId);
+
+    ForceHealthAndPowerUpdate();                            // update health and power for client needed to hide enemy real value
 
     if (m_temporaryFactionFlags & TEMPFACTION_TOGGLE_NON_ATTACKABLE)
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
