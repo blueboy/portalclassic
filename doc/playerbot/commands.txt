@@ -3,8 +3,9 @@ Commands:
 
 /s .bot add BOTNAME (add character to world)
 /s .bot remove BOTNAME
-/s .bot co|combatorder BOTNAME COMBATORDER [TARGET]
 /invite BOTNAME (bot will auto accept invite)
+/t BOTNAME orders combat COMBATSORDER [TARGET] (assign combat orders like healing, assisting or tanking to a bot, see below for detailled explanations)
+
 
 For a full list of commands, use '/t BOTNAME help' or various subcommands e.g. '/t BOTNAME help auction remove'.
 
@@ -17,18 +18,18 @@ Note that these commands work both in whisper and in party chat (assuming the bo
 /t BOTNAME follow reset (resets the bots follow distance to the config default setting. this commmand will be phased out)
 /t BOTNAME follow auto (turns off auto variable follow distance which is ON by default)
 /t BOTNAME follow info (Shows Automatic Follow Distance, toggle status ON or OFF)
-/t BOTNAME combat delay <0-10> (sets the amount of time the bot will wait before engaging your target in combat)
-/t BOTNAME stay
+/t BOTNAME orders delay <0-10> (sets the amount of time the bot will wait before engaging your target or tank's target in combat)
+/t BOTNAME stay   (bot will remain at its current position)
 /t BOTNAME assist (you'll need to be attacking something and the bot only does melee atm)
 /t BOTNAME spells (replies with all spells known to bot)
+/t BOTNAME neutralize (bot will try to neutralize/crowd control its master's target: polymorph, shackle, hibernate...)
+/t BOTNAME pull (bot will try pull it's master's target if it has already tank orders)
 /t BOTNAME cast <SPELLID | (part of) SPELLNAME | [SPELLLINK]>
 /t BOTNAME craft < alchemy | a >                  (List all learnt alchemy [RECIPE]..)
                  < blacksmithing | b >            (List all learnt blacksmith [RECIPE]..)
                  < cooking | c >                  (List all learnt cooking [RECIPE]..)
                  < engineering | e >              (List all learnt engineering [RECIPE]..)
                  < firstaid | f >                 (List all learnt firstaid [RECIPE]..)
-                 < inscription | i >              (List all learnt inscription [RECIPE]..)
-                 < jewelcrafting | j >            (List all learnt jewelcrafting [RECIPE]..)
                  < leatherworking | l >           (List all learnt leatherworking [RECIPE]..)
                  < magic | m >                    (List all learnt enchanting [RECIPE]..)
                  < smelting | s >                 (List all learnt mining [RECIPE]..)
@@ -190,19 +191,29 @@ Combat Orders explained:
   There are primary and secondary commands which can be combined. In this way it is
   possible to define a bot to assist the main tank and also protect the healer, making
   combat management much easier.
+  There are three levels of combat orders: primary, secondary and resist to a elemental damage school
   The commands assist and protect require a target parameter or a friendly player
   selected by bots master.
   Available Combat Orders:
-    tank        pri     try to bind all targets involved in combat by gaining highest threat
-    assist      pri     do damage on selected targets attacker without getting highest threat
-    heal        pri     concentrate on healing - no offensive spells, try to keep threat low
-    protect     sec     if target of protect get's directly attacked gain higher threat on attacker
-    reset       -       clear out assist and protect targets and set combat order to nothing
+    combat tank         primary     try to bind all targets involved in combat by gaining highest threat
+    combat assist       primary     do damage on selected targets attacker without getting highest threat
+    combat heal         primary     concentrate on healing - no offensive spells, try to keep threat low
+    combat nodispell    secondary   concentrate on healing - no offensive spells, try to keep threat low but will not dispel friendlies
+    combat protect      secondary   if target of protect get's directly attacked gain higher threat on attacker
+    combat passive      primary     bot will not engage combat: no attack or spell cast
+    combat resistfire   secondary   bot will try to equip resist fire equipment and use resist fire spells/auras
+    combat resistfrost  secondary   bot will try to equip resist frost equipment and use resist frost spells/auras
+    combat resistnature secondary   bot will try to equip resist nature equipment and use resist nature spells/auras
+    combat resistshadow secondary   bot will try to equip resist shadow equipment and use resist shadow spells/auras
+    
+    combat reset       -       clear out assist and protect targets and set combat order to nothing
   Examples:
-    .bot co TheTank tank
-    .bot co MyHealer heal
-    .bot co TheBrutal assist TheTank
-    .bot co TheBrutal protect MyHealer
+    /t TheTank orders combat tank
+    /t MyHealer orders combat heal
+    /t TheBrutal orders combat assist TheTank
+    /t TheBrutal orders combat protect MyHealer
+    /t TheBrutal orders delay 2
+    /t TheTank orders combat resistfire
 
 Trading with bots:
 ==================
