@@ -138,8 +138,10 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
-    // if can't shoot OR have no ranged (wand) equipped
-    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true)))
+    // switch to melee if in melee range AND can't shoot OR have no ranged (wand) equipped
+    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE
+            && meleeReach
+            && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true)))
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
 
     //Used to determine if this bot is highest on threat

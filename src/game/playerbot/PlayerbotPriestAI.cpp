@@ -163,8 +163,9 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
-    // if in melee range OR can't shoot OR have no ranged (wand) equipped
+    // switch to melee if in melee range AND can't shoot OR have no ranged (wand) equipped AND is not healer
     else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE
+            && meleeReach
             && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true))
             && !m_ai->IsHealer())
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
