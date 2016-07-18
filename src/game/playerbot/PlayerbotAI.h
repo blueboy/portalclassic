@@ -329,6 +329,8 @@ public:
     bool IsElite(Unit* pTarget) const;
     // Used by bots to check if their target is neutralized (polymorph, shackle or the like). Useful to avoid breaking crowd control
     bool IsNeutralized(Unit* pTarget);
+    // Make the bots face their target
+    void FaceTarget(Unit* pTarget);
 
     void MakeSpellLink(const SpellEntry *sInfo, std::ostringstream &out);
     void MakeWeaponSkillLink(const SpellEntry *sInfo, std::ostringstream &out, uint32 skillid);

@@ -5004,6 +5004,21 @@ bool PlayerbotAI::IsNeutralized(Unit* pTarget)
     return false;
 }
 
+// Utility function to make the bots face their target
+// Useful to ensure bots can cast spells/abilities
+// without getting facing target errors
+void PlayerbotAI::FaceTarget(Unit* pTarget)
+{
+    if (!pTarget)
+        return;
+
+    // Only update orientation if not already facing target
+    if (!m_bot->HasInArc(M_PI_F, pTarget))
+        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+
+    return;
+}
+
 bool PlayerbotAI::CanStore()
 {
     uint32 totalused = 0;
