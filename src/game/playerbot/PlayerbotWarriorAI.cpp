@@ -257,8 +257,7 @@ CombatManeuverReturns PlayerbotWarriorAI::DoFirstCombatManeuverPVP(Unit *pTarget
 CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuver(Unit *pTarget)
 {
     // Face enemy, make sure bot is attacking
-    if (!m_bot->HasInArc(M_PI_F, pTarget))
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+    m_ai->FaceTarget(pTarget);
 
     switch (m_ai->GetScenarioType())
     {
@@ -556,6 +555,7 @@ bool PlayerbotWarriorAI::Pull()
 
         // shoot at the target
 //        if (m_ai->CastSpell(SHOOT, m_ai->GetCurrentTarget()))
+        m_ai->FaceTarget(m_ai->GetCurrentTarget());
         m_bot->CastSpell(m_ai->GetCurrentTarget(), SHOOT, true);
         m_ai->TellMaster("I'm PULLING %s.", m_ai->GetCurrentTarget()->GetName());
         return true;

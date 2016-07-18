@@ -278,15 +278,9 @@ CombatManeuverReturns PlayerbotDruidAI::_DoNextPVECombatManeuverBear(Unit* pTarg
 
     // Used to determine if this bot is highest on threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    Unit* pVictim = pTarget->getVictim();
 
     // Face enemy, make sure you're attacking
-    if (!m_bot->HasInArc(M_PI_F, pTarget))
-    {
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
-        if (pVictim)
-            pVictim->Attack(pTarget, true);
-    }
+    m_ai->FaceTarget(pTarget);
 
     if (PlayerbotAI::ORDERS_TANK & m_ai->GetCombatOrder() && !newTarget && GROWL > 0 && !m_bot->HasSpellCooldown(GROWL))
         if (CastSpell(GROWL, pTarget))
@@ -320,15 +314,9 @@ CombatManeuverReturns PlayerbotDruidAI::_DoNextPVECombatManeuverCat(Unit* pTarge
 
     //Used to determine if this bot is highest on threat
     Unit *newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    Unit* pVictim = pTarget->getVictim();
 
     // Face enemy, make sure you're attacking
-    if (!m_bot->HasInArc(M_PI_F, pTarget))
-    {
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
-        if (pVictim)
-            pVictim->Attack(pTarget, true);
-    }
+    m_ai->FaceTarget(pTarget);
 
     // Attempt to do a finishing move
     if (m_bot->GetComboPoints() >= 5)
@@ -374,6 +362,9 @@ CombatManeuverReturns PlayerbotDruidAI::_DoNextPVECombatManeuverSpellDPS(Unit* p
 
     uint32 NATURE = (STARFIRE > 0 ? STARFIRE : WRATH);
 
+    // Face enemy, make sure you're attacking
+    m_ai->FaceTarget(pTarget);
+
     if (FAERIE_FIRE > 0 && m_ai->In_Reach(pTarget,FAERIE_FIRE) && !pTarget->HasAura(FAERIE_FIRE, EFFECT_INDEX_0) && CastSpell(FAERIE_FIRE, pTarget))
         return RETURN_CONTINUE;
 
@@ -390,15 +381,10 @@ CombatManeuverReturns PlayerbotDruidAI::_DoNextPVECombatManeuverSpellDPS(Unit* p
     if (NATURE > 0 && CastSpell(NATURE, pTarget))
         return RETURN_CONTINUE;
 
-    // Face enemy, make sure you're attacking
-    if (!m_bot->HasInArc(M_PI_F, pTarget))
-    {
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
-        if (m_ai->GetCombatStyle() == PlayerbotAI::COMBAT_MELEE)
-            m_bot->Attack(pTarget, true);
-        else
-            m_bot->AttackStop();
-    }
+    if (m_ai->GetCombatStyle() == PlayerbotAI::COMBAT_MELEE)
+        m_bot->Attack(pTarget, true);
+    else
+        m_bot->AttackStop();
 
     return RETURN_NO_ACTION_UNKNOWN;
 }

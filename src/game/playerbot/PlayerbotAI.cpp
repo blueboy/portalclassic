@@ -3647,7 +3647,11 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
     {
         Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, m_targetGuidCommand);
         if (pTarget)
+        {
+            // Face the target to avoid facing casting error
+            FaceTarget(pTarget);
             CastSpell(m_spellIdCommand, *pTarget);
+        }
         m_spellIdCommand = 0;
         m_targetGuidCommand = ObjectGuid();
 
