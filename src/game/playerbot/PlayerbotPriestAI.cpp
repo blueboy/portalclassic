@@ -223,20 +223,24 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         if (ELUNES_GRACE && !m_bot->HasAura(ELUNES_GRACE, EFFECT_INDEX_0) && !m_bot->HasSpellCooldown(ELUNES_GRACE) && CastSpell(ELUNES_GRACE, m_bot))
             return RETURN_CONTINUE;
 
-        // Already healed self or tank. If healer, do nothing else to anger mob.
-        if (m_ai->IsHealer())
-            return RETURN_NO_ACTION_OK; // In a sense, mission accomplished.
-
-        // Have threat, can't quickly lower it. 3 options remain: Stop attacking, lowlevel damage (wand), keep on keeping on.
-        if (newTarget->GetHealthPercent() > 25)
+        // If enemy comes in melee reach
+        if (meleeReach)
         {
-            // If elite, do nothing and pray tank gets aggro off you
-            if (m_ai->IsElite(newTarget))
-                return RETURN_NO_ACTION_OK;
+            // Already healed self or tank. If healer, do nothing else to anger mob
+            if (m_ai->IsHealer())
+                return RETURN_NO_ACTION_OK; // In a sense, mission accomplished.
 
-            // Not an elite. You could insert PSYCHIC SCREAM here but in any PvE situation that's 90-95% likely
-            // to worsen the situation for the group. ... So please don't.
-            return CastSpell(SHOOT, pTarget);
+            // Have threat, can't quickly lower it. 3 options remain: Stop attacking, lowlevel damage (wand), keep on keeping on.
+            if (newTarget->GetHealthPercent() > 25)
+            {
+                // If elite, do nothing and pray tank gets aggro off you
+                if (m_ai->IsElite(newTarget))
+                    return RETURN_NO_ACTION_OK;
+
+                // Not an elite. You could insert PSYCHIC SCREAM here but in any PvE situation that's 90-95% likely
+                // to worsen the situation for the group. ... So please don't.
+                return CastSpell(SHOOT, pTarget);
+            }
         }
     }
 

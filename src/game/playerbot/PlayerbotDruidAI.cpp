@@ -167,6 +167,8 @@ CombatManeuverReturns PlayerbotDruidAI::DoNextCombatManeuverPVE(Unit* pTarget)
     if (!m_ai)  return RETURN_NO_ACTION_ERROR;
     if (!m_bot) return RETURN_NO_ACTION_ERROR;
 
+    bool meleeReach = m_bot->CanReachWithMeleeAttack(pTarget);
+
     //uint32 masterHP = GetMaster()->GetHealth() * 100 / GetMaster()->GetMaxHealth();
 
     uint32 spec = m_bot->GetSpec();
@@ -213,8 +215,8 @@ CombatManeuverReturns PlayerbotDruidAI::DoNextCombatManeuverPVE(Unit* pTarget)
         if (HealPlayer(m_bot) == RETURN_CONTINUE)
             return RETURN_CONTINUE;
 
-        // Aggroed by an elite
-        if (m_ai->IsElite(newTarget))
+        // Aggroed by an elite that came in melee range
+        if (m_ai->IsElite(newTarget) && meleeReach)
         {
             // protect the bot with barkskin: the increased casting time is meaningless
             // because bot will then avoid to cast to not angry mob further
