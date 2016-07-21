@@ -244,24 +244,14 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
         }
     }
 
-    // Heal
+    // Damage tweaking for healers
     if (m_ai->IsHealer())
     {
+        // Heal other players/bots first
         if (HealPlayer(GetHealTarget()) & RETURN_CONTINUE)
             return RETURN_CONTINUE;
-    }
-    else
-    {
-        // Is this desirable? Debatable.
-        // ... Certainly could be very detrimental to a shadow priest
-        // TODO: In a group/raid with a healer you'd want this bot to focus on DPS (it's not specced/geared for healing either)
-        if (HealPlayer(m_bot) & RETURN_CONTINUE)
-            return RETURN_CONTINUE;
-    }
 
-    // Do damage tweaking for healers here
-    if (m_ai->IsHealer())
-    {
+        // No one needs to be healed: do small damage instead
         // If target is elite and not handled by MT: do nothing
         if (m_ai->IsElite(pTarget) && pMainTank && pMainTank->getVictim() != pTarget)
             return RETURN_NO_ACTION_OK;
@@ -275,7 +265,6 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
     }
 
     // Damage Spells
-
     switch (spec)
     {
         case PRIEST_SPEC_HOLY:
@@ -325,6 +314,9 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
     }
     if (SHADOWFORM == 0 && SMITE > 0 && m_ai->In_Reach(pTarget,SMITE) && CastSpell(SMITE, pTarget))
         return RETURN_CONTINUE;
+
+    // Default: shoot with wand
+    return CastSpell(SHOOT, pTarget);
 
     return RETURN_NO_ACTION_OK;
 } // end DoNextCombatManeuver

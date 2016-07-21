@@ -242,6 +242,9 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVE(Unit *pTarget)
     if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL)) // Very low levels
         return CastSpell(FIREBALL, pTarget);
 
+    // Default: shoot with wand
+    return CastSpell(SHOOT, pTarget);
+
     return RETURN_NO_ACTION_ERROR; // What? Not even Fireball is available?
 } // end DoNextCombatManeuver
 
