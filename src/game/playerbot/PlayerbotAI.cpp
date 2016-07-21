@@ -2394,6 +2394,18 @@ bool PlayerbotAI::CastNeutralize()
 
     switch (m_bot->getClass())
     {
+        case CLASS_DRUID:
+            m_spellIdCommand = ((PlayerbotDruidAI*)GetClassAI())->Neutralize(creatureType);
+            break;
+        case CLASS_PRIEST:
+            m_spellIdCommand = ((PlayerbotPriestAI*)GetClassAI())->Neutralize(creatureType);
+            break;
+        case CLASS_MAGE:
+            m_spellIdCommand = ((PlayerbotMageAI*)GetClassAI())->Neutralize(creatureType);
+            break;
+        case CLASS_WARLOCK:
+            m_spellIdCommand = ((PlayerbotWarlockAI*)GetClassAI())->Neutralize(creatureType);
+            break;
         default:
             return false;
     }
