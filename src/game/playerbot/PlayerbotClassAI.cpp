@@ -130,6 +130,49 @@ CombatManeuverReturns PlayerbotClassAI::Buff(bool (*BuffHelper)(PlayerbotAI*, ui
 }
 
 /**
+ * NeedGroupBuff()
+ * return boolean Returns true if more than two targets in the bot's group need the group buff.
+ *
+ * params:groupBuffSpellId uint32 the spell ID of the group buff like Arcane Brillance
+ * params:singleBuffSpellId uint32 the spell ID of the single target buff equivalent of the group buff like Arcane Intellect for group buff Arcane Brillance
+ * return false if false is returned, the bot is expected to perform a buff check for the single target buff of the group buff.
+ *
+ */
+bool PlayerbotClassAI::NeedGroupBuff(uint32 groupBuffSpellId, uint32 singleBuffSpellId)
+{
+    if (!m_bot) return false;
+
+    uint8 numberOfGroupTargets = 0;
+    // Check group players to avoid using regeant and mana with an expensive group buff
+    // when only two players or less need it
+    if (m_bot->GetGroup())
+    {
+        Group::MemberSlotList const& groupSlot = m_bot->GetGroup()->GetMemberSlots();
+        for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+        {
+            Player *groupMember = sObjectMgr.GetPlayer(itr->guid);
+            if (!groupMember || !groupMember->isAlive())
+                continue;
+            // Check if group member needs buff
+            if (!groupMember->HasAura(groupBuffSpellId, EFFECT_INDEX_0) && !groupMember->HasAura(singleBuffSpellId, EFFECT_INDEX_0))
+                numberOfGroupTargets++;
+            // Don't forget about pet
+            Pet * pet = groupMember->GetPet();
+            if (pet && !pet->HasAuraType(SPELL_AURA_MOD_UNATTACKABLE) && (pet->HasAura(groupBuffSpellId, EFFECT_INDEX_0) || pet->HasAura(singleBuffSpellId, EFFECT_INDEX_0)))
+                numberOfGroupTargets++;
+        }
+        // treshold set to 2 targets because beyond that value, the group buff cost is cheaper in mana
+        if (numberOfGroupTargets < 3)
+            return false;
+
+        // In doubt, buff everyone
+        return true;
+    }
+    else
+        return false;   // no group, no group buff
+}
+
+/**
  * GetHealTarget()
  * return Unit* Returns unit to be healed. First checks 'critical' Healer(s), next Tank(s), next Master (if different from:), next DPS.
  * If none of the healths are low enough (or multiple valid targets) against these checks, the lowest health is healed. Having a target
