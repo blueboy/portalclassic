@@ -652,10 +652,12 @@ void PlayerbotDruidAI::DoNonCombatActions()
             return;// RETURN_CONTINUE;
     }
 
-    // Buff
-    if (m_bot->GetGroup() && m_ai->HasSpellReagents(GIFT_OF_THE_WILD) && Buff(&PlayerbotDruidAI::BuffHelper, GIFT_OF_THE_WILD) & RETURN_CONTINUE)
-        return;
-    if (Buff(&PlayerbotDruidAI::BuffHelper, MARK_OF_THE_WILD) & RETURN_CONTINUE)
+    // Buff group
+    // the check for group targets is performed by NeedGroupBuff (if group is found for bots by the function)
+    if (NeedGroupBuff(GIFT_OF_THE_WILD, MARK_OF_THE_WILD) && m_ai->HasSpellReagents(GIFT_OF_THE_WILD))
+        if (Buff(&PlayerbotDruidAI::BuffHelper, GIFT_OF_THE_WILD) & RETURN_CONTINUE)
+            return;
+    else if (Buff(&PlayerbotDruidAI::BuffHelper, MARK_OF_THE_WILD) & RETURN_CONTINUE)
         return;
     if (Buff(&PlayerbotDruidAI::BuffHelper, THORNS, (m_bot->GetGroup() ? JOB_TANK : JOB_ALL)) & RETURN_CONTINUE)
         return;
