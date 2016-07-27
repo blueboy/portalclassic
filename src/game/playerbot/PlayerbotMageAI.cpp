@@ -106,8 +106,7 @@ CombatManeuverReturns PlayerbotMageAI::DoFirstCombatManeuverPVP(Unit* /*pTarget*
 CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuver(Unit *pTarget)
 {
     // Face enemy, make sure bot is attacking
-    if (!m_bot->HasInArc(M_PI_F, pTarget))
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+    m_ai->FaceTarget(pTarget);
 
     switch (m_ai->GetScenarioType())
     {
@@ -139,8 +138,10 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
-    // if can't shoot OR have no ranged (wand) equipped
-    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true)))
+    // switch to melee if in melee range AND can't shoot OR have no ranged (wand) equipped
+    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE
+            && meleeReach
+            && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true)))
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
 
     //Used to determine if this bot is highest on threat
@@ -241,6 +242,9 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVE(Unit *pTarget)
     if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL)) // Very low levels
         return CastSpell(FIREBALL, pTarget);
 
+    // Default: shoot with wand
+    return CastSpell(SHOOT, pTarget);
+
     return RETURN_NO_ACTION_ERROR; // What? Not even Fireball is available?
 } // end DoNextCombatManeuver
 
@@ -275,8 +279,10 @@ void PlayerbotMageAI::DoNonCombatActions()
             return;
 
     // buff group
-    if (m_bot->GetGroup() && m_ai->HasSpellReagents(ARCANE_BRILLIANCE) && Buff(&PlayerbotMageAI::BuffHelper, ARCANE_BRILLIANCE) & RETURN_CONTINUE)
-        return;
+    // the check for group targets is performed by NeedGroupBuff (if group is found for bots by the function)
+    if (NeedGroupBuff(ARCANE_BRILLIANCE, ARCANE_INTELLECT) && m_ai->HasSpellReagents(ARCANE_BRILLIANCE))
+        if (Buff(&PlayerbotMageAI::BuffHelper, ARCANE_BRILLIANCE) & RETURN_CONTINUE)
+            return;
     else if (Buff(&PlayerbotMageAI::BuffHelper, ARCANE_INTELLECT, JOB_MANAONLY) & RETURN_CONTINUE)
         return;
 

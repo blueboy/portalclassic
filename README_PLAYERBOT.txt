@@ -10,3 +10,13 @@ Bots will only use abilities that they have - for example, a priest will only us
 All help is welcome be it through code development, reports from play testing or just discussion. Meet us in the C-MaNGOS forum thread.
 
 For CMaNGOS z2684+
+
+
+INSTALLATION:
+=============
+Installation instructions can be found in doc/playerbot/INSTALL.txt
+
+
+HELP:
+=====
+A list of commands can be found in doc/playerbot/commands.txt

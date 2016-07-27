@@ -2413,6 +2413,18 @@ bool PlayerbotAI::CastNeutralize()
 
     switch (m_bot->getClass())
     {
+        case CLASS_DRUID:
+            m_spellIdCommand = ((PlayerbotDruidAI*)GetClassAI())->Neutralize(creatureType);
+            break;
+        case CLASS_PRIEST:
+            m_spellIdCommand = ((PlayerbotPriestAI*)GetClassAI())->Neutralize(creatureType);
+            break;
+        case CLASS_MAGE:
+            m_spellIdCommand = ((PlayerbotMageAI*)GetClassAI())->Neutralize(creatureType);
+            break;
+        case CLASS_WARLOCK:
+            m_spellIdCommand = ((PlayerbotWarlockAI*)GetClassAI())->Neutralize(creatureType);
+            break;
         default:
             return false;
     }
@@ -3666,7 +3678,11 @@ void PlayerbotAI::UpdateAI(const uint32 /*p_time*/)
     {
         Unit* pTarget = ObjectAccessor::GetUnit(*m_bot, m_targetGuidCommand);
         if (pTarget)
+        {
+            // Face the target to avoid facing casting error
+            FaceTarget(pTarget);
             CastSpell(m_spellIdCommand, *pTarget);
+        }
         m_spellIdCommand = 0;
         m_targetGuidCommand = ObjectGuid();
 
@@ -5021,6 +5037,21 @@ bool PlayerbotAI::IsNeutralized(Unit* pTarget)
     }
 
     return false;
+}
+
+// Utility function to make the bots face their target
+// Useful to ensure bots can cast spells/abilities
+// without getting facing target errors
+void PlayerbotAI::FaceTarget(Unit* pTarget)
+{
+    if (!pTarget)
+        return;
+
+    // Only update orientation if not already facing target
+    if (!m_bot->HasInArc(M_PI_F, pTarget))
+        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+
+    return;
 }
 
 bool PlayerbotAI::CanStore()

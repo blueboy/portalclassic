@@ -71,6 +71,7 @@ protected:
     CombatManeuverReturns CastSpellWand(uint32 nextAction, Unit *pTarget, uint32 SHOOT);
     virtual CombatManeuverReturns HealPlayer(Player* target);
     CombatManeuverReturns Buff(bool (*BuffHelper)(PlayerbotAI*, uint32, Unit*), uint32 spellId, uint32 type = JOB_ALL, bool bMustBeOOC = true);
+    bool NeedGroupBuff(uint32 groupBuffSpellId, uint32 singleBuffSpellId);
     Player* GetHealTarget(JOB_TYPE type = JOB_ALL);
     Player* GetResurrectionTarget(JOB_TYPE type = JOB_ALL, bool bMustBeOOC = true);
     JOB_TYPE GetTargetJob(Player* target);

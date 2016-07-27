@@ -129,8 +129,7 @@ CombatManeuverReturns PlayerbotWarlockAI::DoFirstCombatManeuverPVP(Unit* /*pTarg
 CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuver(Unit *pTarget)
 {
     // Face enemy, make sure bot is attacking
-    if (!m_bot->HasInArc(M_PI_F, pTarget))
-        m_bot->SetFacingTo(m_bot->GetAngle(pTarget));
+    m_ai->FaceTarget(pTarget);
 
     switch (m_ai->GetScenarioType())
     {
@@ -179,8 +178,10 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     if (m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_RANGED && !meleeReach)
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_RANGED);
-    // if in melee range OR can't shoot OR have no ranged (wand) equipped
-    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE && (meleeReach || SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true)))
+    // switch to melee if in melee range AND can't shoot OR have no ranged (wand) equipped
+    else if(m_ai->GetCombatStyle() != PlayerbotAI::COMBAT_MELEE
+            && meleeReach
+            && (SHOOT == 0 || !m_bot->GetWeaponForAttack(RANGED_ATTACK, true, true)))
         m_ai->SetCombatStyle(PlayerbotAI::COMBAT_MELEE);
 
     //Used to determine if this bot is highest on threat
@@ -252,67 +253,70 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
         return RETURN_CONTINUE;
 
     // Damage Spells
-    switch (spec)
+    if (spec)
     {
-        case WARLOCK_SPEC_AFFLICTION:
-            if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
-                return RETURN_CONTINUE;
-            if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
-                return RETURN_CONTINUE;
-            if (SIPHON_LIFE > 0 && m_ai->In_Reach(pTarget,SIPHON_LIFE) && !pTarget->HasAura(SIPHON_LIFE) && CastSpell(SIPHON_LIFE, pTarget))
-                return RETURN_CONTINUE;
-            if (SHADOW_BOLT && m_ai->In_Reach(pTarget,SHADOW_BOLT) && CastSpell(SHADOW_BOLT, pTarget))
-                return RETURN_CONTINUE;
+        switch (spec)
+        {
+            case WARLOCK_SPEC_AFFLICTION:
+                if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
+                    return RETURN_CONTINUE;
+                if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
+                    return RETURN_CONTINUE;
+                if (SIPHON_LIFE > 0 && m_ai->In_Reach(pTarget,SIPHON_LIFE) && !pTarget->HasAura(SIPHON_LIFE) && CastSpell(SIPHON_LIFE, pTarget))
+                    return RETURN_CONTINUE;
+                break;
 
-            return RETURN_NO_ACTION_OK;
+            case WARLOCK_SPEC_DEMONOLOGY:
+                if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
+                    return RETURN_CONTINUE;
+                if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
+                    return RETURN_CONTINUE;
+                break;
 
-        case WARLOCK_SPEC_DEMONOLOGY:
-            if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
-                return RETURN_CONTINUE;
-            if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
-                return RETURN_CONTINUE;
-            if (SHADOW_BOLT && m_ai->In_Reach(pTarget,SHADOW_BOLT) && CastSpell(SHADOW_BOLT, pTarget))
-                return RETURN_CONTINUE;
+            case WARLOCK_SPEC_DESTRUCTION:
+                if (SHADOWBURN && pTarget->GetHealthPercent() < (HPThreshold / 2.0) && m_ai->In_Reach(pTarget, SHADOWBURN) && !pTarget->HasAura(SHADOWBURN) && CastSpell(SHADOWBURN, pTarget))
+                    return RETURN_CONTINUE;
+                if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
+                    return RETURN_CONTINUE;
+                if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
+                    return RETURN_CONTINUE;
+                if (CONFLAGRATE && m_ai->In_Reach(pTarget,CONFLAGRATE) && pTarget->HasAura(IMMOLATE) && !m_bot->HasSpellCooldown(CONFLAGRATE) && CastSpell(CONFLAGRATE, pTarget))
+                    return RETURN_CONTINUE;
+                break;
+        }
 
-            return RETURN_NO_ACTION_OK;
+        // Shadow bolt is common to all specs
+        if (SHADOW_BOLT && m_ai->In_Reach(pTarget,SHADOW_BOLT) && CastSpell(SHADOW_BOLT, pTarget))
+            return RETURN_CONTINUE;
 
-        case WARLOCK_SPEC_DESTRUCTION:
-            if (SHADOWBURN && pTarget->GetHealthPercent() < (HPThreshold / 2.0) && m_ai->In_Reach(pTarget, SHADOWBURN) && !pTarget->HasAura(SHADOWBURN) && CastSpell(SHADOWBURN, pTarget))
-                return RETURN_CONTINUE;
-            if (CORRUPTION && m_ai->In_Reach(pTarget,CORRUPTION) && !pTarget->HasAura(CORRUPTION) && CastSpell(CORRUPTION, pTarget))
-                return RETURN_CONTINUE;
-            if (IMMOLATE && m_ai->In_Reach(pTarget,IMMOLATE) && !pTarget->HasAura(IMMOLATE) && CastSpell(IMMOLATE, pTarget))
-                return RETURN_CONTINUE;
-            if (CONFLAGRATE && m_ai->In_Reach(pTarget,CONFLAGRATE) && pTarget->HasAura(IMMOLATE) && !m_bot->HasSpellCooldown(CONFLAGRATE) && CastSpell(CONFLAGRATE, pTarget))
-                return RETURN_CONTINUE;
-            if (SHADOW_BOLT && m_ai->In_Reach(pTarget,SHADOW_BOLT) && CastSpell(SHADOW_BOLT, pTarget))
-                return RETURN_CONTINUE;
+        // Default: shoot with wand
+        return CastSpell(SHOOT, pTarget);
 
-            return RETURN_NO_ACTION_OK;
+        return RETURN_NO_ACTION_OK;
 
-            //if (DRAIN_LIFE && LastSpellAffliction < 4 && !pTarget->HasAura(DRAIN_SOUL) && !pTarget->HasAura(DRAIN_LIFE) && !pTarget->HasAura(DRAIN_MANA) && m_ai->GetHealthPercent() <= 70)
-            //    m_ai->CastSpell(DRAIN_LIFE, *pTarget);
-            //    //m_ai->SetIgnoreUpdateTime(5);
-            //else if (HOWL_OF_TERROR && !pTarget->HasAura(HOWL_OF_TERROR) && m_ai->GetAttackerCount() > 3 && LastSpellAffliction < 8)
-            //    m_ai->CastSpell(HOWL_OF_TERROR, *pTarget);
-            //    m_ai->TellMaster("casting howl of terror!");
-            //else if (FEAR && !pTarget->HasAura(FEAR) && pVictim == m_bot && m_ai->GetAttackerCount() >= 2 && LastSpellAffliction < 9)
-            //    m_ai->CastSpell(FEAR, *pTarget);
-            //    //m_ai->TellMaster("casting fear!");
-            //    //m_ai->SetIgnoreUpdateTime(1.5);
-            //else if (RAIN_OF_FIRE && LastSpellDestruction < 3 && m_ai->GetAttackerCount() >= 3)
-            //    m_ai->CastSpell(RAIN_OF_FIRE, *pTarget);
-            //    //m_ai->TellMaster("casting rain of fire!");
-            //    //m_ai->SetIgnoreUpdateTime(8);
-            //else if (SEARING_PAIN && LastSpellDestruction < 8)
-            //    m_ai->CastSpell(SEARING_PAIN, *pTarget);
-            //else if (SOUL_FIRE && LastSpellDestruction < 9)
-            //    m_ai->CastSpell(SOUL_FIRE, *pTarget);
-            //    //m_ai->SetIgnoreUpdateTime(6);
-            //else if (HELLFIRE && LastSpellDestruction < 12 && !m_bot->HasAura(HELLFIRE) && m_ai->GetAttackerCount() >= 5 && m_ai->GetHealthPercent() >= 50)
-            //    m_ai->CastSpell(HELLFIRE);
-            //    m_ai->TellMaster("casting hellfire!");
-            //    //m_ai->SetIgnoreUpdateTime(15);
+                //if (DRAIN_LIFE && LastSpellAffliction < 4 && !pTarget->HasAura(DRAIN_SOUL) && !pTarget->HasAura(DRAIN_LIFE) && !pTarget->HasAura(DRAIN_MANA) && m_ai->GetHealthPercent() <= 70)
+                //    m_ai->CastSpell(DRAIN_LIFE, *pTarget);
+                //    //m_ai->SetIgnoreUpdateTime(5);
+                //else if (HOWL_OF_TERROR && !pTarget->HasAura(HOWL_OF_TERROR) && m_ai->GetAttackerCount() > 3 && LastSpellAffliction < 8)
+                //    m_ai->CastSpell(HOWL_OF_TERROR, *pTarget);
+                //    m_ai->TellMaster("casting howl of terror!");
+                //else if (FEAR && !pTarget->HasAura(FEAR) && pVictim == m_bot && m_ai->GetAttackerCount() >= 2 && LastSpellAffliction < 9)
+                //    m_ai->CastSpell(FEAR, *pTarget);
+                //    //m_ai->TellMaster("casting fear!");
+                //    //m_ai->SetIgnoreUpdateTime(1.5);
+                //else if (RAIN_OF_FIRE && LastSpellDestruction < 3 && m_ai->GetAttackerCount() >= 3)
+                //    m_ai->CastSpell(RAIN_OF_FIRE, *pTarget);
+                //    //m_ai->TellMaster("casting rain of fire!");
+                //    //m_ai->SetIgnoreUpdateTime(8);
+                //else if (SEARING_PAIN && LastSpellDestruction < 8)
+                //    m_ai->CastSpell(SEARING_PAIN, *pTarget);
+                //else if (SOUL_FIRE && LastSpellDestruction < 9)
+                //    m_ai->CastSpell(SOUL_FIRE, *pTarget);
+                //    //m_ai->SetIgnoreUpdateTime(6);
+                //else if (HELLFIRE && LastSpellDestruction < 12 && !m_bot->HasAura(HELLFIRE) && m_ai->GetAttackerCount() >= 5 && m_ai->GetHealthPercent() >= 50)
+                //    m_ai->CastSpell(HELLFIRE);
+                //    m_ai->TellMaster("casting hellfire!");
+                //    //m_ai->SetIgnoreUpdateTime(15);
     }
 
     // No spec due to low level OR no spell found yet
@@ -322,6 +326,9 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
         return RETURN_CONTINUE;
     if (SHADOW_BOLT && m_ai->In_Reach(pTarget,SHADOW_BOLT))
         return CastSpell(SHADOW_BOLT, pTarget);
+
+    // Default: shoot with wand
+    return CastSpell(SHOOT, pTarget);
 
     return RETURN_NO_ACTION_OK;
 } // end DoNextCombatManeuver
