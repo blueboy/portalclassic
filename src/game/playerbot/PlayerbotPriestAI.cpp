@@ -486,20 +486,26 @@ void PlayerbotPriestAI::DoNonCombatActions()
     // Buffing
     // the check for group targets is performed by NeedGroupBuff (if group is found for bots by the function)
     if (NeedGroupBuff(PRAYER_OF_FORTITUDE, POWER_WORD_FORTITUDE) && m_ai->HasSpellReagents(PRAYER_OF_FORTITUDE))
+    {
         if (Buff(&PlayerbotPriestAI::BuffHelper, PRAYER_OF_FORTITUDE) & RETURN_CONTINUE)
             return;
+    }
     else if (Buff(&PlayerbotPriestAI::BuffHelper, POWER_WORD_FORTITUDE) & RETURN_CONTINUE)
         return;
 
     if (NeedGroupBuff(PRAYER_OF_SPIRIT, DIVINE_SPIRIT) && m_ai->HasSpellReagents(PRAYER_OF_FORTITUDE))
+    {
         if (Buff(&PlayerbotPriestAI::BuffHelper, PRAYER_OF_SPIRIT) & RETURN_CONTINUE)
             return;
+    }
     else if (Buff(&PlayerbotPriestAI::BuffHelper, DIVINE_SPIRIT, (JOB_ALL | JOB_MANAONLY)) & RETURN_CONTINUE)
         return;
 
     if (NeedGroupBuff(PRAYER_OF_SHADOW_PROTECTION, SHADOW_PROTECTION) && m_ai->HasSpellReagents(PRAYER_OF_FORTITUDE))
+    {
         if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_RESIST_SHADOW && Buff(&PlayerbotPriestAI::BuffHelper, PRAYER_OF_SHADOW_PROTECTION) & RETURN_CONTINUE)
             return;
+    }
     else if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_RESIST_SHADOW && Buff(&PlayerbotPriestAI::BuffHelper, SHADOW_PROTECTION) & RETURN_CONTINUE)
         return;
 

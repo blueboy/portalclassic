@@ -281,8 +281,10 @@ void PlayerbotMageAI::DoNonCombatActions()
     // buff group
     // the check for group targets is performed by NeedGroupBuff (if group is found for bots by the function)
     if (NeedGroupBuff(ARCANE_BRILLIANCE, ARCANE_INTELLECT) && m_ai->HasSpellReagents(ARCANE_BRILLIANCE))
+    {
         if (Buff(&PlayerbotMageAI::BuffHelper, ARCANE_BRILLIANCE) & RETURN_CONTINUE)
             return;
+    }
     else if (Buff(&PlayerbotMageAI::BuffHelper, ARCANE_INTELLECT, JOB_MANAONLY) & RETURN_CONTINUE)
         return;
 
