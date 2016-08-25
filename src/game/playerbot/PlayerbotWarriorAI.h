@@ -11,26 +11,6 @@ enum
     WarriorBerserker
 };
 
-enum SharpeningStoneDisplayId
-{
-    ROUGH_SHARPENING_DISPLAYID          = 24673,
-    COARSE_SHARPENING_DISPLAYID         = 24674,
-    HEAVY_SHARPENING_DISPLAYID          = 24675,
-    SOLID_SHARPENING_DISPLAYID          = 24676,
-    DENSE_SHARPENING_DISPLAYID          = 24677,
-    CONSECRATED_SHARPENING_DISPLAYID    = 24674,    // will not be used because bot can not know if it will face undead targets
-    ELEMENTAL_SHARPENING_DISPLAYID      = 21072
-};
-
-enum WeightStoneDisplayId
-{
-    ROUGH_WEIGHTSTONE_DISPLAYID         = 24683,
-    COARSE_WEIGHTSTONE_DISPLAYID        = 24684,
-    HEAVY_WEIGHTSTONE_DISPLAYID         = 24685,
-    SOLID_WEIGHTSTONE_DISPLAYID         = 24686,
-    DENSE_WEIGHTSTONE_DISPLAYID         = 24687
-};
-
 enum WarriorSpells
 {
     BATTLE_SHOUT_1                  = 6673,

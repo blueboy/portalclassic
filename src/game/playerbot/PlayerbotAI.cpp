@@ -1815,6 +1815,55 @@ Item* PlayerbotAI::FindConsumable(uint32 displayId) const
     return nullptr;
 }
 
+static const uint32 uPriorizedSharpStoneIds[6] =
+{
+    ELEMENTAL_SHARPENING_DISPLAYID, DENSE_SHARPENING_DISPLAYID, SOLID_SHARPENING_DISPLAYID,
+    HEAVY_SHARPENING_DISPLAYID, COARSE_SHARPENING_DISPLAYID, ROUGH_SHARPENING_DISPLAYID
+};
+
+static const uint32 uPriorizedWeightStoneIds[5] =
+{
+    DENSE_WEIGHTSTONE_DISPLAYID, SOLID_WEIGHTSTONE_DISPLAYID, HEAVY_WEIGHTSTONE_DISPLAYID,
+    COARSE_WEIGHTSTONE_DISPLAYID, ROUGH_WEIGHTSTONE_DISPLAYID
+};
+
+/**
+ * FindStoneFor()
+ * return Item* Returns sharpening/weight stone item eligible to enchant a bot weapon
+ *
+ * params:weapon Item* the weapôn the function should search and return a enchanting item for
+ * return nullptr if no relevant item is found in bot inventory, else return a sharpening or weight
+ * stone based on the weapon subclass
+ *
+ */
+Item* PlayerbotAI::FindStoneFor(Item* weapon) const
+{
+    Item* stone;
+    ItemPrototype const* pProto = weapon->GetProto();
+    if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD || pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD2
+        || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE2
+        || pProto->SubClass == ITEM_SUBCLASS_WEAPON_DAGGER))
+    {
+        for (uint8 i = 0; i < countof(uPriorizedSharpStoneIds); ++i)
+        {
+            stone = FindConsumable(uPriorizedSharpStoneIds[i]);
+            if (stone)
+                return stone;
+        }
+    }
+    else if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE2))
+    {
+        for (uint8 i = 0; i < countof(uPriorizedWeightStoneIds); ++i)
+        {
+            stone = FindConsumable(uPriorizedWeightStoneIds[i]);
+            if (stone)
+                return stone;
+        }
+    }
+
+    return nullptr;
+}
+
 bool PlayerbotAI::FindAmmo() const
 {
     for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
