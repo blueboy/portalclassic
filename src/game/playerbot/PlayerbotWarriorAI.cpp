@@ -485,6 +485,92 @@ void PlayerbotWarriorAI::DoNonCombatActions()
     // hp check
     if (EatDrinkBandage(false))
         return;
+
+    // Search and apply sharpening/weight stone to weapons
+    // Basically same code than the weapon buff from rogues
+    // TODO: move weapons temporary buffs to a more suitable place
+    // because others melee classes could use it (including rogues without poisons)
+    // Also reduce code (iterator...)
+    // Mainhand ...
+    Item * stone, * weapon;
+    weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    {
+        ItemPrototype const* pProto = weapon->GetProto();
+        if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD || pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD2
+            || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE2
+            || pProto->SubClass == ITEM_SUBCLASS_WEAPON_DAGGER))
+        {
+            stone = m_ai->FindConsumable(ELEMENTAL_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(DENSE_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(SOLID_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(HEAVY_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(COARSE_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(ROUGH_SHARPENING_DISPLAYID);
+        }
+        else if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE2))
+        {
+                    stone = m_ai->FindConsumable(DENSE_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(SOLID_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(HEAVY_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(COARSE_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(ROUGH_WEIGHTSTONE_DISPLAYID);
+        }
+        if (stone)
+        {
+            m_ai->UseItem(stone, EQUIPMENT_SLOT_MAINHAND);
+            m_ai->SetIgnoreUpdateTime(5);
+        }
+    }
+    //... and offhand
+    weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+    if (weapon && (weapon->GetProto()->InventoryType == INVTYPE_WEAPONOFFHAND || weapon->GetProto()->InventoryType == INVTYPE_WEAPONMAINHAND)
+        && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    {
+        ItemPrototype const* pProto = weapon->GetProto();
+        if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD || pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD2
+            || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE2
+            || pProto->SubClass == ITEM_SUBCLASS_WEAPON_DAGGER))
+        {
+            stone = m_ai->FindConsumable(ELEMENTAL_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(DENSE_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(SOLID_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(HEAVY_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(COARSE_SHARPENING_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(ROUGH_SHARPENING_DISPLAYID);
+        }
+        else if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE2))
+        {
+            stone = m_ai->FindConsumable(DENSE_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(SOLID_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(HEAVY_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(COARSE_WEIGHTSTONE_DISPLAYID);
+            if (!stone)
+                stone = m_ai->FindConsumable(ROUGH_WEIGHTSTONE_DISPLAYID);
+        }
+        if (stone)
+        {
+            m_ai->UseItem(stone, EQUIPMENT_SLOT_MAINHAND);
+            m_ai->SetIgnoreUpdateTime(5);
+        }
+    }
 } // end DoNonCombatActions
 
 // Match up with "Pull()" below

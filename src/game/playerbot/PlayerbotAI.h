@@ -366,7 +366,6 @@ public:
     Item* FindFood() const;
     Item* FindDrink() const;
     Item* FindBandage() const;
-    Item* FindPoison() const;
     Item* FindMount(uint32 matchingRidingSkill) const;
     Item* FindItem(uint32 ItemId);
     Item* FindItemInBank(uint32 ItemId);
