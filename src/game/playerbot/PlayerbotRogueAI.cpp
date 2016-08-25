@@ -433,6 +433,26 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuverPVP(Unit* pTarget)
     return RETURN_NO_ACTION_OK;
 }
 
+// Note: in Classic, wound poison and crippling poison share the same display ID
+// If bot has both in his/her inventory, the first one picked will be used, be it a wound poison or not
+static const uint32 uPriorizedPoisonIds[3] =
+{
+    INSTANT_POISON_DISPLAYID, WOUND_POISON_DISPLAYID, DEADLY_POISON_DISPLAYID
+};
+
+// Return a poison Item based
+Item* PlayerbotRogueAI::FindPoison() const
+{
+    Item* poison;
+    for (uint8 i = 0; i < countof(uPriorizedPoisonIds); ++i)
+    {
+        poison = m_ai->FindConsumable(uPriorizedPoisonIds[i]);
+        if (poison)
+            return poison;
+    }
+    return nullptr;
+}
+
 void PlayerbotRogueAI::DoNonCombatActions()
 {
     if (!m_ai)  return;
@@ -452,13 +472,7 @@ void PlayerbotRogueAI::DoNonCombatActions()
     weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
     if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
-        poison = m_ai->FindConsumable(INSTANT_POISON_DISPLAYID);
-        if (!poison)
-            // Note: in Classic, wound poison and crippling poison share the same display ID
-            // If bot has both in his/her inventory, the first one picked will be used, be it a wound poison or not
-            poison = m_ai->FindConsumable(WOUND_POISON_DISPLAYID);
-        if (!poison)
-            poison = m_ai->FindConsumable(DEADLY_POISON_DISPLAYID);
+        poison = FindPoison();
         if (poison)
         {
             m_ai->UseItem(poison, EQUIPMENT_SLOT_MAINHAND);
@@ -469,13 +483,7 @@ void PlayerbotRogueAI::DoNonCombatActions()
     weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
     if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
-        poison = m_ai->FindConsumable(DEADLY_POISON_DISPLAYID);
-        if (!poison)
-            // Note: in Classic, wound poison and crippling poison share the same display ID
-            // If bot has both in his/her inventory, the first one picked will be used, be it a wound poison or not
-            poison = m_ai->FindConsumable(WOUND_POISON_DISPLAYID);
-        if (!poison)
-            poison = m_ai->FindConsumable(INSTANT_POISON_DISPLAYID);
+        poison = FindPoison();
         if (poison)
         {
             m_ai->UseItem(poison, EQUIPMENT_SLOT_OFFHAND);
