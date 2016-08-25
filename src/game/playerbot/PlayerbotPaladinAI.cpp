@@ -607,7 +607,20 @@ void PlayerbotPaladinAI::DoNonCombatActions()
     // hp/mana check
     if (EatDrinkBandage())
         return;
-    // m_ai->TellMaster("DoNonCombatActions() - 10. past EatDrinkBandage()"); // debug
+
+    // Search and apply stones to weapons
+    // Mainhand ...
+    Item * stone, * weapon;
+    weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    {
+        stone = m_ai->FindStoneFor(weapon);
+        if (stone)
+        {
+            m_ai->UseItem(stone, EQUIPMENT_SLOT_MAINHAND);
+            m_ai->SetIgnoreUpdateTime(5);
+        }
+    }
 }
 
 /**

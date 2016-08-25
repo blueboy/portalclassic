@@ -466,9 +466,9 @@ void PlayerbotRogueAI::DoNonCombatActions()
     if (EatDrinkBandage(false))
         return;
 
-    // Search and apply poisons to weapons
+    // Search and apply poisons to weapons, if no poison found, try to apply a sharpening/weight stone
     // Mainhand ...
-    Item * poison, * weapon;
+    Item * poison, * stone, * weapon;
     weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
     if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
@@ -477,6 +477,15 @@ void PlayerbotRogueAI::DoNonCombatActions()
         {
             m_ai->UseItem(poison, EQUIPMENT_SLOT_MAINHAND);
             m_ai->SetIgnoreUpdateTime(5);
+        }
+        else
+        {
+            stone = m_ai->FindStoneFor(weapon);
+            if (stone)
+            {
+                m_ai->UseItem(stone, EQUIPMENT_SLOT_MAINHAND);
+                m_ai->SetIgnoreUpdateTime(5);
+            }
         }
     }
     //... and offhand
@@ -488,6 +497,15 @@ void PlayerbotRogueAI::DoNonCombatActions()
         {
             m_ai->UseItem(poison, EQUIPMENT_SLOT_OFFHAND);
             m_ai->SetIgnoreUpdateTime(5);
+        }
+        else
+        {
+            stone = m_ai->FindStoneFor(weapon);
+            if (stone)
+            {
+                m_ai->UseItem(stone, EQUIPMENT_SLOT_OFFHAND);
+                m_ai->SetIgnoreUpdateTime(5);
+            }
         }
     }
 } // end DoNonCombatActions
