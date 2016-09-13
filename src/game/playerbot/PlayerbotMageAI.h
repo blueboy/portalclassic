@@ -21,6 +21,7 @@ enum MageSpells
     BLAST_WAVE_1                    = 11113,
     BLINK_1                         = 1953,
     BLIZZARD_1                      = 10,
+    CLEARCASTING_1                  = 12536,
     COLD_SNAP_1                     = 12472,
     COMBUSTION_1                    = 11129,
     CONE_OF_COLD_1                  = 120,
@@ -40,8 +41,7 @@ enum MageSpells
     FROSTBOLT_1                     = 116,
     ICE_ARMOR_1                     = 7302,
     ICE_BARRIER_1                   = 11426,
-    ICE_BLOCK_1                     = 27619,
-    INVISIBILITY_1                  = 66,
+    ICE_BLOCK_1                     = 11958,
     MAGE_ARMOR_1                    = 6117,
     MANA_SHIELD_1                   = 1463,
     POLYMORPH_1                     = 118,
@@ -52,6 +52,19 @@ enum MageSpells
     SHOOT_2                         = 5019,
     SLOW_FALL_1                     = 130
 };
+
+enum MageTalents
+{
+    IMPROVED_SCORCH_1               = 11095,
+    IMPROVED_SCORCH_2               = 12872,
+    IMPROVED_SCORCH_3               = 12873
+};
+
+static const uint32 uiImprovedScorch[3] =
+{
+    IMPROVED_SCORCH_1, IMPROVED_SCORCH_2, IMPROVED_SCORCH_3
+};
+
 //class Player;
 
 class MANGOS_DLL_SPEC PlayerbotMageAI : PlayerbotClassAI
@@ -78,12 +91,15 @@ private:
 
     static bool BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit *target);
 
+    uint8 CheckFrostCooldowns();
+
     // ARCANE
     uint32 ARCANE_MISSILES,
            ARCANE_EXPLOSION,
            COUNTERSPELL,
-           SLOW,
+           EVOCATION,
            POLYMORPH,
+           PRESENCE_OF_MIND,
            ARCANE_POWER;
 
     // RANGED
@@ -94,6 +110,8 @@ private:
            FIRE_BLAST,
            FLAMESTRIKE,
            SCORCH,
+           FIRE_VULNERABILITY,
+           IMPROVED_SCORCH,
            PYROBLAST,
            BLAST_WAVE,
            COMBUSTION,
