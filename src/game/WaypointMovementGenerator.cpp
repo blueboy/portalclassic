@@ -20,7 +20,7 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Creature.h"
-#include "CreatureAI.h"
+#include "AI/CreatureAI.h"
 #include "WaypointManager.h"
 #include "ScriptMgr.h"
 #include "movement/MoveSplineInit.h"
@@ -383,6 +383,7 @@ void FlightPathMovementGenerator::Finalize(Player& player)
 
     player.Unmount();
     player.RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE | UNIT_FLAG_TAXI_FLIGHT);
+    player.SetClientControl(&player, 1);
 
     if (player.m_taxi.empty())
     {
@@ -409,6 +410,7 @@ void FlightPathMovementGenerator::Reset(Player& player)
     player.getHostileRefManager().setOnlineOfflineState(false);
     player.addUnitState(UNIT_STAT_TAXI_FLIGHT);
     player.SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE | UNIT_FLAG_TAXI_FLIGHT);
+    player.SetClientControl(&player, 0);
 
     Movement::MoveSplineInit init(player);
     uint32 end = GetPathAtMapEnd();
@@ -439,7 +441,20 @@ bool FlightPathMovementGenerator::Update(Player& player, const uint32& /*diff*/)
         while (true);
     }
 
-    return i_currentNode < (i_path->size() - 1);
+    const bool flying = (i_currentNode < (i_path->size() - 1));
+
+    // Multi-map flight paths
+    if (flying && (*i_path)[i_currentNode + 1].mapid != player.GetMapId())
+    {
+        // short preparations to continue flight
+        Interrupt(player);                // will reset at map landing
+        SetCurrentNodeAfterTeleport();
+        TaxiPathNodeEntry const& node = (*i_path)[i_currentNode];
+        SkipCurrentNode();
+        player.TeleportTo(node.mapid, node.x, node.y, node.z, player.GetOrientation());
+    }
+
+    return flying;
 }
 
 void FlightPathMovementGenerator::SetCurrentNodeAfterTeleport()

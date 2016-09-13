@@ -55,7 +55,7 @@ struct ServerPktHeader
 
 WorldSocket::WorldSocket(boost::asio::io_service &service, std::function<void (Socket *)> closeHandler)
     : Socket(service, closeHandler), m_lastPingTime(std::chrono::system_clock::time_point::min()), m_overSpeedPings(0),
-      m_useExistingHeader(false), m_session(nullptr), m_sessionFinalized(false), m_seed(static_cast<uint32>(rand32()))
+      m_useExistingHeader(false), m_session(nullptr), m_sessionFinalized(false), m_seed(urand())
 {}
 
 WorldSocket::~WorldSocket()
@@ -69,7 +69,7 @@ void WorldSocket::SendPacket(const WorldPacket& pct, bool immediate)
         return;
 
     // Dump outgoing packet.
-    //sLog.outWorldPacketDump(uint32(get_handle()), pct.GetOpcode(), pct.GetOpcodeName(), &pct, false);
+    sLog.outWorldPacketDump(GetRemoteEndpoint().c_str(), pct.GetOpcode(), pct.GetOpcodeName(), &pct, false);
 
     ServerPktHeader header;
 
@@ -171,9 +171,6 @@ bool WorldSocket::ProcessIncomingData()
     if (IsClosed())
         return false;
 
-    // Dump received packet.
-    //sLog.outWorldPacketDump(uint32(get_handle()), new_pct->GetOpcode(), new_pct->GetOpcodeName(), new_pct, true);
-
     WorldPacket *pct = new WorldPacket(opcode, validBytesRemaining);
 
     if (validBytesRemaining)
@@ -181,6 +178,8 @@ bool WorldSocket::ProcessIncomingData()
         pct->append(InPeak(), validBytesRemaining);
         ReadSkip(validBytesRemaining);
     }
+
+    sLog.outWorldPacketDump(GetRemoteEndpoint().c_str(), pct->GetOpcode(), pct->GetOpcodeName(), pct, true);
 
     try
     {

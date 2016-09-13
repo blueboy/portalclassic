@@ -1243,6 +1243,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendPushToPartyResponse(Player* pPlayer, uint32 msg);
         void SendQuestUpdateAddItem(Quest const* pQuest, uint32 item_idx, uint32 count);
         void SendQuestUpdateAddCreatureOrGo(Quest const* pQuest, ObjectGuid guid, uint32 creatureOrGO_idx, uint32 count);
+        void SendQuestGiverStatusMultiple();
 
         ObjectGuid GetDividerGuid() const { return m_dividerGuid; }
         void SetDividerGuid(ObjectGuid guid) { m_dividerGuid = guid; }
@@ -1687,7 +1688,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         /*********************************************************/
         /***                  HONOR SYSTEM                     ***/
         /*********************************************************/
-        bool AddHonorCP(float honor, uint8 type, uint32 victim, uint8 victimType);
+        bool AddHonorCP(float honor, uint8 type, Unit* victim = nullptr);
         void UpdateHonor();
         void ResetHonor();
         void ClearHonorInfo();
@@ -2059,6 +2060,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetAuraUpdateMask(uint8 slot) { m_auraUpdateMask |= (uint64(1) << slot); }
         Player* GetNextRandomRaidMember(float radius);
         PartyResult CanUninviteFromGroup() const;
+        void UpdateGroupLeaderFlag(const bool remove = false);
         // BattleGround Group System
         void SetBattleGroundRaid(Group* group, int8 subgroup = -1);
         void RemoveFromBattleGroundRaid();

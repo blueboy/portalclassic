@@ -141,7 +141,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
         return false;
     }
 
-
     uint32 summon_spell_id = fields[21].GetUInt32();
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(summon_spell_id);
 
@@ -191,7 +190,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
     SetName(fields[11].GetString());
 
-    SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_UNK3 | UNIT_BYTE2_FLAG_AURAS | UNIT_BYTE2_FLAG_UNK5);
+    SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SUPPORTABLE | UNIT_BYTE2_FLAG_AURAS);
     SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE | UNIT_FLAG_RESTING);
 
     if (getPetType() == HUNTER_PET)
@@ -335,7 +334,13 @@ void Pet::SavePetToDB(PetSaveMode mode)
     {
         // reagents must be returned before save call
         if (mode == PET_SAVE_REAGENTS)
-            mode = PET_SAVE_NOT_IN_SLOT;
+        {
+            // Hunter Pets always save as current if dismissed or unsummoned due to range/etc.
+            if (getPetType() == HUNTER_PET)
+                mode = PET_SAVE_AS_CURRENT;
+            else
+                mode = PET_SAVE_NOT_IN_SLOT;
+        }
         // not save pet as current if another pet temporary unsummoned
         else if (mode == PET_SAVE_AS_CURRENT && pOwner->GetTemporaryUnsummonedPetNumber() &&
                  pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
@@ -1014,7 +1019,7 @@ bool Pet::CreateBaseAtCreature(Creature* creature)
     SetByteValue(UNIT_FIELD_BYTES_0, 3, POWER_FOCUS);
     SetSheath(SHEATH_STATE_MELEE);
 
-    SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_UNK3 | UNIT_BYTE2_FLAG_AURAS | UNIT_BYTE2_FLAG_UNK5);
+    SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SUPPORTABLE | UNIT_BYTE2_FLAG_AURAS);
     // SetByteFlag(UNIT_FIELD_BYTES_2, 2, UNIT_CAN_BE_RENAMED | UNIT_CAN_BE_ABANDONED); (need to test and check these for vanilla and TBC)
 
     SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE | UNIT_FLAG_RENAME);
@@ -1032,13 +1037,13 @@ void Pet::InitStatsForLevel(uint32 petlevel)
 
     SetLevel(petlevel);
 
-    SetAttackTime(BASE_ATTACK, cInfo->MeleeBaseAttackTime);
-    SetAttackTime(OFF_ATTACK, cInfo->MeleeBaseAttackTime);
-    SetAttackTime(RANGED_ATTACK, cInfo->RangedBaseAttackTime);
-
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0);
 
     int32 createResistance[MAX_SPELL_SCHOOL] = {0, 0, 0, 0, 0, 0, 0};
+
+    SetAttackTime(BASE_ATTACK, cInfo->MeleeBaseAttackTime);
+    SetAttackTime(OFF_ATTACK, cInfo->MeleeBaseAttackTime);
+    SetAttackTime(RANGED_ATTACK, cInfo->RangedBaseAttackTime);
 
     if (getPetType() == HUNTER_PET)
         SetMeleeDamageSchool(SpellSchools(SPELL_SCHOOL_NORMAL));
@@ -1056,6 +1061,8 @@ void Pet::InitStatsForLevel(uint32 petlevel)
 
     for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
         SetModifierValue(UnitMods(UNIT_MOD_RESISTANCE_START + i), BASE_VALUE, float(createResistance[i]));
+
+    float health, mana, armor, minDmg;
 
     switch (getPetType())
     {
@@ -1077,25 +1084,31 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 UpdateModelData();
             }
 
-            uint32 maxlevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
-
-            if (petlevel < maxlevel)
+            // Max level
+            if (petlevel < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
                 SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(petlevel));
-
             else
             {
                 SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
                 SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
             }
 
-            PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(1, petlevel);
-            if (pInfo)
+            // Info found in pet_levelstats
+            if (PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(1, petlevel))
             {
                 for (int i = STAT_STRENGTH; i < MAX_STATS;++i)
                     SetCreateStat(Stats(i), float(pInfo->stats[i]));
 
-                SetCreateHealth(pInfo->health);
-                SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, pInfo->armor);
+                health = pInfo->health;
+                mana = 0;
+                armor = pInfo->armor;
+
+                // First we divide attack time by standard attack time, and then multipy by level and damage mod.
+                uint32 mDmg = (GetAttackTime(BASE_ATTACK) * petlevel) / 2000;
+
+                // Set damage
+                SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(mDmg - mDmg / 4));
+                SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float((mDmg - mDmg / 4) * 1.5));
             }
             else
             {
@@ -1104,40 +1117,56 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 for (int i = STAT_STRENGTH; i < MAX_STATS;++i)
                     SetCreateStat(Stats(i), 1.0f);
 
-                SetCreateHealth(1);
-                SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, 1);
-            }
+                health = 1;
+                mana = 0;
+                armor = 0;
 
-            // First we divide attack time by standard attack time, and then multipy by level and damage mod.
-            float mDmg = (GetAttackTime(BASE_ATTACK) * petlevel) / 2000;
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, (mDmg - mDmg / 5));
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, (mDmg + mDmg / 5));
-            // damage is increased afterwards as strength and pet scaling modify attack power
+                // Set damage
+                SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, 1);
+                SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, 1);
+            }
 
             break;
         }
-
         case SUMMON_PET:
         {
             SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
             SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
 
-            float dMaxLevel = cInfo->MaxMeleeDmg / cInfo->MaxLevel;
-            float dMinLevel = cInfo->MinMeleeDmg / cInfo->MinLevel;
-            float mDmg = (dMaxLevel - ((dMaxLevel - dMinLevel) / 2)) * petlevel;
-
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, (mDmg - mDmg / 5));
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, (mDmg + mDmg / 5));
-
-            PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(cInfo->Entry, petlevel);
-            if (pInfo)
+            // Info found in pet_levelstats
+            if (PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(cInfo->Entry, petlevel))
             {
                 for (int i = STAT_STRENGTH; i < MAX_STATS;++i)
                     SetCreateStat(Stats(i), float(pInfo->stats[i]));
 
-                SetCreateHealth(pInfo->health);
-                SetCreateMana(pInfo->mana);
-                SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, pInfo->armor);
+                health = pInfo->health;
+                mana = pInfo->mana;
+                armor = pInfo->armor;
+
+                // TODO: Remove cinfo->ArmorMultiplier test workaround to disable classlevelstats when DB is ready
+				CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(petlevel, cInfo->UnitClass);
+                if (cInfo->ArmorMultiplier && cCLS) // Info found in ClassLevelStats
+                {
+                    minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseMeleeAttackPower / 14) * (cInfo->MeleeBaseAttackTime/1000)) * cInfo->DamageMultiplier;
+
+                    // Apply custom damage setting (from config)
+                    minDmg *= _GetDamageMod(cInfo->Rank);
+
+                    SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(minDmg));
+                    SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(minDmg * 1.5));
+                }
+                else
+                {
+                    sLog.outErrorDb("SUMMON_PET creature_template not finished on creature %s! (entry: %u)", GetGuidStr().c_str(), cInfo->Entry);
+
+                    float dMinLevel = cInfo->MinMeleeDmg / cInfo->MinLevel;
+                    float dMaxLevel = cInfo->MaxMeleeDmg / cInfo->MaxLevel;
+                    float mDmg = (dMaxLevel - ((dMaxLevel - dMinLevel) / 2)) * petlevel;
+                    
+                    // Set damage
+                    SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(mDmg - mDmg / 4));
+                    SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float((mDmg - mDmg / 4) * 1.5));
+                }
             }
             else
             {
@@ -1146,74 +1175,124 @@ void Pet::InitStatsForLevel(uint32 petlevel)
                 for (int i = STAT_STRENGTH; i < MAX_STATS;++i)
                     SetCreateStat(Stats(i), 1.0f);
 
-                SetCreateHealth(1);
-                SetCreateMana(1);
-                SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, 1);
+                health = 1;
+                mana = 1;
+                armor = 1;
+                
+                // Set damage
+                SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, 1);
+                SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, 1);
             }
 
             break;
         }
-
         case GUARDIAN_PET:
         {
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(cInfo->MinMeleeDmg));
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(cInfo->MaxMeleeDmg));
-
-            SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, float(cInfo->MinRangedDmg));
-            SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, float(cInfo->MaxRangedDmg));
-
-            SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(((cInfo->Armor * petlevel) / cInfo->MaxLevel) * cInfo->ArmorMultiplier));
-
-            if (petlevel == cInfo->MaxLevel)
+            // TODO: Remove cinfo->ArmorMultiplier test workaround to disable classlevelstats when DB is ready
+			CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(petlevel, cInfo->UnitClass);
+            if (cInfo->ArmorMultiplier && cCLS) // Info found in ClassLevelStats
             {
-                SetCreateHealth(cInfo->MaxLevelHealth);
-                SetCreateMana(cInfo->MaxLevelMana);
+                health = cCLS->BaseHealth;
+                mana = cCLS->BaseMana;
+                armor = cCLS->BaseArmor;
+
+                // Melee
+                minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseMeleeAttackPower / 14) * (cInfo->MeleeBaseAttackTime/1000)) * cInfo->DamageMultiplier;
+
+                // Get custom setting
+                minDmg *= _GetDamageMod(cInfo->Rank);
+
+                // If the damage value is not passed on as float it will result in damage = 1; but only for guardian type pets, though...
+                SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(minDmg));
+                SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(minDmg * 1.5));
+
+                // Ranged
+                minDmg = (cCLS->BaseDamage * cInfo->DamageVariance + (cCLS->BaseRangedAttackPower / 14) * (cInfo->RangedBaseAttackTime/1000)) * cInfo->DamageMultiplier;
+
+                // Get custom setting
+                minDmg *= _GetDamageMod(cInfo->Rank);
+
+                SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, float(minDmg));
+                SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, float(minDmg * 1.5));
             }
-
-            else if (petlevel == cInfo->MinLevel)
+            else // TODO: Remove fallback to creature_template data when DB is ready
             {
-                SetCreateHealth(cInfo->MinLevelHealth);
-                SetCreateMana(cInfo->MinLevelMana);
-            }
-
-            else
-            {
-                float hMaxLevel = cInfo->MaxLevelHealth / cInfo->MaxLevel;
-                float hMinLevel = cInfo->MinLevelHealth / cInfo->MinLevel;
-                float mMaxLevel = cInfo->MaxLevelMana / cInfo->MaxLevel;
-                float mMinLevel = cInfo->MinLevelMana / cInfo->MinLevel;
-
-                if (petlevel > cInfo->MaxLevel)
+                if (petlevel >= cInfo->MaxLevel)
                 {
-                    SetCreateHealth(hMaxLevel * petlevel);
-                    SetCreateMana(mMaxLevel * petlevel);
+                    health = cInfo->MaxLevelHealth;
+                    mana = cInfo->MaxLevelMana;
                 }
-                else if (petlevel < cInfo->MinLevel)
+                else if (petlevel <= cInfo->MinLevel)
                 {
-                    SetCreateHealth(hMinLevel * petlevel);
-                    SetCreateMana(mMinLevel * petlevel);
+                    health = cInfo->MinLevelHealth;
+                    mana = cInfo->MinLevelMana;
                 }
                 else
                 {
-                    SetCreateHealth(((hMaxLevel - ((hMaxLevel - hMinLevel) / 2))) * petlevel);
-                    SetCreateMana(((mMaxLevel - ((mMaxLevel - mMinLevel) / 2))) * petlevel);
+                    float hMinLevel = cInfo->MinLevelHealth / cInfo->MinLevel;
+                    float hMaxLevel = cInfo->MaxLevelHealth / cInfo->MaxLevel;
+                    float mMinLevel = cInfo->MinLevelMana / cInfo->MinLevel;
+                    float mMaxLevel = cInfo->MaxLevelMana / cInfo->MaxLevel;
+
+                    health = (hMaxLevel - ((hMaxLevel - hMinLevel) / 2)) * petlevel;
+                    mana = (mMaxLevel - ((mMaxLevel - mMinLevel) / 2)) * petlevel;
                 }
+
+                sLog.outErrorDb("Pet::InitStatsForLevel> Error trying to set stats for creature %s (entry: %u) using ClassLevelStats; not enough data to do it!", GetGuidStr().c_str(), cInfo->Entry);
+
+                SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(cInfo->MinMeleeDmg));
+                SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(cInfo->MaxMeleeDmg));
+
+                SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, float(cInfo->MinRangedDmg));
+                SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, float(cInfo->MaxRangedDmg));
             }
 
             break;
         }
-
         default:
             sLog.outError("Pet have incorrect type (%u) for level handling.", getPetType());
     }
 
+    // Hunter's pets' should NOT use creature's original modifiers/multipliers
+    if (getPetType() != HUNTER_PET)
+    {
+        health *= cInfo->HealthMultiplier;
+
+        if (mana > 0)
+            mana *= cInfo->PowerMultiplier;
+
+        armor *= cInfo->ArmorMultiplier;
+    }
+
+    // Apply custom health setting (from config)
+    health *= _GetHealthMod(cInfo->Rank);
+
+    // Need to update stats before setting health and power or it will bug out in-game displaying it as the mob missing about 2/3
     UpdateAllStats();
 
-    SetHealth(GetMaxHealth());
-    SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
+    // A pet cannot not have health
+    if (health < 1)
+        health = 1;
 
-    // Remove rage bar from pets
+    // Set health
+    SetCreateHealth(health);
+    SetMaxHealth(health);
+    SetHealth(health);
+    SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, health);
+
+    // Set mana
+    SetCreateMana(mana);
+    SetMaxPower(POWER_MANA, mana);
+    SetPower(POWER_MANA, mana);
+    SetModifierValue(UNIT_MOD_MANA, BASE_VALUE, mana);
+
+    // Remove rage bar from pets (By setting rage = 0, and ensuring it stays that way by setting max rage = 0 as well)
     SetMaxPower(POWER_RAGE, 0);
+    SetPower(POWER_RAGE, 0);
+    SetModifierValue(UNIT_MOD_RAGE, BASE_VALUE, 0);
+
+    // Set armor
+    SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, armor);
 
     return;
 }
@@ -1514,7 +1593,7 @@ void Pet::_SaveAuras()
 
         // skip all holders from spells that are passive or channeled
         // do not save single target holders (unless they were cast by the player)
-        if (save && !holder->IsPassive() && !IsChanneledSpell(holder->GetSpellProto()) && (holder->GetCasterGuid() == GetObjectGuid() || holder->GetTrackedAuraType() != TRACK_AURA_TYPE_NOT_TRACKED))
+        if (save && !holder->IsPassive() && !IsChanneledSpell(holder->GetSpellProto()) && (holder->GetCasterGuid() == GetObjectGuid() || holder->GetTrackedAuraType() == TRACK_AURA_TYPE_NOT_TRACKED))
         {
             int32  damage[MAX_EFFECT_INDEX];
             uint32 periodicTime[MAX_EFFECT_INDEX];
@@ -1888,7 +1967,6 @@ bool Pet::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* ci
         return false;
 
     SetSheath(SHEATH_STATE_MELEE);
-    SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_UNK3 | UNIT_BYTE2_FLAG_AURAS | UNIT_BYTE2_FLAG_UNK5);
 
     if (getPetType() == MINI_PET)                           // always non-attackable
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -1993,4 +2071,24 @@ void Pet::SetModeFlags(PetModeFlags mode)
     data << GetObjectGuid();
     data << uint32(m_petModeFlags);
     ((Player*)owner)->GetSession()->SendPacket(&data);
+}
+
+void Pet::SetStayPosition(bool stay)
+{
+    if (stay)
+    {
+        m_stayPosX = GetPositionX();
+        m_stayPosY = GetPositionY();
+        m_stayPosZ = GetPositionZ();
+        m_stayPosO = GetOrientation();
+    }
+    else
+    {
+        m_stayPosX = 0;
+        m_stayPosY = 0;
+        m_stayPosZ = 0;
+        m_stayPosO = 0;
+    }
+
+    m_stayPosSet = stay;
 }

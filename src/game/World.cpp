@@ -33,7 +33,7 @@
 #include "AccountMgr.h"
 #include "AuctionHouseMgr.h"
 #include "ObjectMgr.h"
-#include "CreatureEventAIMgr.h"
+#include "AI/CreatureEventAIMgr.h"
 #include "GuildMgr.h"
 #include "SpellMgr.h"
 #include "Chat.h"
@@ -43,7 +43,7 @@
 #include "ItemEnchantmentMgr.h"
 #include "MapManager.h"
 #include "ScriptMgr.h"
-#include "CreatureAIRegistry.h"
+#include "AI/CreatureAIRegistry.h"
 #include "Policies/Singleton.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "OutdoorPvP/OutdoorPvP.h"
@@ -204,8 +204,6 @@ World::AddSession_(WorldSession* s)
             // prevent decrease sessions count if session queued
             if (RemoveQueuedSession(old->second))
                 decrease_session = false;
-            // not remove replaced session form queue if listed
-            delete old->second;
         }
     }
 

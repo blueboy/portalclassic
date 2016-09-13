@@ -110,6 +110,8 @@ bool Group::Create(ObjectGuid guid, const char* name)
     if (!isBGGroup())
         CharacterDatabase.CommitTransaction();
 
+    _updateLeaderFlag();
+
     return true;
 }
 
@@ -201,8 +203,10 @@ bool Group::AddLeaderInvite(Player* player)
     if (!AddInvite(player))
         return false;
 
+    _updateLeaderFlag(true);
     m_leaderGuid = player->GetObjectGuid();
     m_leaderName = player->GetName();
+    _updateLeaderFlag();
     return true;
 }
 
@@ -405,6 +409,7 @@ void Group::Disband(bool hideDestroy)
         ResetInstances(INSTANCE_RESET_GROUP_DISBAND, nullptr);
     }
 
+    _updateLeaderFlag(true);
     m_leaderGuid.Clear();
     m_leaderName.clear();
 }
@@ -699,6 +704,7 @@ bool Group::_removeMember(ObjectGuid guid)
 
     if (m_leaderGuid == guid)                               // leader was removed
     {
+        _updateLeaderFlag(true);
         if (GetMembersCount() > 0)
             _setLeader(m_memberSlots.front().guid);
         return true;
@@ -762,8 +768,16 @@ void Group::_setLeader(ObjectGuid guid)
         CharacterDatabase.CommitTransaction();
     }
 
+    _updateLeaderFlag(true);
     m_leaderGuid = slot->guid;
     m_leaderName = slot->name;
+    _updateLeaderFlag();
+}
+
+void Group::_updateLeaderFlag(const bool remove /*= false*/)
+{
+    if (Player* player = sObjectMgr.GetPlayer(m_leaderGuid))
+        player->UpdateGroupLeaderFlag(remove);
 }
 
 bool Group::_setMembersGroup(ObjectGuid guid, uint8 group)

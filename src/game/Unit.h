@@ -77,7 +77,7 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_NOT_SHEATHED                = 0x00000200,   // 9    removed by unsheathing
     AURA_INTERRUPT_FLAG_TALK                        = 0x00000400,   // 10   talk to npc / loot? action on creature
     AURA_INTERRUPT_FLAG_USE                         = 0x00000800,   // 11   mine/use/open action on gameobject
-    AURA_INTERRUPT_FLAG_UNK12                       = 0x00001000,   // 12   removed by attack?
+    AURA_INTERRUPT_FLAG_MELEE_ATTACK                = 0x00001000,   // 12   removed by attack
     AURA_INTERRUPT_FLAG_UNK13                       = 0x00002000,   // 13
     AURA_INTERRUPT_FLAG_UNK14                       = 0x00004000,   // 14
     AURA_INTERRUPT_FLAG_UNK15                       = 0x00008000,   // 15   removed by casting a spell?
@@ -182,9 +182,9 @@ enum UnitBytes2_Flags
     UNIT_BYTE2_FLAG_UNK0        = 0x01,
     UNIT_BYTE2_FLAG_UNK1        = 0x02,
     UNIT_BYTE2_FLAG_UNK2        = 0x04,
-    UNIT_BYTE2_FLAG_UNK3        = 0x08,
+    UNIT_BYTE2_FLAG_SUPPORTABLE = 0x08,                     // allows for being targeted for healing/bandaging by friendlies
     UNIT_BYTE2_FLAG_AURAS       = 0x10,                     // show possitive auras as positive, and allow its dispel
-    UNIT_BYTE2_FLAG_UNK5        = 0x20,
+    UNIT_BYTE2_FLAG_UNK5        = 0x20,                     // show negative auras as positive, *not* allowing dispel (at least for pets)
     UNIT_BYTE2_FLAG_UNK6        = 0x40,
     UNIT_BYTE2_FLAG_UNK7        = 0x80
 };
@@ -257,10 +257,11 @@ typedef std::list<SpellImmune> SpellImmuneList;
 enum UnitModifierType
 {
     BASE_VALUE = 0,
-    BASE_PCT = 1,
-    TOTAL_VALUE = 2,
-    TOTAL_PCT = 3,
-    MODIFIER_TYPE_END = 4
+    BASE_EXCLUSIVE = 1,
+    BASE_PCT = 2,    
+    TOTAL_VALUE = 3,
+    TOTAL_PCT = 4,
+    MODIFIER_TYPE_END = 5
 };
 
 enum WeaponDamageRange
@@ -998,6 +999,18 @@ enum PowerDefaults
 
 struct SpellProcEventEntry;                                 // used only privately
 
+
+struct CombatData
+{
+public:
+    CombatData(Unit* owner) : threatManager(ThreatManager(owner)), hostileRefManager(HostileRefManager(owner)) {};
+
+    // Manage all Units threatening us
+    ThreatManager threatManager;
+    // Manage all Units that are threatened by us
+    HostileRefManager hostileRefManager;
+};
+
 class MANGOS_DLL_SPEC Unit : public WorldObject
 {
     public:
@@ -1193,7 +1206,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
          * @return false if we weren't attacking already, true otherwise
          * \see Unit::m_attacking
          */
-        bool AttackStop(bool targetSwitch = false);
+        bool AttackStop(bool targetSwitch = false, bool includingCast = false);
         /**
          * Removes all attackers from the Unit::m_attackers set and logs it if someone that
          * wasn't attacking it was in the list. Does this check by checking if Unit::AttackStop()
@@ -1684,11 +1697,11 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void TauntFadeOut(Unit* taunter);
         void FixateTarget(Unit* pVictim);
         ObjectGuid GetFixateTargetGuid() const { return m_fixateTargetGuid; }
-        ThreatManager& getThreatManager() { return m_ThreatManager; }
-        ThreatManager const& getThreatManager() const { return m_ThreatManager; }
-        void addHatedBy(HostileReference* pHostileReference) { m_HostileRefManager.insertFirst(pHostileReference); };
+        ThreatManager& getThreatManager() { return m_combatData->threatManager; }
+        ThreatManager const& getThreatManager() const { return m_combatData->threatManager; }
+        void addHatedBy(HostileReference* pHostileReference) { m_combatData->hostileRefManager.insertFirst(pHostileReference); };
         void removeHatedBy(HostileReference* /*pHostileReference*/) { /* nothing to do yet */ }
-        HostileRefManager& getHostileRefManager() { return m_HostileRefManager; }
+        HostileRefManager& getHostileRefManager() { return m_combatData->hostileRefManager; }
 
         Aura* GetAura(uint32 spellId, SpellEffectIndex effindex);
         Aura* GetAura(AuraType type, SpellFamily family, uint64 familyFlag, ObjectGuid casterGuid = ObjectGuid());
@@ -1881,6 +1894,17 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         void ForceHealthAndPowerUpdate();   // force server to send new value for hp and power (including max)
 
+        // Take possession of an unit (pet, creature, ...)
+        bool TakePossessOf(Unit* possessed);
+
+        // Take possession of a new spawned unit
+        Unit* TakePossessOf(SpellEntry const* spellEntry, uint32 effIdx, float x, float y, float z, float ang);
+
+        // Reset control to player
+        void ResetControlState(bool attackCharmer = true);
+
+        CombatData* m_combatData;
+
     protected:
         explicit Unit();
 
@@ -1892,7 +1916,6 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         float m_createStats[MAX_STATS];
 
-        AttackerSet m_attackers;
         Unit* m_attacking;
 
         DeathState m_deathState;
@@ -1951,6 +1974,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 m_CombatTimer;
         bool   m_dummyCombatState;                          // Used to keep combat state during some aura
 
+        AttackerSet m_attackers;                            // Used to help know who is currently attacking this unit
         Spell* m_currentSpells[CURRENT_MAX_SPELL];
         uint32 m_castCounter;                               // count casts chain of triggered spells for prevent infinity cast crashes
 
@@ -1960,10 +1984,6 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         ShortTimeTracker m_movesplineTimer;
 
         Diminishing m_Diminishing;
-        // Manage all Units threatening us
-        ThreatManager m_ThreatManager;
-        // Manage all Units that are threatened by us
-        HostileRefManager m_HostileRefManager;
 
         FollowerRefManager m_FollowingRefManager;
 
