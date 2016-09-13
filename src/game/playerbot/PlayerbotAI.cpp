@@ -1793,46 +1793,6 @@ Item* PlayerbotAI::FindBandage() const
     }
     return nullptr;
 }
-//Find Poison ...Natsukawa
-Item* PlayerbotAI::FindPoison() const
-{
-    // list out items in main backpack
-    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; slot++)
-    {
-        Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
-        if (pItem)
-        {
-            const ItemPrototype* const pItemProto = pItem->GetProto();
-
-            if (!pItemProto || m_bot->CanUseItem(pItemProto) != EQUIP_ERR_OK)
-                continue;
-
-            if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == 6)
-                return pItem;
-        }
-    }
-    // list out items in other removable backpacks
-    for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
-    {
-        const Bag* const pBag = (Bag *) m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, bag);
-        if (pBag)
-            for (uint8 slot = 0; slot < pBag->GetBagSize(); ++slot)
-            {
-                Item* const pItem = m_bot->GetItemByPos(bag, slot);
-                if (pItem)
-                {
-                    const ItemPrototype* const pItemProto = pItem->GetProto();
-
-                    if (!pItemProto || m_bot->CanUseItem(pItemProto) != EQUIP_ERR_OK)
-                        continue;
-
-                    if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == 6)
-                        return pItem;
-                }
-            }
-    }
-    return nullptr;
-}
 
 Item* PlayerbotAI::FindConsumable(uint32 displayId) const
 {
@@ -1847,7 +1807,7 @@ Item* PlayerbotAI::FindConsumable(uint32 displayId) const
             if (!pItemProto || m_bot->CanUseItem(pItemProto) != EQUIP_ERR_OK)
                 continue;
 
-            if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->DisplayInfoID == displayId)
+            if ((pItemProto->Class == ITEM_CLASS_CONSUMABLE || pItemProto->Class == ITEM_SUBCLASS_BANDAGE) && pItemProto->DisplayInfoID == displayId)
                 return pItem;
         }
     }
@@ -1866,11 +1826,60 @@ Item* PlayerbotAI::FindConsumable(uint32 displayId) const
                     if (!pItemProto || m_bot->CanUseItem(pItemProto) != EQUIP_ERR_OK)
                         continue;
 
-                    if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->DisplayInfoID == displayId)
+                    if ((pItemProto->Class == ITEM_CLASS_CONSUMABLE || pItemProto->Class == ITEM_SUBCLASS_BANDAGE) && pItemProto->DisplayInfoID == displayId)
                         return pItem;
                 }
             }
     }
+    return nullptr;
+}
+
+static const uint32 uPriorizedSharpStoneIds[6] =
+{
+    ELEMENTAL_SHARPENING_DISPLAYID, DENSE_SHARPENING_DISPLAYID, SOLID_SHARPENING_DISPLAYID,
+    HEAVY_SHARPENING_DISPLAYID, COARSE_SHARPENING_DISPLAYID, ROUGH_SHARPENING_DISPLAYID
+};
+
+static const uint32 uPriorizedWeightStoneIds[5] =
+{
+    DENSE_WEIGHTSTONE_DISPLAYID, SOLID_WEIGHTSTONE_DISPLAYID, HEAVY_WEIGHTSTONE_DISPLAYID,
+    COARSE_WEIGHTSTONE_DISPLAYID, ROUGH_WEIGHTSTONE_DISPLAYID
+};
+
+/**
+ * FindStoneFor()
+ * return Item* Returns sharpening/weight stone item eligible to enchant a bot weapon
+ *
+ * params:weapon Item* the weapôn the function should search and return a enchanting item for
+ * return nullptr if no relevant item is found in bot inventory, else return a sharpening or weight
+ * stone based on the weapon subclass
+ *
+ */
+Item* PlayerbotAI::FindStoneFor(Item* weapon) const
+{
+    Item* stone;
+    ItemPrototype const* pProto = weapon->GetProto();
+    if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD || pProto->SubClass == ITEM_SUBCLASS_WEAPON_SWORD2
+        || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_AXE2
+        || pProto->SubClass == ITEM_SUBCLASS_WEAPON_DAGGER))
+    {
+        for (uint8 i = 0; i < countof(uPriorizedSharpStoneIds); ++i)
+        {
+            stone = FindConsumable(uPriorizedSharpStoneIds[i]);
+            if (stone)
+                return stone;
+        }
+    }
+    else if (pProto && (pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE || pProto->SubClass == ITEM_SUBCLASS_WEAPON_MACE2))
+    {
+        for (uint8 i = 0; i < countof(uPriorizedWeightStoneIds); ++i)
+        {
+            stone = FindConsumable(uPriorizedWeightStoneIds[i]);
+            if (stone)
+                return stone;
+        }
+    }
+
     return nullptr;
 }
 
@@ -3827,7 +3836,7 @@ bool PlayerbotAI::In_Range(Unit* Target, uint32 spellId)
     if (!TempRange)
         return false;
 
-    if (TempRange->minRange == (TempRange->maxRange == 0.0f))
+    if (TempRange->minRange == 0.0f && TempRange->maxRange == 0.0f)
         return true;
 
     //Unit is out of range of this spell
@@ -3906,6 +3915,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
         TellMaster("missing spell entry in CastSpell for spellid %u.", spellId);
         return false;
     }
+
+    // for AI debug purpose: uncomment the following line and bot will tell Master of every spell they attempt to cast
+    // TellMaster("I'm trying to cast %s (spellID %u)", pSpellInfo->SpellName[0], spellId);
 
     // Power check (stolen from: CreatureAI.cpp - CreatureAI::CanCastSpell)
     if (m_bot->GetPower((Powers)pSpellInfo->powerType) < Spell::CalculatePowerCost(pSpellInfo, m_bot))

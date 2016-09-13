@@ -1,5 +1,6 @@
 
 #include "PlayerbotMageAI.h"
+#include "../SpellAuras.h"
 
 class PlayerbotAI;
 
@@ -17,11 +18,13 @@ PlayerbotMageAI::PlayerbotMageAI(Player* const master, Player* const bot, Player
     MANA_SHIELD             = m_ai->initSpell(MANA_SHIELD_1);
     CONJURE_WATER           = m_ai->initSpell(CONJURE_WATER_1);
     CONJURE_FOOD            = m_ai->initSpell(CONJURE_FOOD_1);
+    EVOCATION               = m_ai->initSpell(EVOCATION_1);
     FIREBALL                = m_ai->initSpell(FIREBALL_1);
     FIRE_BLAST              = m_ai->initSpell(FIRE_BLAST_1);
     FLAMESTRIKE             = m_ai->initSpell(FLAMESTRIKE_1);
     SCORCH                  = m_ai->initSpell(SCORCH_1);
     POLYMORPH               = m_ai->initSpell(POLYMORPH_1);
+    PRESENCE_OF_MIND        = m_ai->initSpell(PRESENCE_OF_MIND_1);
     PYROBLAST               = m_ai->initSpell(PYROBLAST_1);
     BLAST_WAVE              = m_ai->initSpell(BLAST_WAVE_1);
     COMBUSTION              = m_ai->initSpell(COMBUSTION_1);
@@ -36,6 +39,15 @@ PlayerbotMageAI::PlayerbotMageAI(Player* const master, Player* const bot, Player
     ICE_ARMOR               = m_ai->initSpell(ICE_ARMOR_1);
     ICE_BLOCK               = m_ai->initSpell(ICE_BLOCK_1);
     COLD_SNAP               = m_ai->initSpell(COLD_SNAP_1);
+
+    // TALENTS
+    IMPROVED_SCORCH         = 0;
+    for (uint8 i = 0; i < 3; i++)
+    {
+        if (m_ai->initSpell(uiImprovedScorch[i]))
+            IMPROVED_SCORCH = m_ai->initSpell(uiImprovedScorch[i]);
+    }
+    FIRE_VULNERABILITY      = 22959;
 
     // RANGED COMBAT
     SHOOT                   = m_ai->initSpell(SHOOT_2);
@@ -146,106 +158,171 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     //Used to determine if this bot is highest on threat
     Unit *newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    if (newTarget) // TODO: && party has a tank
-    {
-        // Insert instant threat reducing spell (if a mage has one)
 
-        // Have threat, can't quickly lower it. 3 options remain: Stop attacking, lowlevel damage (wand), keep on keeping on.
+    if (newTarget && !m_ai->IsNeutralized(newTarget)) // Bot has aggro and the mob is not already crowd controled
+    {
         if (newTarget->GetHealthPercent() > 25)
         {
-            // If elite, do nothing and pray tank gets aggro off you
-            // TODO: Is there an IsElite function? If so, find it and insert.
-            //if (newTarget->IsElite())
-            //    return;
+            // If elite
+            if (m_ai->IsElite(newTarget))
+            {
+                // If the attacker is a beast or humanoid, let's the bot give it a form more suited to the low intellect of something fool enough to attack a mage
+                Creature * pCreature = (Creature*) newTarget;
+                if (pCreature && (pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_HUMANOID || pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_BEAST))
+                {
+                    if (POLYMORPH > 0 && CastSpell(POLYMORPH, newTarget))
+                        return RETURN_CONTINUE;
+                }
 
-            // Not an elite. You could insert FEAR here but in any PvE situation that's 90-95% likely
-            // to worsen the situation for the group. ... So please don't.
-            CastSpell(SHOOT, pTarget);
-            return RETURN_CONTINUE;
+                // Things are getting dire: cast Ice block
+                if (ICE_BLOCK > 0 && !m_bot->HasSpellCooldown(ICE_BLOCK) && m_ai->GetHealthPercent() < 30 && !m_bot->HasAura(ICE_BLOCK, EFFECT_INDEX_0) && m_ai->CastSpell(ICE_BLOCK))
+                    return RETURN_CONTINUE;
+
+                // Cast Ice Barrier if health starts to goes low
+                if (ICE_BARRIER > 0 && !m_bot->HasSpellCooldown(ICE_BARRIER) && m_ai->GetHealthPercent() < 50 && !m_bot->HasAura(ICE_BARRIER) && m_ai->SelfBuff(ICE_BARRIER))
+                    return RETURN_CONTINUE;
+
+                // Have threat, can't quickly lower it. 3 options remain: Stop attacking, lowlevel damage (wand), keep on keeping on.
+                return CastSpell(SHOOT, pTarget);
+            }
+            else // not elite
+            {
+                // Cast mana shield if no shield is already up
+                if (MANA_SHIELD > 0 && m_ai->GetHealthPercent() < 70 && !m_bot->HasAura(MANA_SHIELD) && !m_bot->HasAura(ICE_BARRIER) && m_ai->SelfBuff(MANA_SHIELD))
+                    return RETURN_CONTINUE;
+            }
         }
+    }
+
+    // Mana check and replenishment
+    if (EVOCATION && m_ai->GetManaPercent() <= 10 && !m_bot->HasSpellCooldown(EVOCATION) && !newTarget && m_ai->SelfBuff(EVOCATION))
+        return RETURN_CONTINUE;
+
+    // If bot has frost/fire resist order use Frost/Fire Ward when available
+    if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_RESIST_FROST && FROST_WARD && !m_bot->HasSpellCooldown(FROST_WARD) && m_ai->SelfBuff(FROST_WARD))
+        return RETURN_CONTINUE;
+    if (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_RESIST_FIRE && FIRE_WARD && !m_bot->HasSpellCooldown(FIRE_WARD) && m_ai->SelfBuff(FIRE_WARD))
+        return RETURN_CONTINUE;
+
+    if (COUNTERSPELL > 0 && !m_bot->HasSpellCooldown(COUNTERSPELL) && pTarget->IsNonMeleeSpellCasted(true) && CastSpell(COUNTERSPELL, pTarget))
+        return RETURN_CONTINUE;
+
+    // If Clearcasting is active, cast arcane missiles
+    // Bot could also cast flamestrike or blizzard for free, but the AoE could break some crowd control
+    // or add threat on mobs ignoring the bot currently, so only focus on the bot's current target
+    if (m_bot->HasAura(CLEARCASTING_1) && ARCANE_MISSILES > 0 && CastSpell(ARCANE_MISSILES, pTarget))
+    {
+        m_ai->SetIgnoreUpdateTime(3);
+        return RETURN_CONTINUE;
     }
 
     switch (spec)
     {
         case MAGE_SPEC_FROST:
-            if (ICE_BLOCK > 0 && m_ai->In_Reach(m_bot,ICE_BLOCK) && pVictim == m_bot && !m_bot->HasAura(ICE_BLOCK, EFFECT_INDEX_0) && CastSpell(ICE_BLOCK, m_bot))
+            if (COLD_SNAP && !m_bot->HasSpellCooldown(COLD_SNAP) && CheckFrostCooldowns() > 2 && m_ai->SelfBuff(COLD_SNAP))  // Clear frost spell cooldowns if bot has more than 2 active
                 return RETURN_CONTINUE;
-            if (ICE_BARRIER > 0 && m_ai->In_Reach(m_bot,ICE_BARRIER) && pVictim == m_bot && !m_bot->HasAura(ICE_BARRIER, EFFECT_INDEX_0) && m_ai->GetHealthPercent() < 50 && CastSpell(ICE_BARRIER, m_bot))
+            if (CONE_OF_COLD > 0 && !m_bot->HasSpellCooldown(CONE_OF_COLD) && meleeReach)
+            {
+                // Cone of Cold does not require a target, so ensure that the bot faces the current one before casting
+                m_ai->FaceTarget(pTarget);
+                if (m_ai->CastSpell(CONE_OF_COLD))
+                    return RETURN_CONTINUE;
+            }
+            if (FROSTBOLT > 0 && m_ai->In_Reach(pTarget,FROSTBOLT) && !pTarget->HasAura(FROSTBOLT, EFFECT_INDEX_0) && CastSpell(FROSTBOLT, pTarget))
                 return RETURN_CONTINUE;
+            if (FROST_NOVA > 0 && !m_bot->HasSpellCooldown(FROST_NOVA) && meleeReach && !pTarget->HasAura(FROST_NOVA, EFFECT_INDEX_0) && CastSpell(FROST_NOVA, pTarget))
+                return RETURN_CONTINUE;
+            // Default frost spec action
+            if (FROSTBOLT > 0 && m_ai->In_Reach(pTarget,FROSTBOLT))
+                return CastSpell(FROSTBOLT, pTarget);
+            /*
             if (BLIZZARD > 0 && m_ai->In_Reach(pTarget,BLIZZARD) && m_ai->GetAttackerCount() >= 5 && CastSpell(BLIZZARD, pTarget))
             {
                 m_ai->SetIgnoreUpdateTime(8);
                 return RETURN_CONTINUE;
             }
-            if (CONE_OF_COLD > 0 && meleeReach && !pTarget->HasAura(CONE_OF_COLD, EFFECT_INDEX_0) && CastSpell(CONE_OF_COLD, pTarget))
-                return RETURN_CONTINUE;
-            if (FROSTBOLT > 0 && m_ai->In_Reach(pTarget,FROSTBOLT) && !pTarget->HasAura(FROSTBOLT, EFFECT_INDEX_0) && CastSpell(FROSTBOLT, pTarget))
-                return RETURN_CONTINUE;
-            if (FROST_WARD > 0 && m_ai->In_Reach(m_bot,FROST_WARD) && !m_bot->HasAura(FROST_WARD, EFFECT_INDEX_0) && CastSpell(FROST_WARD, m_bot))
-                return RETURN_CONTINUE;
-            if (FROST_NOVA > 0 && meleeReach && !pTarget->HasAura(FROST_NOVA, EFFECT_INDEX_0) && CastSpell(FROST_NOVA, pTarget))
-                return RETURN_CONTINUE;
-            if (COLD_SNAP > 0 && m_ai->In_Reach(m_bot,COLD_SNAP) && CastSpell(COLD_SNAP, m_bot))
-                return RETURN_CONTINUE;
-
-            if (FROSTBOLT > 0 && m_ai->In_Reach(pTarget,FROSTBOLT))
-                return CastSpell(FROSTBOLT, pTarget);
+            */
             break;
 
         case MAGE_SPEC_FIRE:
-            if (FIRE_WARD > 0 && m_ai->In_Reach(m_bot,FIRE_WARD) && !m_bot->HasAura(FIRE_WARD, EFFECT_INDEX_0) && CastSpell(FIRE_WARD, m_bot))
-                return RETURN_CONTINUE;
-            if (COMBUSTION > 0 && m_ai->In_Reach(m_bot,COMBUSTION) && !m_bot->HasAura(COMBUSTION, EFFECT_INDEX_0) && CastSpell(COMBUSTION, m_bot))
-                return RETURN_CONTINUE;
-            if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL) && CastSpell(FIREBALL, pTarget))
-                return RETURN_CONTINUE;
-            if (FIRE_BLAST > 0 && m_ai->In_Reach(pTarget,FIRE_BLAST) && CastSpell(FIRE_BLAST, pTarget))
-                return RETURN_CONTINUE;
-            if (FLAMESTRIKE > 0 && m_ai->In_Reach(pTarget,FLAMESTRIKE) && CastSpell(FLAMESTRIKE, pTarget))
-                return RETURN_CONTINUE;
-            if (SCORCH > 0 && m_ai->In_Reach(pTarget,SCORCH) && CastSpell(SCORCH, pTarget))
-                return RETURN_CONTINUE;
-            if (PYROBLAST > 0 && m_ai->In_Reach(pTarget,PYROBLAST) && !pTarget->HasAura(PYROBLAST, EFFECT_INDEX_0) && CastSpell(PYROBLAST, pTarget))
+            if (COMBUSTION > 0 && m_ai->SelfBuff(COMBUSTION))
                 return RETURN_CONTINUE;
             if (BLAST_WAVE > 0 && m_ai->GetAttackerCount() >= 3 && meleeReach && CastSpell(BLAST_WAVE, pTarget))
                 return RETURN_CONTINUE;
-
+            // Try to have 3 scorch stacks to let tank build aggro while getting a nice crit% bonus
+            if (IMPROVED_SCORCH > 0 && SCORCH > 0)
+            {
+                if (!pTarget->HasAura(FIRE_VULNERABILITY, EFFECT_INDEX_0) && CastSpell(SCORCH, pTarget))   // no stacks: cast it
+                    return RETURN_CONTINUE;
+                else
+                {
+                    SpellAuraHolder* holder = pTarget->GetSpellAuraHolder(FIRE_VULNERABILITY);
+                    if (holder && (holder->GetStackAmount() < 3) && CastSpell(SCORCH, pTarget))
+                        return RETURN_CONTINUE;
+                }
+            }
+            // At least 3 stacks of Scorch: cast an opening fireball
+            if (FIREBALL > 0 && !pTarget->HasAura(FIREBALL, EFFECT_INDEX_1) && CastSpell(FIREBALL, pTarget))
+                return RETURN_CONTINUE;
+            // 3 stacks of Scorch and fireball DoT: use fire blast if available
+            if (FIRE_BLAST > 0 && !m_bot->HasSpellCooldown(FIRE_BLAST) && CastSpell(FIRE_BLAST, pTarget))
+                return RETURN_CONTINUE;
+            // All DoTs, cooldowns used, try to maximise scorch stacks (5) to get a even nicer crit% bonus
+            if (IMPROVED_SCORCH > 0 && SCORCH > 0)
+            {
+                SpellAuraHolder* holder = pTarget->GetSpellAuraHolder(FIRE_VULNERABILITY);
+                if (holder && (holder->GetStackAmount() < 5) && CastSpell(SCORCH, pTarget))
+                    return RETURN_CONTINUE;
+            }
+            // Default fire spec action
             if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL))
                 return CastSpell(FIREBALL, pTarget);
+            /*
+            if (FLAMESTRIKE > 0 && m_ai->In_Reach(pTarget,FLAMESTRIKE) && CastSpell(FLAMESTRIKE, pTarget))
+                return RETURN_CONTINUE;
+            */
             break;
 
         case MAGE_SPEC_ARCANE:
-            if (ARCANE_POWER > 0 && m_ai->In_Reach(pTarget,ARCANE_POWER) && CastSpell(ARCANE_POWER, pTarget))
+            if (ARCANE_POWER > 0 && !m_bot->HasSpellCooldown(ARCANE_POWER) && m_ai->IsElite(pTarget) && m_ai->CastSpell(ARCANE_POWER))    // Do not waste Arcane Power on normal NPCs as the bot is likely in a group
                 return RETURN_CONTINUE;
-            if (ARCANE_MISSILES > 0 && m_ai->In_Reach(pTarget,ARCANE_MISSILES) && CastSpell(ARCANE_MISSILES, pTarget))
+            if (PRESENCE_OF_MIND > 0 && !m_bot->HasAura(PRESENCE_OF_MIND) && !m_bot->HasSpellCooldown(PRESENCE_OF_MIND) && m_ai->IsElite(pTarget) && m_ai->SelfBuff(PRESENCE_OF_MIND))
+                return RETURN_CONTINUE;
+            // If bot has presence of mind active, cast long casting time spells
+            if (PRESENCE_OF_MIND && m_bot->HasAura(PRESENCE_OF_MIND))
+            {
+                // Instant Pyroblast, yeah! Tanks will probably hate this, but what do they know about power? Nothing...
+                if (PYROBLAST > 0 && CastSpell(PYROBLAST, pTarget))
+                    return RETURN_CONTINUE;
+                if (FIREBALL > 0 && CastSpell(FIREBALL, pTarget))
+                    return RETURN_CONTINUE;
+            }
+            if (ARCANE_EXPLOSION > 0 && m_ai->GetAttackerCount() >= 3 && meleeReach && CastSpell(ARCANE_EXPLOSION, pTarget))
+                return RETURN_CONTINUE;
+            // Default arcane spec actions (yes, two fire spells)
+            if (FIRE_BLAST > 0 && !m_bot->HasSpellCooldown(FIRE_BLAST) && CastSpell(FIRE_BLAST, pTarget))
+                return RETURN_CONTINUE;
+            if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL))
+                return CastSpell(FIREBALL, pTarget);
+            // If no fireball, arcane missiles
+            if (ARCANE_MISSILES > 0 && CastSpell(ARCANE_MISSILES, pTarget))
             {
                 m_ai->SetIgnoreUpdateTime(3);
                 return RETURN_CONTINUE;
             }
-            if (ARCANE_EXPLOSION > 0 && m_ai->GetAttackerCount() >= 3 && meleeReach && CastSpell(ARCANE_EXPLOSION, pTarget))
-                return RETURN_CONTINUE;
-            if (COUNTERSPELL > 0 && pTarget->IsNonMeleeSpellCasted(true) && CastSpell(COUNTERSPELL, pTarget))
-                return RETURN_CONTINUE;
-            if (SLOW > 0 && m_ai->In_Reach(pTarget,SLOW) && !pTarget->HasAura(SLOW, EFFECT_INDEX_0) && CastSpell(SLOW, pTarget))
-                return RETURN_CONTINUE;
-            if (MANA_SHIELD > 0 && m_ai->GetHealthPercent() < 70 && pVictim == m_bot && !m_bot->HasAura(MANA_SHIELD, EFFECT_INDEX_0) && CastSpell(MANA_SHIELD, m_bot))
-                return RETURN_CONTINUE;
-
-            if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL))
-                return CastSpell(FIREBALL, pTarget);
             break;
     }
 
     // No spec due to low level OR no spell found yet
-    if (FROSTBOLT > 0 && m_ai->In_Reach(pTarget,FROSTBOLT) && !pTarget->HasAura(FROSTBOLT, EFFECT_INDEX_0))
-        return CastSpell(FROSTBOLT, pTarget);
-    if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL)) // Very low levels
-        return CastSpell(FIREBALL, pTarget);
+    if (FROSTBOLT > 0 && m_ai->In_Reach(pTarget,FROSTBOLT) && !pTarget->HasAura(FROSTBOLT, EFFECT_INDEX_0) && CastSpell(FROSTBOLT, pTarget))
+        return RETURN_CONTINUE;
+    if (FIREBALL > 0 && m_ai->In_Reach(pTarget,FIREBALL) && CastSpell(FIREBALL, pTarget)) // Very low levels
+        return RETURN_CONTINUE;
 
     // Default: shoot with wand
     return CastSpell(SHOOT, pTarget);
 
-    return RETURN_NO_ACTION_ERROR; // What? Not even Fireball is available?
+    return RETURN_NO_ACTION_ERROR; // What? Not even Fireball or wand are available?
 } // end DoNextCombatManeuver
 
 CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVP(Unit* pTarget)
@@ -254,6 +331,24 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVP(Unit* pTarget)
         return RETURN_CONTINUE;
 
     return DoNextCombatManeuverPVE(pTarget); // TODO: bad idea perhaps, but better than the alternative
+}
+
+// Function to keep track of active frost cooldowns to clear with Cold Snap
+uint8 PlayerbotMageAI::CheckFrostCooldowns()
+{
+    uint8 uiFrostActiveCooldown = 0;
+    if (FROST_NOVA && m_bot->HasSpellCooldown(FROST_NOVA))
+        uiFrostActiveCooldown++;
+    if (ICE_BARRIER && m_bot->HasSpellCooldown(ICE_BARRIER))
+        uiFrostActiveCooldown++;
+    if (CONE_OF_COLD && m_bot->HasSpellCooldown(CONE_OF_COLD))
+        uiFrostActiveCooldown++;
+    if (ICE_BLOCK && m_bot->HasSpellCooldown(ICE_BLOCK))
+        uiFrostActiveCooldown++;
+    if (FROST_WARD && m_bot->HasSpellCooldown(FROST_WARD))
+        uiFrostActiveCooldown++;
+
+    return uiFrostActiveCooldown;
 }
 
 void PlayerbotMageAI::DoNonCombatActions()
@@ -275,8 +370,13 @@ void PlayerbotMageAI::DoNonCombatActions()
             return;
     }
     else if (FROST_ARMOR)
+    {
         if (m_ai->SelfBuff(FROST_ARMOR))
             return;
+    }
+
+    if (COMBUSTION && !m_bot->HasSpellCooldown(COMBUSTION) && m_ai->SelfBuff(COMBUSTION))
+        return;
 
     // buff group
     // the check for group targets is performed by NeedGroupBuff (if group is found for bots by the function)

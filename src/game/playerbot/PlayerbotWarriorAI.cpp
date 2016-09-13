@@ -485,6 +485,32 @@ void PlayerbotWarriorAI::DoNonCombatActions()
     // hp check
     if (EatDrinkBandage(false))
         return;
+
+    // Search and apply stones to weapons
+    // Mainhand ...
+    Item * stone, * weapon;
+    weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    {
+        stone = m_ai->FindStoneFor(weapon);
+        if (stone)
+        {
+            m_ai->UseItem(stone, EQUIPMENT_SLOT_MAINHAND);
+            m_ai->SetIgnoreUpdateTime(5);
+        }
+    }
+    //... and offhand (we add a check to avoid trying to apply stone if the warrior is wielding a shield)
+    weapon = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+    if (weapon && (weapon->GetProto()->InventoryType == INVTYPE_WEAPONOFFHAND || weapon->GetProto()->InventoryType == INVTYPE_WEAPONMAINHAND)
+        && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    {
+        stone = m_ai->FindStoneFor(weapon);
+        if (stone)
+        {
+            m_ai->UseItem(stone, EQUIPMENT_SLOT_OFFHAND);
+            m_ai->SetIgnoreUpdateTime(5);
+        }
+    }
 } // end DoNonCombatActions
 
 // Match up with "Pull()" below

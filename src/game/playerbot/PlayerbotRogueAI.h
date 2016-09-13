@@ -75,6 +75,7 @@ private:
     CombatManeuverReturns DoNextCombatManeuverPVE(Unit* pTarget);
     CombatManeuverReturns DoFirstCombatManeuverPVP(Unit* pTarget);
     CombatManeuverReturns DoNextCombatManeuverPVP(Unit* pTarget);
+    Item* FindPoison() const;
 
     // COMBAT
     uint32 ADRENALINE_RUSH,

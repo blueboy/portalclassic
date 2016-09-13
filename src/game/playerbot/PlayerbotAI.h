@@ -58,6 +58,26 @@ enum NotableItems
     POWERFUL_SEAFORIUM_CHARGE      = 18594
 };
 
+enum SharpeningStoneDisplayId
+{
+    ROUGH_SHARPENING_DISPLAYID          = 24673,
+    COARSE_SHARPENING_DISPLAYID         = 24674,
+    HEAVY_SHARPENING_DISPLAYID          = 24675,
+    SOLID_SHARPENING_DISPLAYID          = 24676,
+    DENSE_SHARPENING_DISPLAYID          = 24677,
+    CONSECRATED_SHARPENING_DISPLAYID    = 24674,    // will not be used because bot can not know if it will face undead targets
+    ELEMENTAL_SHARPENING_DISPLAYID      = 21072
+};
+
+enum WeightStoneDisplayId
+{
+    ROUGH_WEIGHTSTONE_DISPLAYID         = 24683,
+    COARSE_WEIGHTSTONE_DISPLAYID        = 24684,
+    HEAVY_WEIGHTSTONE_DISPLAYID         = 24685,
+    SOLID_WEIGHTSTONE_DISPLAYID         = 24686,
+    DENSE_WEIGHTSTONE_DISPLAYID         = 24687
+};
+
 enum MainSpec
 {
     MAGE_SPEC_FIRE              = 41,
@@ -366,13 +386,13 @@ public:
     Item* FindFood() const;
     Item* FindDrink() const;
     Item* FindBandage() const;
-    Item* FindPoison() const;
     Item* FindMount(uint32 matchingRidingSkill) const;
     Item* FindItem(uint32 ItemId);
     Item* FindItemInBank(uint32 ItemId);
     Item* FindKeyForLockValue(uint32 reqSkillValue);
     Item* FindBombForLockValue(uint32 reqSkillValue);
     Item* FindConsumable(uint32 displayId) const;
+    Item* FindStoneFor(Item* weapon) const;
     bool  FindAmmo() const;
     uint8 _findItemSlot(Item* target);
     bool CanStore();
