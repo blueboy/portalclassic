@@ -210,7 +210,7 @@ CombatManeuverReturns PlayerbotDruidAI::DoNextCombatManeuverPVE(Unit* pTarget)
 
     //Used to determine if this bot is highest on threat
     Unit *newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    if (newTarget) // TODO: && party has a tank
+    if (newTarget && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK) && !m_ai->IsNeutralized(newTarget)) // TODO: && party has a tank
     {
         if (HealPlayer(m_bot) == RETURN_CONTINUE)
             return RETURN_CONTINUE;

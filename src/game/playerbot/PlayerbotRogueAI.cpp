@@ -199,28 +199,28 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     //Used to determine if this bot has highest threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    if (newTarget && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK)) // TODO: && party has a tank
+    if (newTarget && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK) && !m_ai->IsNeutralized(newTarget)) // TODO: && party has a tank
     {
         // Aggroed by an elite
         if (m_ai->IsElite(newTarget))
         {
-            if (EVASION > 0 && m_ai->GetHealthPercent() <= 35 && !m_bot->HasSpellCooldown(EVASION) && !m_bot->HasAura(EVASION, EFFECT_INDEX_0) && m_ai->CastSpell(EVASION))
-                return RETURN_CONTINUE;
-            if (BLIND > 0 && m_ai->GetHealthPercent() <= 30 && m_ai->HasSpellReagents(BLIND) && !pTarget->HasAura(BLIND, EFFECT_INDEX_0) && m_ai->CastSpell(BLIND, *pTarget))
-                return RETURN_CONTINUE;
             if (VANISH > 0 && m_ai->GetHealthPercent() <= 20 && !m_bot->HasSpellCooldown(VANISH) && !m_bot->HasAura(FEINT, EFFECT_INDEX_0) && m_ai->CastSpell(VANISH))
             {
                 m_ai->SetIgnoreUpdateTime(11);
                 return RETURN_CONTINUE;
             }
-            if (FEINT > 0 && !m_bot->HasSpellCooldown(FEINT) && m_ai->CastSpell(FEINT))
+            if (BLIND > 0 && m_ai->GetHealthPercent() <= 30 && m_ai->HasSpellReagents(BLIND) && !newTarget->HasAura(BLIND, EFFECT_INDEX_0) && m_ai->CastSpell(BLIND, *newTarget))
+                return RETURN_CONTINUE;
+            if (EVASION > 0 && m_ai->GetHealthPercent() <= 35 && !m_bot->HasSpellCooldown(EVASION) && !m_bot->HasAura(EVASION, EFFECT_INDEX_0) && m_ai->CastSpell(EVASION))
+                return RETURN_CONTINUE;
+            if (FEINT > 0 && !m_bot->HasSpellCooldown(FEINT) && m_ai->CastSpell(FEINT, *newTarget))
                 return RETURN_CONTINUE;
             if (PREPARATION > 0 && !m_bot->HasSpellCooldown(PREPARATION) && (m_bot->HasSpellCooldown(EVASION) || m_bot->HasSpellCooldown(VANISH)) && m_ai->CastSpell(PREPARATION))
                 return RETURN_CONTINUE;
         }
 
         // Default: Gouge the target
-        if (GOUGE > 0 && !pTarget->HasAura(GOUGE, EFFECT_INDEX_0) && m_ai->CastSpell(GOUGE, *pTarget))
+        if (GOUGE > 0 && !pTarget->HasAura(GOUGE, EFFECT_INDEX_0) && m_ai->CastSpell(GOUGE, *newTarget))
             return RETURN_CONTINUE;
     }
 

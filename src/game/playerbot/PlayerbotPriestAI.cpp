@@ -189,7 +189,7 @@ CombatManeuverReturns PlayerbotPriestAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     //Used to determine if this bot is highest on threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    if (newTarget) // TODO: && party has a tank
+    if (newTarget && !m_ai->IsNeutralized(newTarget)) // TODO: && party has a tank
     {
         if (FADE > 0 && !m_bot->HasAura(FADE, EFFECT_INDEX_0) && !m_bot->HasSpellCooldown(FADE))
         {

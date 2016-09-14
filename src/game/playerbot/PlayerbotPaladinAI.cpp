@@ -218,7 +218,7 @@ CombatManeuverReturns PlayerbotPaladinAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     //Used to determine if this bot has highest threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
-    if (newTarget && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK)) // TODO: && party has a tank
+    if (newTarget && !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_TANK) && !m_ai->IsNeutralized(newTarget)) // TODO: && party has a tank
     {
         if (HealPlayer(m_bot) == RETURN_CONTINUE)
             return RETURN_CONTINUE;
