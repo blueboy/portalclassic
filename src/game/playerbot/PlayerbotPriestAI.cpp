@@ -511,6 +511,10 @@ void PlayerbotPriestAI::DoNonCombatActions()
 
     if (EatDrinkBandage())
         return;
+
+    // Nothing else to do, Night Elves will cast Shadowmeld to reduce their aggro versus patrols or nearby mobs
+    if (SHADOWMELD && !m_bot->HasAura(SHADOWMELD, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOWMELD, *m_bot))
+        return;
 } // end DoNonCombatActions
 
 // TODO: this and mage's BuffHelper are identical and thus could probably go in PlayerbotClassAI.cpp somewhere

@@ -282,8 +282,6 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVE(Unit *pTarget)
             return RETURN_CONTINUE;
 //        else if (m_bot->getRace() == RACE_DWARF && m_bot->HasAuraState(AURA_STATE_DEADLY_POISON) && m_ai->CastSpell(STONEFORM, *m_bot))
 //            return RETURN_CONTINUE;
-        else if (m_bot->getRace() == RACE_NIGHTELF && pVictim == m_bot && m_ai->GetHealthPercent() < 25 && !m_bot->HasAura(SHADOWMELD, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOWMELD, *m_bot))
-            return RETURN_CONTINUE;
 
         /*else if(FREEZING_TRAP > 0 && !pTarget->HasAura(FREEZING_TRAP, EFFECT_INDEX_0) && !pTarget->HasAura(ARCANE_TRAP, EFFECT_INDEX_0) && !pTarget->HasAura(EXPLOSIVE_TRAP, EFFECT_INDEX_0) && !pTarget->HasAura(BEAR_TRAP, EFFECT_INDEX_0) && !pTarget->HasAura(IMMOLATION_TRAP, EFFECT_INDEX_0) && !pTarget->HasAura(FROST_TRAP, EFFECT_INDEX_0) && m_ai->CastSpell(FREEZING_TRAP,*pTarget) )
             out << " > Freezing Trap"; // this can trap your bots too
@@ -412,4 +410,8 @@ void PlayerbotHunterAI::DoNonCombatActions()
             m_ai->SetIgnoreUpdateTime(7);
         }
     }
+
+    // Nothing else to do, Night Elves will cast Shadowmeld to reduce their aggro versus patrols or nearby mobs
+    if (SHADOWMELD && !m_bot->HasAura(SHADOWMELD, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOWMELD, *m_bot))
+        return;
 } // end DoNonCombatActions

@@ -675,6 +675,10 @@ void PlayerbotDruidAI::DoNonCombatActions()
 
     // Return to fighting form AFTER reviving, healing, buffing
     CheckForms();
+
+    // Nothing else to do, Night Elves will cast Shadowmeld to reduce their aggro versus patrols or nearby mobs
+    if (SHADOWMELD && !m_bot->HasAura(SHADOWMELD, EFFECT_INDEX_0) && m_ai->CastSpell(SHADOWMELD, *m_bot))
+        return;
 } // end DoNonCombatActions
 
 bool PlayerbotDruidAI::BuffHelper(PlayerbotAI* ai, uint32 spellId, Unit* target)
