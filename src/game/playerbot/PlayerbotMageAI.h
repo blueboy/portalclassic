@@ -10,6 +10,14 @@ enum
     SPELL_ARCANE
 };
 
+enum ManaGemIds
+{
+    MANA_RUBY_DISPLAYID     		= 7045,
+    MANA_CITRINE_DISPLAYID  		= 6496,
+    MANA_AGATE_DISPLAYID    		= 6851,
+    MANA_JADE_DISPLAYID     		= 7393
+};
+
 enum MageSpells
 {
     AMPLIFY_MAGIC_1                 = 1008,
@@ -86,6 +94,7 @@ private:
     CombatManeuverReturns DoNextCombatManeuverPVE(Unit* pTarget);
     CombatManeuverReturns DoFirstCombatManeuverPVP(Unit* pTarget);
     CombatManeuverReturns DoNextCombatManeuverPVP(Unit* pTarget);
+    Item* FindManaGem() const;
 
     CombatManeuverReturns CastSpell(uint32 nextAction, Unit *pTarget = nullptr) { return CastSpellWand(nextAction, pTarget, SHOOT); }
 
@@ -148,7 +157,8 @@ private:
            WILL_OF_THE_FORSAKEN;
 
     uint32 CONJURE_WATER,
-           CONJURE_FOOD;
+           CONJURE_FOOD,
+           CONJURE_MANA_GEM;
 };
 
 #endif
