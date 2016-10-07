@@ -40,6 +40,7 @@ PlayerbotMageAI::PlayerbotMageAI(Player* const master, Player* const bot, Player
     ICE_ARMOR               = m_ai->initSpell(ICE_ARMOR_1);
     ICE_BLOCK               = m_ai->initSpell(ICE_BLOCK_1);
     COLD_SNAP               = m_ai->initSpell(COLD_SNAP_1);
+    MAGE_REMOVE_CURSE       = m_ai->initSpell(REMOVE_CURSE_MAGE_1);
 
     // TALENTS
     IMPROVED_SCORCH         = 0;
@@ -159,6 +160,13 @@ CombatManeuverReturns PlayerbotMageAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     //Used to determine if this bot is highest on threat
     Unit *newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
+
+    // Remove curse on group members
+    if (Player* pCursedTarget = GetDispelTarget(DISPEL_CURSE))
+    {
+        if (MAGE_REMOVE_CURSE > 0 && CastSpell(MAGE_REMOVE_CURSE, pCursedTarget))
+            return RETURN_CONTINUE;
+    }
 
     if (newTarget && !m_ai->IsNeutralized(newTarget)) // Bot has aggro and the mob is not already crowd controled
     {
@@ -382,6 +390,13 @@ void PlayerbotMageAI::DoNonCombatActions()
 
     if (!m_bot || !master)
         return;
+
+    // Remove curse on group members
+    if (Player* pCursedTarget = GetDispelTarget(DISPEL_CURSE))
+    {
+        if (MAGE_REMOVE_CURSE > 0 && CastSpell(MAGE_REMOVE_CURSE, pCursedTarget))
+            return RETURN_CONTINUE;
+    }
 
     // Buff armor
     if (MAGE_ARMOR)

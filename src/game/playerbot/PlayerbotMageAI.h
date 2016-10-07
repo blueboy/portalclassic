@@ -12,10 +12,10 @@ enum
 
 enum ManaGemIds
 {
-    MANA_RUBY_DISPLAYID     		= 7045,
-    MANA_CITRINE_DISPLAYID  		= 6496,
-    MANA_AGATE_DISPLAYID    		= 6851,
-    MANA_JADE_DISPLAYID     		= 7393
+    MANA_RUBY_DISPLAYID             = 7045,
+    MANA_CITRINE_DISPLAYID          = 6496,
+    MANA_AGATE_DISPLAYID            = 6851,
+    MANA_JADE_DISPLAYID             = 7393
 };
 
 enum MageSpells
@@ -144,7 +144,8 @@ private:
            ARCANE_BRILLIANCE,
            MANA_SHIELD,
            DAMPEN_MAGIC,
-           AMPLIFY_MAGIC;
+           AMPLIFY_MAGIC,
+           MAGE_REMOVE_CURSE;
 
     // racial
     uint32 STONEFORM,
