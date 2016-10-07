@@ -297,6 +297,62 @@ Player* PlayerbotClassAI::GetHealTarget(JOB_TYPE type)
     return nullptr;
 }
 
+/**
+ * GetDispelTarget()
+ * return Unit* Returns unit to be dispelled. First checks 'critical' Healer(s), next Tank(s), next Master (if different from:), next DPS.
+ *
+ * return NULL If NULL is returned, no healing is required. At all.
+ *
+ * Will need extensive re-write for co-operation amongst multiple healers. As it stands, multiple healers would all pick the same 'ideal'
+ * healing target.
+ */
+Player* PlayerbotClassAI::GetDispelTarget(DispelType dispelType, JOB_TYPE type, bool bMustBeOOC)
+{
+    if (!m_ai)  return nullptr;
+    if (!m_bot) return nullptr;
+    if (!m_bot->isAlive() || m_bot->IsInDuel()) return nullptr;
+    if (bMustBeOOC && m_bot->isInCombat()) return nullptr;
+
+    // First, fill the list of targets
+    if (m_bot->GetGroup())
+    {
+        // define seperately for sorting purposes - DO NOT CHANGE ORDER!
+        std::vector<heal_priority> targets;
+
+        Group::MemberSlotList const& groupSlot = m_bot->GetGroup()->GetMemberSlots();
+        for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+        {
+            Player *groupMember = sObjectMgr.GetPlayer(itr->guid);
+            if (!groupMember || !groupMember->isAlive())
+                continue;
+            JOB_TYPE job = GetTargetJob(groupMember);
+            if (job & type)
+            {
+                uint32 dispelMask  = GetDispellMask(dispelType);
+                Unit::SpellAuraHolderMap const& auras = groupMember->GetSpellAuraHolderMap();
+                for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
+                {
+                    SpellAuraHolder *holder = itr->second;
+                    // Only return group members with negative magic effect
+                    if (dispelType == DISPEL_MAGIC && !holder->IsPositive())
+                        continue;
+                    // poison, disease and curse are always negative: return everyone
+                    if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
+                        targets.push_back( heal_priority(groupMember, 0, job) );
+                }
+            }
+        }
+
+        // Sorts according to type: Healers first, tanks next, then master followed by DPS, thanks to the order of the TYPE enum
+        std::sort(targets.begin(), targets.end());
+
+        if (targets.size())
+            return targets.at(0).p;
+    }
+
+    return nullptr;
+}
+
 Player* PlayerbotClassAI::GetResurrectionTarget(JOB_TYPE type, bool bMustBeOOC)
 {
     if (!m_ai)  return nullptr;
