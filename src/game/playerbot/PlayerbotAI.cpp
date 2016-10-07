@@ -5175,6 +5175,9 @@ void PlayerbotAI::UseItem(Item *item, uint16 targetFlag, ObjectGuid targetGUID)
         MovementClear();
     }
 
+    if (m_bot->HasSpellCooldown(spellId))
+        return;
+    // spell not on cooldown: mark it as next spell to cast whenever possible for bot
     m_CurrentlyCastingSpellId = spellId;
 
     WorldPacket* const packet = new WorldPacket(CMSG_USE_ITEM, 13);
