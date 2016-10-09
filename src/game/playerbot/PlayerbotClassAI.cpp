@@ -334,7 +334,7 @@ Player* PlayerbotClassAI::GetDispelTarget(DispelType dispelType, JOB_TYPE type, 
                 {
                     SpellAuraHolder *holder = itr->second;
                     // Only return group members with negative magic effect
-                    if (dispelType == DISPEL_MAGIC && !holder->IsPositive())
+                    if (dispelType == DISPEL_MAGIC && holder->IsPositive())
                         continue;
                     // poison, disease and curse are always negative: return everyone
                     if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
