@@ -391,11 +391,11 @@ void PlayerbotMageAI::DoNonCombatActions()
     if (!m_bot || !master)
         return;
 
-    // Remove curse on group members
+    // Remove curse on group members if orders allow bot to do so
     if (Player* pCursedTarget = GetDispelTarget(DISPEL_CURSE))
     {
-        if (MAGE_REMOVE_CURSE > 0 && CastSpell(MAGE_REMOVE_CURSE, pCursedTarget))
-            return RETURN_CONTINUE;
+        if (MAGE_REMOVE_CURSE > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && CastSpell(MAGE_REMOVE_CURSE, pCursedTarget))
+            return;
     }
 
     // Buff armor

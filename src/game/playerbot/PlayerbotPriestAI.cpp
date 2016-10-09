@@ -21,6 +21,7 @@ PlayerbotPriestAI::PlayerbotPriestAI(Player* const master, Player* const bot, Pl
     DESPERATE_PRAYER              = m_ai->initSpell(DESPERATE_PRAYER_1);
     PRAYER_OF_HEALING             = m_ai->initSpell(PRAYER_OF_HEALING_1);
     CURE_DISEASE                  = m_ai->initSpell(CURE_DISEASE_1);
+    ABOLISH_DISEASE               = m_ai->initSpell(ABOLISH_DISEASE_1);
     SHACKLE_UNDEAD                = m_ai->initSpell(SHACKLE_UNDEAD_1);
 
     // SHADOW
@@ -374,34 +375,20 @@ CombatManeuverReturns PlayerbotPriestAI::HealPlayer(Player* target)
         return RETURN_NO_ACTION_ERROR; // not error per se - possibly just OOM
     }
 
-    if ((CURE_DISEASE > 0 || PRIEST_DISPEL_MAGIC > 0) && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0)
+    // Remove negative magic on group members if orders allow bot to do so
+    if (Player* pCursedTarget = GetDispelTarget(DISPEL_MAGIC))
     {
-        uint32 dispelMask  = GetDispellMask(DISPEL_DISEASE);
-        uint32 dispelMask2 = GetDispellMask(DISPEL_MAGIC);
-        Unit::SpellAuraHolderMap const& auras = target->GetSpellAuraHolderMap();
-        for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
-        {
-            SpellAuraHolder *holder = itr->second;
-            if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
-            {
-                if ((holder->GetSpellProto()->Dispel == DISPEL_DISEASE) && CURE_DISEASE > 0)
-                {
-                    if (m_ai->CastSpell(CURE_DISEASE, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-            else if ((1 << holder->GetSpellProto()->Dispel) & dispelMask2)
-            {
-                // only remove negative effects
-                if ((holder->GetSpellProto()->Dispel == DISPEL_MAGIC) && !holder->IsPositive() && PRIEST_DISPEL_MAGIC > 0)
-                {
-                    if (m_ai->CastSpell(PRIEST_DISPEL_MAGIC, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-        }
+        if (PRIEST_DISPEL_MAGIC > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && CastSpell(PRIEST_DISPEL_MAGIC, pCursedTarget))
+            return RETURN_CONTINUE;
+    }
+
+    // Remove disease on group members if orders allow bot to do so
+    if (Player* pDiseasedTarget = GetDispelTarget(DISPEL_DISEASE))
+    {
+        uint32 cure = ABOLISH_DISEASE > 0 ? ABOLISH_DISEASE : CURE_DISEASE;
+        // uint32 poison = ABOLISH_POISON ? ABOLISH_POISON : CURE_POISON;
+        if (cure > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && CastSpell(cure, pDiseasedTarget))
+            return RETURN_CONTINUE;
     }
 
     uint8 hp = target->GetHealthPercent();

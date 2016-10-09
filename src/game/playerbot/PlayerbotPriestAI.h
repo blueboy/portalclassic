@@ -105,6 +105,7 @@ private:
            SHACKLE_UNDEAD,
            SMITE,
            CURE_DISEASE,
+           ABOLISH_DISEASE,
            PRIEST_DISPEL_MAGIC;
 
     // ranged

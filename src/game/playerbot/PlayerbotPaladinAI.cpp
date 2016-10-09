@@ -307,44 +307,26 @@ CombatManeuverReturns PlayerbotPaladinAI::HealPlayer(Player* target)
         return RETURN_NO_ACTION_ERROR; // not error per se - possibly just OOM
     }
 
-    if (PURIFY > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0)
+    uint32 dispel = CLEANSE > 0 ? CLEANSE : PURIFY;
+    // Remove negative magic on group members if orders allow bot to do so
+    if (Player* pCursedTarget = GetDispelTarget(DISPEL_MAGIC))
     {
-        uint32 DISPEL = CLEANSE > 0 ? CLEANSE : PURIFY;
-        uint32 dispelMask  = GetDispellMask(DISPEL_DISEASE);
-        uint32 dispelMask2 = GetDispellMask(DISPEL_POISON);
-        uint32 dispelMask3 = GetDispellMask(DISPEL_MAGIC);
-        Unit::SpellAuraHolderMap const& auras = target->GetSpellAuraHolderMap();
-        for(Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
-        {
-            SpellAuraHolder *holder = itr->second;
-            if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
-            {
-                if (holder->GetSpellProto()->Dispel == DISPEL_DISEASE)
-                {
-                    if (m_ai->CastSpell(DISPEL, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-            else if ((1 << holder->GetSpellProto()->Dispel) & dispelMask2)
-            {
-                if (holder->GetSpellProto()->Dispel == DISPEL_POISON)
-                {
-                    if (m_ai->CastSpell(DISPEL, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-            else if ((1 << holder->GetSpellProto()->Dispel) & dispelMask3 & (DISPEL == CLEANSE))
-            {
-                if (holder->GetSpellProto()->Dispel == DISPEL_MAGIC)
-                {
-                    if (m_ai->CastSpell(DISPEL, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-        }
+        if (dispel > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && m_ai->CastSpell(dispel, *pCursedTarget))
+            return RETURN_CONTINUE;
+    }
+    // Remove poison on group members if orders allow bot to do so
+    if (Player* pPoisonedTarget = GetDispelTarget(DISPEL_POISON))
+    {
+        m_ai->TellMaster("Has poison %s :",pPoisonedTarget->GetName());
+        if (dispel > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && m_ai->CastSpell(dispel, *pPoisonedTarget))
+            return RETURN_CONTINUE;
+    }
+
+    // Remove disease on group members if orders allow bot to do so
+    if (Player* pDiseasedTarget = GetDispelTarget(DISPEL_DISEASE))
+    {
+        if (dispel > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && m_ai->CastSpell(dispel, *pDiseasedTarget))
+            return RETURN_CONTINUE;
     }
 
     // Define a tank bot will look at

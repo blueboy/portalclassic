@@ -164,6 +164,7 @@ private:
            TRANQUILITY,
            REBIRTH,
            REMOVE_CURSE,
+           CURE_POISON,
            ABOLISH_POISON;
 
     // racial

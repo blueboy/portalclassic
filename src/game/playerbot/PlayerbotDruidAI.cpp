@@ -33,6 +33,7 @@ PlayerbotDruidAI::PlayerbotDruidAI(Player* const master, Player* const bot, Play
     TRANQUILITY                   = m_ai->initSpell(TRANQUILITY_1);
     REBIRTH                       = m_ai->initSpell(REBIRTH_1);
     REMOVE_CURSE                  = m_ai->initSpell(REMOVE_CURSE_DRUID_1);
+    CURE_POISON                   = m_ai->initSpell(CURE_POISON_1);
     ABOLISH_POISON                = m_ai->initSpell(ABOLISH_POISON_1);
     // Druid Forms
     MOONKIN_FORM                  = m_ai->initSpell(MOONKIN_FORM_1);
@@ -412,8 +413,7 @@ CombatManeuverReturns PlayerbotDruidAI::HealPlayer(Player* target)
     {
         if (m_bot->isInCombat())
         {
-            // TODO: Add check for cooldown
-            if (REBIRTH && m_ai->In_Reach(target,REBIRTH) && m_ai->CastSpell(REBIRTH, *target))
+            if (REBIRTH && m_ai->In_Reach(target,REBIRTH) && !m_bot->HasSpellCooldown(REBIRTH) && m_ai->CastSpell(REBIRTH, *target))
             {
                 std::string msg = "Resurrecting ";
                 msg += target->GetName();
@@ -425,39 +425,19 @@ CombatManeuverReturns PlayerbotDruidAI::HealPlayer(Player* target)
         return RETURN_NO_ACTION_ERROR; // not error per se - possibly just OOM
     }
 
-    //If spell exists and orders say we should be dispelling
-    if ((REMOVE_CURSE > 0 || ABOLISH_POISON > 0) && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0)
+    // Remove curse on group members if orders allow bot to do so
+    if (Player* pCursedTarget = GetDispelTarget(DISPEL_CURSE))
     {
-        //This does something important(lol)
-        uint32 dispelMask  = GetDispellMask(DISPEL_CURSE);
-        uint32 dispelMask2  = GetDispellMask(DISPEL_POISON);
-        //Get a list of all the targets auras(spells affecting target)
-        Unit::SpellAuraHolderMap const& auras = target->GetSpellAuraHolderMap();
-        //Iterate through the auras
-        for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); itr++)
-        {
-            SpellAuraHolder *holder = itr->second;
-            //I dont know what this does but it doesn't work without it
-            if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
-            {
-                //If the spell is dispellable and we can dispel it, do so
-                if ((holder->GetSpellProto()->Dispel == DISPEL_CURSE) & (REMOVE_CURSE > 0))
-                {
-                    if (CastSpell(REMOVE_CURSE, target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-            else if ((1 << holder->GetSpellProto()->Dispel) & dispelMask2)
-            {
-                if ((holder->GetSpellProto()->Dispel == DISPEL_POISON) & (ABOLISH_POISON > 0))
-                {
-                    if (CastSpell(ABOLISH_POISON, target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-        }
+        if (REMOVE_CURSE > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && CastSpell(REMOVE_CURSE, pCursedTarget))
+            return RETURN_CONTINUE;
+    }
+    
+    // Remove poison on group members if orders allow bot to do so
+    if (Player* pPoisonedTarget = GetDispelTarget(DISPEL_POISON))
+    {
+        uint32 cure = ABOLISH_POISON > 0 ? ABOLISH_POISON : CURE_POISON;
+        if (cure > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && CastSpell(cure, pPoisonedTarget))
+            return RETURN_CONTINUE;
     }
 
     uint8 hp = target->GetHealthPercent();

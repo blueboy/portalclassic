@@ -256,34 +256,18 @@ CombatManeuverReturns PlayerbotShamanAI::HealPlayer(Player* target)
         return RETURN_NO_ACTION_ERROR; // not error per se - possibly just OOM
     }
 
-    // Dispel if necessary
-    if ((CURE_DISEASE_SHAMAN > 0 || CURE_POISON_SHAMAN > 0) && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0)
+    // Remove poison on group members if orders allow bot to do so
+    if (Player* pPoisonedTarget = GetDispelTarget(DISPEL_POISON))
     {
-        uint32 dispelMask  = GetDispellMask(DISPEL_POISON);
-        uint32 dispelMask2  = GetDispellMask(DISPEL_DISEASE);
-        Unit::SpellAuraHolderMap const& auras = target->GetSpellAuraHolderMap();
-        for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
-        {
-            SpellAuraHolder *holder = itr->second;
-            if ((1 << holder->GetSpellProto()->Dispel) & dispelMask)
-            {
-                if (holder->GetSpellProto()->Dispel == DISPEL_POISON)
-                {
-                    if (m_ai->CastSpell(CURE_POISON_SHAMAN, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-            else if ((1 << holder->GetSpellProto()->Dispel) & dispelMask2)
-            {
-                if (holder->GetSpellProto()->Dispel == DISPEL_DISEASE)
-                {
-                    if (m_ai->CastSpell(CURE_DISEASE_SHAMAN, *target))
-                        return RETURN_CONTINUE;
-                    return RETURN_NO_ACTION_ERROR;
-                }
-            }
-        }
+        if (CURE_POISON_SHAMAN > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && m_ai->CastSpell(CURE_POISON_SHAMAN, *pPoisonedTarget))
+            return RETURN_CONTINUE;
+    }
+
+    // Remove disease on group members if orders allow bot to do so
+    if (Player* pDiseasedTarget = GetDispelTarget(DISPEL_DISEASE))
+    {
+        if (CURE_DISEASE_SHAMAN > 0 && (m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_NODISPEL) == 0 && m_ai->CastSpell(CURE_DISEASE_SHAMAN, *pDiseasedTarget))
+            return RETURN_CONTINUE;
     }
 
     // Everyone is healthy enough, return OK. MUST correlate to highest value below (should be last HP check)
