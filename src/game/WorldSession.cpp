@@ -125,9 +125,9 @@ void WorldSession::SendPacket(WorldPacket const& packet) const
     // Playerbot mod: send packet to bot AI
     if (GetPlayer()) {
         if (GetPlayer()->GetPlayerbotAI())
-            GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);
+            GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(packet);
         else if (GetPlayer()->GetPlayerbotMgr())
-            GetPlayer()->GetPlayerbotMgr()->HandleMasterOutgoingPacket(*packet);
+            GetPlayer()->GetPlayerbotMgr()->HandleMasterOutgoingPacket(packet);
     }
 
     if (!m_Socket)
@@ -322,11 +322,10 @@ bool WorldSession::Update(PacketFilter& updater)
                 botPlayer->GetPlayerbotAI()->HandleTeleportAck();
             else if (botPlayer->IsInWorld())
             {
-                std::for_each(pBotWorldSession->m_recvQueue.begin(), pBotWorldSession->m_recvQueue.end(), [&pBotWorldSession](WorldPacket* packet)
+                std::for_each(pBotWorldSession->m_recvQueue.begin(), pBotWorldSession->m_recvQueue.end(), [&pBotWorldSession](std::unique_ptr<WorldPacket>& packet)
                 {
                     OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
                     (pBotWorldSession->*opHandle.handler)(*packet);
-                    delete packet;
                 });
                 pBotWorldSession->m_recvQueue.clear();
             }
