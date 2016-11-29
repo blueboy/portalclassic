@@ -221,7 +221,7 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVE(Unit *pTarget)
         if (AUTO_SHOT > 0)
         {
             if (m_bot->isAttackReady(RANGED_ATTACK))
-                m_bot->CastSpell(pTarget, AUTO_SHOT, true);
+                m_bot->CastSpell(pTarget, AUTO_SHOT, TRIGGERED_OLD_TRIGGERED);
 
             m_bot->setAttackTimer(RANGED_ATTACK,500);
 
@@ -365,11 +365,11 @@ void PlayerbotHunterAI::DoNonCombatActions()
                     if (pet->HaveInDiet(pItemProto)) // is pItem in pets diet
                     {
                         // DEBUG_LOG ("[PlayerbotHunterAI]: DoNonCombatActions - Food for pet: %s",pItemProto->Name1);
-                        caster->CastSpell(caster, 23355, true); // pet feed visual
+                        caster->CastSpell(caster, 23355, TRIGGERED_OLD_TRIGGERED); // pet feed visual
                         uint32 count = 1; // number of items used
                         int32 benefit = pet->GetCurrentFoodBenefitLevel(pItemProto->ItemLevel); // nutritional value of food
                         m_bot->DestroyItemCount(pItem, count, true); // remove item from inventory
-                        m_bot->CastCustomSpell(m_bot, PET_FEED, &benefit, nullptr, nullptr, true); // feed pet
+                        m_bot->CastCustomSpell(m_bot, PET_FEED, &benefit, nullptr, nullptr, TRIGGERED_OLD_TRIGGERED); // feed pet
                         m_ai->TellMaster("feeding pet.");
                         m_ai->SetIgnoreUpdateTime(10);
                         return;
@@ -393,11 +393,11 @@ void PlayerbotHunterAI::DoNonCombatActions()
                             if (pet->HaveInDiet(pItemProto)) // is pItem in pets diet
                             {
                                 // DEBUG_LOG ("[PlayerbotHunterAI]: DoNonCombatActions - Food for pet: %s",pItemProto->Name1);
-                                caster->CastSpell(caster, 23355, true); // pet feed visual
+                                caster->CastSpell(caster, 23355, TRIGGERED_OLD_TRIGGERED); // pet feed visual
                                 uint32 count = 1; // number of items used
                                 int32 benefit = pet->GetCurrentFoodBenefitLevel(pItemProto->ItemLevel); // nutritional value of food
                                 m_bot->DestroyItemCount(pItem, count, true); // remove item from inventory
-                                m_bot->CastCustomSpell(m_bot, PET_FEED, &benefit, nullptr, nullptr, true); // feed pet
+                                m_bot->CastCustomSpell(m_bot, PET_FEED, &benefit, nullptr, nullptr, TRIGGERED_OLD_TRIGGERED); // feed pet
                                 m_ai->TellMaster("feeding pet.");
                                 m_ai->SetIgnoreUpdateTime(10);
                                 return;

@@ -584,7 +584,7 @@ bool PlayerbotWarriorAI::Pull()
         // shoot at the target
 //        if (m_ai->CastSpell(SHOOT, m_ai->GetCurrentTarget()))
         m_ai->FaceTarget(m_ai->GetCurrentTarget());
-        m_bot->CastSpell(m_ai->GetCurrentTarget(), SHOOT, true);
+        m_bot->CastSpell(m_ai->GetCurrentTarget(), SHOOT, TRIGGERED_OLD_TRIGGERED);
         m_ai->TellMaster("I'm PULLING %s.", m_ai->GetCurrentTarget()->GetName());
         return true;
     }
