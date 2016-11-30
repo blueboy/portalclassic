@@ -90,7 +90,7 @@ bool WorldSessionFilter::Process(WorldPacket const& packet) const
 /// WorldSession constructor
 WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_t mute_time, LocaleConstant locale) :
     m_muteTime(mute_time),
-    _player(nullptr), m_Socket(sock->shared<WorldSocket>()), _security(sec), _accountId(id), _logoutTime(0),
+    _player(nullptr), m_Socket(sock ? sock->shared<WorldSocket>() : nullptr), _security(sec), _accountId(id), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED) {}
@@ -104,7 +104,8 @@ WorldSession::~WorldSession()
 
     // marks this session as finalized in the socket which references (BUT DOES NOT OWN) it.
     // this lets the socket handling code know that the socket can be safely deleted
-    m_Socket->FinalizeSession();
+    if (m_Socket)
+        m_Socket->FinalizeSession();
 }
 
 void WorldSession::SizeError(WorldPacket const& packet, uint32 size) const
