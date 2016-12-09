@@ -368,8 +368,8 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
             if (REVENGE > 0 && !m_bot->HasSpellCooldown(REVENGE))
             {
-                uint8 base = pTarget->RollMeleeOutcomeAgainst(m_bot, BASE_ATTACK);
-                uint8 off = pTarget->RollMeleeOutcomeAgainst(m_bot, OFF_ATTACK);
+                uint8 base = pTarget->RollMeleeOutcomeAgainst(m_bot, BASE_ATTACK, SPELL_SCHOOL_MASK_NORMAL);
+                uint8 off = pTarget->RollMeleeOutcomeAgainst(m_bot, OFF_ATTACK, SPELL_SCHOOL_MASK_NORMAL);
                 if (base == MELEE_HIT_PARRY || base == MELEE_HIT_DODGE || base == MELEE_HIT_BLOCK || off == MELEE_HIT_PARRY || off == MELEE_HIT_DODGE || off == MELEE_HIT_BLOCK)
                     if (m_ai->CastSpell(REVENGE, *pTarget))
                         return RETURN_CONTINUE;
