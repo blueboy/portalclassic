@@ -36,6 +36,7 @@ PlayerbotHunterAI::PlayerbotHunterAI(Player* const master, Player* const bot, Pl
     AIMED_SHOT                    = m_ai->initSpell(AIMED_SHOT_1);
     VOLLEY                        = m_ai->initSpell(VOLLEY_1);
     BLACK_ARROW                   = m_ai->initSpell(BLACK_ARROW_1);
+    TRANQUILIZING_SHOT            = m_ai->initSpell(TRANQUILIZING_SHOT_1);
 
     // MELEE
     RAPTOR_STRIKE                 = m_ai->initSpell(RAPTOR_STRIKE_1);
