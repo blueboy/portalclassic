@@ -2137,8 +2137,8 @@ void PlayerbotAI::DoCombatMovement()
              && m_movementOrder != MOVEMENT_STAY
              && GetClassAI()->GetWaitUntil() == 0 ) // Not waiting
     {
-        // ranged combat - just move within spell range
-        if (!CanReachWithSpellAttack(m_targetCombat))
+        // ranged combat - just move within spell range if bot does not have heal orders
+        if (!CanReachWithSpellAttack(m_targetCombat) && !IsHealer())
         {
             m_bot->GetMotionMaster()->Clear(false);
             m_bot->GetMotionMaster()->MoveChase(m_targetCombat);
@@ -5019,7 +5019,7 @@ bool PlayerbotAI::IsElite(Unit* pTarget, bool isWorldBoss) const
 
     if (Creature * pCreature = (Creature*) pTarget)
     {
-        if (isWorldBoss))
+        if (isWorldBoss)
             return pCreature->IsWorldBoss();
         else
             return (pCreature->IsElite() || pCreature->IsWorldBoss());
