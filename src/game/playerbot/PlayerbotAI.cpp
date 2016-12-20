@@ -125,7 +125,7 @@ bool PlayerbotAI::CanReachWithSpellAttack(Unit* target)
         if (target->HasAura(spellId, EFFECT_INDEX_0))
             continue;
 
-        const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
+        const SpellEntry* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
         if (!spellInfo)
             continue;
 
@@ -198,7 +198,7 @@ uint32 PlayerbotAI::getSpellId(const char* args, bool master) const
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
             continue;
 
-        const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
+        const SpellEntry* pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
         if (!pSpellInfo)
             continue;
 
@@ -262,7 +262,7 @@ uint32 PlayerbotAI::getPetSpellId(const char* args) const
         if (itr->second.state == PETSPELL_REMOVED || IsPassiveSpell(spellId))
             continue;
 
-        const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
+        const SpellEntry* pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
         if (!pSpellInfo)
             continue;
 
@@ -317,7 +317,7 @@ uint32 PlayerbotAI::initSpell(uint32 spellId)
     }
     if (next == 0)
     {
-        const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+        const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
         DEBUG_LOG ("[PlayerbotAI]: initSpell - Playerbot spell init: %s is %u", pSpellInfo->SpellName[0], spellId);
 
         // Add spell to spellrange map
@@ -349,7 +349,7 @@ uint32 PlayerbotAI::initPetSpell(uint32 spellIconId)
         if (itr->second.state == PETSPELL_REMOVED || IsPassiveSpell(spellId))
             continue;
 
-        const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+        const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
         if (!pSpellInfo)
             continue;
 
@@ -957,7 +957,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             p >> spellId >> result;
             p.resize(5);
 
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+            SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
             if (!spellInfo)
                 return;
 
@@ -1033,7 +1033,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                         uint32 spellId = itr->first;
                         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
                             continue;
-                        const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
+                        const SpellEntry* pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
                         if (!pSpellInfo)
                             continue;
 
@@ -1241,7 +1241,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
             // DEBUG_LOG("castItemGuid (%s) casterItemGuid(%s) spellId (%u) castFlags (%u) msTime (%u)",castItemGuid.GetString().c_str(),casterGuid.GetString().c_str(), spellId, castFlags, msTime);
 
-            const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+            const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
             if (!pSpellInfo)
                 return;
 
@@ -2137,8 +2137,8 @@ void PlayerbotAI::DoCombatMovement()
              && m_movementOrder != MOVEMENT_STAY
              && GetClassAI()->GetWaitUntil() == 0 ) // Not waiting
     {
-        // ranged combat - just move within spell range
-        if (!CanReachWithSpellAttack(m_targetCombat))
+        // ranged combat - just move within spell range if bot does not have heal orders
+        if (!CanReachWithSpellAttack(m_targetCombat) && !IsHealer())
         {
             m_bot->GetMotionMaster()->Clear(false);
             m_bot->GetMotionMaster()->MoveChase(m_targetCombat);
@@ -3822,7 +3822,7 @@ bool PlayerbotAI::canObeyCommandFrom(const Player& player) const
 
 bool PlayerbotAI::In_Range(Unit* Target, uint32 spellId)
 {
-    const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+    const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!pSpellInfo)
         return false;
 
@@ -3905,7 +3905,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
 
     // see Creature.cpp 1738 for reference
     // don't allow bot to cast damage spells on friends
-    const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+    const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!pSpellInfo)
     {
         TellMaster("missing spell entry in CastSpell for spellid %u.", spellId);
@@ -4041,7 +4041,7 @@ bool PlayerbotAI::CastPetSpell(uint32 spellId, Unit* target)
     if (pet->HasSpellCooldown(spellId))
         return false;
 
-    const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+    const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!pSpellInfo)
     {
         TellMaster("Missing spell entry in CastPetSpell()");
@@ -4087,7 +4087,7 @@ bool PlayerbotAI::Buff(uint32 spellId, Unit* target, void (*beforeCast)(Player *
     if (spellId == 0)
         return false;
 
-    SpellEntry const * spellProto = sSpellStore.LookupEntry(spellId);
+    SpellEntry const * spellProto = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
 
     if (!spellProto)
         return false;
@@ -4329,7 +4329,7 @@ bool PlayerbotAI::PickPocket(Unit* pTarget)
 
 bool PlayerbotAI::HasSpellReagents(uint32 spellId)
 {
-    const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+    const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!pSpellInfo)
         return false;
 
@@ -5019,7 +5019,7 @@ bool PlayerbotAI::IsElite(Unit* pTarget, bool isWorldBoss) const
 
     if (Creature * pCreature = (Creature*) pTarget)
     {
-        if (isWorldBoss))
+        if (isWorldBoss)
             return pCreature->IsWorldBoss();
         else
             return (pCreature->IsElite() || pCreature->IsWorldBoss());
@@ -5165,7 +5165,7 @@ void PlayerbotAI::UseItem(Item *item, uint16 targetFlag, ObjectGuid targetGUID)
         }
     }
 
-    SpellEntry const * spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellEntry const * spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
     if (!spellInfo)
     {
         TellMaster("Can't find spell entry for spell %u on item %u", spellId, item->GetEntry());
@@ -7097,7 +7097,7 @@ void PlayerbotAI::_HandleCommandPet(std::string &text, Player &fromPlayer)
             if (itr->second.state == PETSPELL_REMOVED || IsPassiveSpell(spellId))
                 continue;
 
-            const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+            const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
             if (!pSpellInfo)
                 continue;
 
@@ -7149,7 +7149,7 @@ void PlayerbotAI::_HandleCommandSpells(std::string& /*text*/, Player &fromPlayer
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
             continue;
 
-        const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
+        const SpellEntry* const pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
         if (!pSpellInfo)
             continue;
 
@@ -7359,7 +7359,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                     m_bot->learnSpell(spellId, false);
                 ++totalSpellLearnt;
                 totalCost += cost;
-                const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
+                const SpellEntry *const pSpellInfo =  sSpellTemplate.LookupEntry<SpellEntry>(spellId);
                 if (!pSpellInfo)
                     continue;
 
@@ -7438,7 +7438,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                     continue;
 
                 uint32 spellId = tSpell->spell;
-                const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
+                const SpellEntry *const pSpellInfo =  sSpellTemplate.LookupEntry<SpellEntry>(spellId);
                 if (!pSpellInfo)
                     continue;
                 uint32 cost = uint32(floor(tSpell->spellCost *  fDiscountMod));
@@ -7534,7 +7534,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                     // has skill
                     if (skillLine->skillId == *it && skillLine->learnOnGetSkill == 0)
                     {
-                        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+                        SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(skillLine->spellId);
                         if (!spellInfo)
                             continue;
 
@@ -7561,7 +7561,7 @@ void PlayerbotAI::_HandleCommandSkill(std::string &text, Player &fromPlayer)
                     if (!skillLine)
                         continue;
 
-                    SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+                    SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(skillLine->spellId);
                     if (!spellInfo)
                         continue;
 
