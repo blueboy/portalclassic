@@ -26,6 +26,7 @@
 #include "Cell.h"
 
 #include <list>
+#include <memory>
 
 struct SpellEntry;
 
@@ -377,11 +378,10 @@ typedef std::list<VendorItemCount> VendorItemCounts;
 
 struct TrainerSpell
 {
-    TrainerSpell() : spell(0), spellCost(0), reqSkill(0), reqSkillValue(0), reqLevel(0), learnedSpell(0), isProvidedReqLevel(false) {}
+    TrainerSpell() : spell(0), spellCost(0), reqSkill(0), reqSkillValue(0), reqLevel(0), learnedSpell(0), isProvidedReqLevel(false), conditionId(0) {}
 
-    TrainerSpell(uint32 _spell, uint32 _spellCost, uint32 _reqSkill, uint32 _reqSkillValue, uint32 _reqLevel, uint32 _learnedspell, bool _isProvidedReqLevel)
-        : spell(_spell), spellCost(_spellCost), reqSkill(_reqSkill), reqSkillValue(_reqSkillValue), reqLevel(_reqLevel), learnedSpell(_learnedspell), isProvidedReqLevel(_isProvidedReqLevel)
-    {}
+    TrainerSpell(uint32 _spell, uint32 _spellCost, uint32 _reqSkill, uint32 _reqSkillValue, uint32 _reqLevel, uint32 _learnedspell, bool _isProvidedReqLevel, uint32 _conditionId)
+        : spell(_spell), spellCost(_spellCost), reqSkill(_reqSkill), reqSkillValue(_reqSkillValue), reqLevel(_reqLevel), learnedSpell(_learnedspell), isProvidedReqLevel(_isProvidedReqLevel), conditionId(_conditionId) {}
 
     uint32 spell;
     uint32 spellCost;
@@ -389,6 +389,7 @@ struct TrainerSpell
     uint32 reqSkillValue;
     uint32 reqLevel;
     uint32 learnedSpell;
+    uint32 conditionId;
     bool isProvidedReqLevel;
 
     // helpers
@@ -560,7 +561,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool IsInEvadeMode() const;
 
         bool AIM_Initialize();
-        virtual CreatureAI* AI() override { if (m_charmInfo && m_charmInfo->GetAI()) return m_charmInfo->GetAI(); else return m_ai; }
+        virtual CreatureAI* AI() override { if (m_charmInfo && m_charmInfo->GetAI()) return m_charmInfo->GetAI(); else return m_ai.get(); }
         virtual CombatData* GetCombatData() override { if (m_charmInfo && m_charmInfo->GetCombatData()) return m_charmInfo->GetCombatData(); else return m_combatData; }
 
         void SetWalk(bool enable, bool asDefault = true);
@@ -779,7 +780,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         Position m_respawnPos;
 
-        CreatureAI* m_ai;
+        std::unique_ptr<CreatureAI> m_ai;
 
     private:
         GridReference<Creature> m_gridRef;

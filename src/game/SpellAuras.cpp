@@ -257,7 +257,7 @@ Aura::Aura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBas
     m_isPersistent(false), m_in_use(0), m_spellAuraHolder(holder)
 {
     MANGOS_ASSERT(target);
-    MANGOS_ASSERT(spellproto && spellproto == sSpellStore.LookupEntry(spellproto->Id) && "`info` must be pointer to sSpellStore element");
+    MANGOS_ASSERT(spellproto && spellproto == sSpellTemplate.LookupEntry<SpellEntry>(spellproto->Id) && "`info` must be pointer to sSpellTemplate element");
 
     m_currentBasePoints = currentBasePoints ? *currentBasePoints : spellproto->CalculateSimpleValue(eff);
 
@@ -792,7 +792,7 @@ void Aura::TriggerSpell()
     // generic casting code with custom spells and target/caster customs
     uint32 trigger_spell_id = GetSpellProto()->EffectTriggerSpell[m_effIndex];
 
-    SpellEntry const* triggeredSpellInfo = sSpellStore.LookupEntry(trigger_spell_id);
+    SpellEntry const* triggeredSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(trigger_spell_id);
     SpellEntry const* auraSpellInfo = GetSpellProto();
     uint32 auraId = auraSpellInfo->Id;
     Unit* target = GetTarget();
@@ -1005,7 +1005,7 @@ void Aura::TriggerSpell()
         }
 
         // Reget trigger spell proto
-        triggeredSpellInfo = sSpellStore.LookupEntry(trigger_spell_id);
+        triggeredSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(trigger_spell_id);
     }
     else                                                    // initial triggeredSpellInfo != nullptr
     {
@@ -1269,6 +1269,11 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
                 return;
             }
+            case 17189:                                     // Frostwhisper's Lifeblood
+                // Ras Frostwhisper gets back to full health when turned to his human form
+                if (Unit* caster = GetCaster())
+                    caster->ModifyHealth(caster->GetMaxHealth() - caster->GetHealth());
+                return;
             case 28169:                                     // Mutating Injection
             {
                 // Mutagen Explosion
@@ -2219,7 +2224,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
                     return;
             }
 
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell_id);
+            SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spell_id);
 
             if (!spellInfo)
                 return;
@@ -3434,14 +3439,16 @@ void Aura::HandleModSpellCritChance(bool apply, bool Real)
     if (!Real)
         return;
 
-    if (GetTarget()->GetTypeId() == TYPEID_PLAYER)
+    Unit* target = GetTarget();
+
+    if (target->GetTypeId() == TYPEID_UNIT)
     {
-        ((Player*)GetTarget())->UpdateAllSpellCritChances();
+        for (uint8 school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
+            target->m_modSpellCritChance[school] += (apply ? m_modifier.m_amount : (-m_modifier.m_amount));
+        return;
     }
-    else
-    {
-        GetTarget()->m_baseSpellCritChance += apply ? m_modifier.m_amount : (-m_modifier.m_amount);
-    }
+
+    ((Player*)target)->UpdateAllSpellCritChances();
 }
 
 void Aura::HandleModSpellCritChanceShool(bool /*apply*/, bool Real)
@@ -3450,12 +3457,18 @@ void Aura::HandleModSpellCritChanceShool(bool /*apply*/, bool Real)
     if (!Real)
         return;
 
-    if (GetTarget()->GetTypeId() != TYPEID_PLAYER)
-        return;
+    Unit* target = GetTarget();
 
-    for (int school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
+    for (uint8 school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
+    {
         if (m_modifier.m_miscvalue & (1 << school))
-            ((Player*)GetTarget())->UpdateSpellCritChance(school);
+        {
+            if (target->GetTypeId() == TYPEID_UNIT)
+                target->m_modSpellCritChance[school] += m_modifier.m_amount;
+            else
+                ((Player*)target)->UpdateSpellCritChance(school);
+         }
+     }
 }
 
 /********************************/
@@ -3843,7 +3856,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             {
                 if (itr->second.state == PLAYERSPELL_REMOVED) continue;
                 if (itr->first == spellId1 || itr->first == spellId2) continue;
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+                SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(itr->first);
                 if (!spellInfo || !IsNeedCastSpellAtFormApply(spellInfo, form))
                     continue;
                 target->CastSpell(target, itr->first, TRIGGERED_OLD_TRIGGERED, nullptr, this);
@@ -3852,7 +3865,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             // Leader of the Pack
             if (((Player*)target)->HasSpell(17007))
             {
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(24932);
+                SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(24932);
                 if (spellInfo && spellInfo->Stances & (1 << (form - 1)))
                     target->CastSpell(target, 24932, TRIGGERED_OLD_TRIGGERED, nullptr, this);
             }
@@ -4285,7 +4298,7 @@ void Aura::PeriodicTick()
                 // Set trigger flag
                 uint32 procAttacker = PROC_FLAG_ON_DO_PERIODIC;
                 uint32 procVictim = PROC_FLAG_ON_TAKE_PERIODIC;
-                uint32 procEx = PROC_EX_NORMAL_HIT | PROC_EX_PERIODIC_POSITIVE;
+                uint32 procEx = PROC_EX_NORMAL_HIT | PROC_EX_INTERNAL_HOT;
                 pCaster->ProcDamageAndSpell(target, procAttacker, procVictim, procEx, gain, BASE_ATTACK, spellProto);
 
                 target->getHostileRefManager().threatAssist(pCaster, float(gain) * 0.5f * sSpellMgr.GetSpellThreatMultiplier(spellProto), spellProto);
@@ -4674,7 +4687,7 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
     m_spellAuraHolderState(SPELLAURAHOLDER_STATE_CREATED)
 {
     MANGOS_ASSERT(target);
-    MANGOS_ASSERT(spellproto && spellproto == sSpellStore.LookupEntry(spellproto->Id) && "`info` must be pointer to sSpellStore element");
+    MANGOS_ASSERT(spellproto && spellproto == sSpellTemplate.LookupEntry<SpellEntry>(spellproto->Id) && "`info` must be pointer to sSpellTemplate element");
 
     if (!caster)
         m_casterGuid = target->GetObjectGuid();
@@ -4924,7 +4937,7 @@ void SpellAuraHolder::CleanupTriggeredSpells()
         if (!tSpellId)
             continue;
 
-        SpellEntry const* tProto = sSpellStore.LookupEntry(tSpellId);
+        SpellEntry const* tProto = sSpellTemplate.LookupEntry<SpellEntry>(tSpellId);
         if (!tProto)
             continue;
 
