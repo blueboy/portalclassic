@@ -4024,7 +4024,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
             m_bot->CastSpell(pTarget, pSpellInfo, TRIGGERED_NONE);          // uni-cast spell
     }
 
-    SetIgnoreUpdateTime(CastTime + 1);
+    // Some casting times are negative so set ignore update time to 1 sec to avoid stucking the bot AI
+    SetIgnoreUpdateTime(std::max(CastTime, 0.0f) + 1);
 
     return true;
 }
