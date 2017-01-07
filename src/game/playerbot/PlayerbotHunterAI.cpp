@@ -219,6 +219,12 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVE(Unit *pTarget)
             m_ai->CastSpell(ASPECT_OF_THE_MONKEY, *m_bot);
     }
 
+    if (TRANQUILIZING_SHOT > 0 && IsTargetEnraged(pTarget) && !m_bot->HasSpellCooldown(TRANQUILIZING_SHOT) && m_ai->CastSpell(TRANQUILIZING_SHOT, *pTarget))
+    {
+        m_ai->TellMaster("Casting TRANQUILIZING SHOT onto %s", pTarget->GetName());
+        return RETURN_CONTINUE;
+    }
+
     //Used to determine if this bot has highest threat
     Unit* newTarget = m_ai->FindAttacker((PlayerbotAI::ATTACKERINFOTYPE) (PlayerbotAI::AIT_VICTIMSELF | PlayerbotAI::AIT_HIGHESTTHREAT), m_bot);
     // Aggro management
