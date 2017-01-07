@@ -350,6 +350,24 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVP(Unit* pTarget)
     return DoNextCombatManeuverPVE(pTarget); // TODO: bad idea perhaps, but better than the alternative
 }
 
+bool PlayerbotHunterAI::IsTargetEnraged(Unit* pTarget)
+{
+    if (!m_ai)  return false;
+    if (!m_bot) return false;
+    if (!pTarget) return false;
+
+    Unit::SpellAuraHolderMap const& auras = pTarget->GetSpellAuraHolderMap();
+    for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
+    {
+        SpellAuraHolder *holder = itr->second;
+        // Return true is target unit has aura with DISPEL_ENRAGE dispel type
+        if ((1 << holder->GetSpellProto()->Dispel) & GetDispellMask(DISPEL_ENRAGE))
+            return true;
+    }
+
+    return false;
+}
+
 void PlayerbotHunterAI::DoNonCombatActions()
 {
     if (!m_ai)  return;
