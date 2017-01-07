@@ -129,7 +129,8 @@ private:
            WING_CLIP,
            MONGOOSE_BITE,
            DISENGAGE,
-           DETERRENCE;
+           DETERRENCE,
+           FEIGN_DEATH;
 
     uint32 FREEZING_TRAP,
            IMMOLATION_TRAP,
