@@ -1879,6 +1879,49 @@ Item* PlayerbotAI::FindStoneFor(Item* weapon) const
     return nullptr;
 }
 
+static const uint32 uPriorizedManaPotionIds[8] =
+{
+    MAJOR_MANA_POTION, MAJOR_REJUVENATION_POTION, SUPERIOR_MANA_POTION,
+    GREATER_MANA_POTION, MANA_POTION, LESSER_MANA_POTION,
+    MINOR_MANA_POTION, MINOR_REJUVENATION_POTION
+};
+
+/**
+ * FindManaRegenItem()
+ * return Item* Returns items like runes or potion that can help the bot to instantly resplenish some of its mana
+ *
+ * return nullptr if no relevant item is found in bot inventory, else return a consumable item providing mana
+ *
+ */
+Item* PlayerbotAI::FindManaRegenItem() const
+{
+    Item* manaRegen;
+    // If bot has enough health, try to use a Demonic or Dark Rune
+    // to avoid triggering the health potion cooldown with a mana potion
+    if (m_bot->GetHealth() > 1500)
+    {
+        // First try a Demonic Rune as they are BoP
+        manaRegen = FindConsumable(DEMONIC_RUNE);
+        if (manaRegen)
+            return manaRegen;
+        else
+        {
+            manaRegen = FindConsumable(DARK_RUNE);
+            if (manaRegen)
+                return manaRegen;
+        }
+    }
+    // Else use mana potion (and knowingly trigger the health potion cooldown)
+    for (uint8 i = 0; i < countof(uPriorizedManaPotionIds); ++i)
+    {
+        manaRegen = FindConsumable(uPriorizedManaPotionIds[i]);
+        if (manaRegen)
+            return manaRegen;
+    }
+
+    return nullptr;
+}
+
 bool PlayerbotAI::FindAmmo() const
 {
     for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)

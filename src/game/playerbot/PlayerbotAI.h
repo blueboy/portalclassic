@@ -78,6 +78,24 @@ enum WeightStoneDisplayId
     DENSE_WEIGHTSTONE_DISPLAYID         = 24687
 };
 
+enum ManaPotionsId
+{
+    MINOR_MANA_POTION                   = 15715,
+    LESSER_MANA_POTION                  = 15716,
+    MANA_POTION                         = 15717,
+    GREATER_MANA_POTION                 = 15718,
+    SUPERIOR_MANA_POTION                = 24151,
+    MAJOR_MANA_POTION                   = 21672,
+    MINOR_REJUVENATION_POTION           = 2345,
+    MAJOR_REJUVENATION_POTION           = 18253
+};
+
+enum ManaRunesId
+{
+    DEMONIC_RUNE                        = 22952,
+    DARK_RUNE                           = 32905
+};
+
 enum MainSpec
 {
     MAGE_SPEC_FIRE              = 41,
@@ -393,6 +411,7 @@ public:
     Item* FindBombForLockValue(uint32 reqSkillValue);
     Item* FindConsumable(uint32 displayId) const;
     Item* FindStoneFor(Item* weapon) const;
+    Item* FindManaRegenItem() const;
     bool  FindAmmo() const;
     uint8 _findItemSlot(Item* target);
     bool CanStore();
