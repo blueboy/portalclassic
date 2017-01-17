@@ -5246,6 +5246,52 @@ void PlayerbotAI::UseItem(Item *item, uint16 targetFlag, ObjectGuid targetGUID)
     m_bot->GetSession()->QueuePacket(std::move(packet));
 }
 
+static const uint32 uPriorizedHealingItemIds[14] =
+{
+    HEALTHSTONE_DISPLAYID, MAJOR_HEALING_POTION, WHIPPER_ROOT_TUBER, NIGHT_DRAGON_BREATH, LIMITED_INVULNERABILITY_POTION, GREATER_DREAMLESS_SLEEP_POTION,
+    SUPERIOR_HEALING_POTION, CRYSTAL_RESTORE, DREAMLESS_SLEEP_POTION, GREATER_HEALING_POTION, HEALING_POTION, LESSER_HEALING_POTION, DISCOLORED_HEALING_POTION, MINOR_HEALING_POTION,
+};
+
+/**
+ * TryEmergency()
+ * Playerbot function to select an item that the bot will use to heal itself on low health without waiting for a heal from a healer
+ *
+ * params:pAttacker Unit* the creature that is attacking the bot
+ * return nothing
+ */
+void PlayerbotAI::TryEmergency(Unit* pAttacker)
+{
+    // Do not use consumable if bot can heal self
+    if (IsHealer() && GetManaPercent() > 20)
+        return;
+
+    // If bot does not have aggro: use bandage instead of potion/stone/crystal
+    if (!pAttacker && !m_bot->HasAura(11196)) // Recently bandaged
+    {
+        Item* bandage = FindBandage();
+        if (bandage)
+        {
+            SetIgnoreUpdateTime(8);
+            UseItem(bandage);
+            return;
+        }
+    }
+
+    // Else loop over the list of health consumable to pick one
+    Item* healthItem;
+    for (uint8 i = 0; i < countof(uPriorizedHealingItemIds); ++i)
+    {
+        healthItem = FindConsumable(uPriorizedHealingItemIds[i]);
+        if (healthItem)
+        {
+            UseItem(healthItem);
+            return;
+        }
+    }
+
+    return;
+}
+
 // submits packet to use an item
 void PlayerbotAI::EquipItem(Item* src_Item)
 {

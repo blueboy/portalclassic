@@ -96,6 +96,23 @@ enum ManaRunesId
     DARK_RUNE                           = 32905
 };
 
+enum HealingItemDisplayId
+{
+    MAJOR_HEALING_POTION                = 24152,
+    WHIPPER_ROOT_TUBER                  = 21974,
+    NIGHT_DRAGON_BREATH                 = 21975,
+    LIMITED_INVULNERABILITY_POTION      = 24213,
+    GREATER_DREAMLESS_SLEEP_POTION      = 17403,
+    SUPERIOR_HEALING_POTION             = 15714,
+    CRYSTAL_RESTORE                     = 2516,
+    DREAMLESS_SLEEP_POTION              = 17403,
+    GREATER_HEALING_POTION              = 15713,
+    HEALING_POTION                      = 15712,
+    LESSER_HEALING_POTION               = 15711,
+    DISCOLORED_HEALING_POTION           = 15736,
+    MINOR_HEALING_POTION                = 15710
+};
+
 enum MainSpec
 {
     MAGE_SPEC_FIRE              = 41,
@@ -436,6 +453,8 @@ public:
     void UseItem(Item *item, uint8 targetInventorySlot);
     void UseItem(Item *item, Unit *target);
     void UseItem(Item *item);
+
+    void TryEmergency(Unit* pAttacker);
 
     void PlaySound(uint32 soundid);
     void Announce(AnnounceFlags msg);
