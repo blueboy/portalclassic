@@ -1763,7 +1763,7 @@ Item* PlayerbotAI::FindBandage() const
             if (!pItemProto || m_bot->CanUseItem(pItemProto) != EQUIP_ERR_OK)
                 continue;
 
-            if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_BANDAGE)
+            if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_FOOD)
                 return pItem;
         }
     }
@@ -1782,7 +1782,7 @@ Item* PlayerbotAI::FindBandage() const
                     if (!pItemProto || m_bot->CanUseItem(pItemProto) != EQUIP_ERR_OK)
                         continue;
 
-                    if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_BANDAGE)
+                    if (pItemProto->Class == ITEM_CLASS_CONSUMABLE && pItemProto->SubClass == ITEM_SUBCLASS_FOOD)
                         return pItem;
                 }
             }
