@@ -77,6 +77,11 @@ protected:
     Player* GetResurrectionTarget(JOB_TYPE type = JOB_ALL, bool bMustBeOOC = true);
     JOB_TYPE GetTargetJob(Player* target);
 
+    bool FleeFromAoEIfCan(uint32 spellId, Unit* pTarget);
+    bool FleeFromTrapGOIfCan(uint32 goEntry, Unit* pTarget);
+    bool FleeFromNpcWithAuraIfCan(uint32 NpcEntry, uint32 spellId, Unit* pTarget);
+    bool FleeFromPointIfCan(uint32 radius, Unit* pTarget, float x0, float y0, float z0, float forcedAngle = 0.0f);
+
     // These values are used in GetHealTarget and can be overridden per class (to accomodate healing spell health checks)
     uint8 m_MinHealthPercentTank;
     uint8 m_MinHealthPercentHealer;
