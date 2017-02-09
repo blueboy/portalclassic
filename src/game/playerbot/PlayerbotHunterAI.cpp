@@ -247,7 +247,10 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVE(Unit *pTarget)
 
     // Distance management: avoid to be in the dead zone where neither melee nor range can be used: keep distance whenever possible
     // If not in range: come closer
-    if (pTarget && !m_ai->In_Reach(pTarget, AUTO_SHOT))
+    // Do not do it if passive or stay orders.
+    if (pTarget && !m_ai->In_Reach(pTarget, AUTO_SHOT) &&
+        !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_PASSIVE) &&
+        (m_bot->GetPlayerbotAI()->GetMovementOrder() != PlayerbotAI::MOVEMENT_STAY))
     {
         m_ai->InterruptCurrentCastingSpell();
         m_bot->GetMotionMaster()->MoveFollow(pTarget, 39.0f, m_bot->GetOrientation());
@@ -255,7 +258,10 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVE(Unit *pTarget)
     }
     // If below ranged combat distance and bot is not attacked by target
     // make it flee from target for a few seconds to get in ranged distance again
-    if (pVictim != m_bot && m_bot->GetCombatDistance(pTarget, true) <= 8.0f)
+    // Do not do it if passive or stay orders.
+    if (pVictim != m_bot && m_bot->GetCombatDistance(pTarget, true) <= 8.0f &&
+        !(m_ai->GetCombatOrder() & PlayerbotAI::ORDERS_PASSIVE) &&
+        (m_bot->GetPlayerbotAI()->GetMovementOrder() != PlayerbotAI::MOVEMENT_STAY))
     {
         m_ai->InterruptCurrentCastingSpell();
         m_ai->SetIgnoreUpdateTime(2);
