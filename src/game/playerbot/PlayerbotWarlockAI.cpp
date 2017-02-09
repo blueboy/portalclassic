@@ -228,10 +228,10 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
         }
     }
 
-    // Create soul shard
+    // Create soul shard (only on non-worldboss)
     uint8 freeSpace = m_ai->GetFreeBagSpace();
     uint8 HPThreshold = (m_ai->IsElite(pTarget) ? 10 : 25);
-    if (DRAIN_SOUL && pTarget->GetHealthPercent() < HPThreshold && m_ai->In_Reach(pTarget, DRAIN_SOUL) &&
+    if (DRAIN_SOUL && !m_ai->IsElite(pTarget, true) && pTarget->GetHealthPercent() < HPThreshold && m_ai->In_Reach(pTarget, DRAIN_SOUL) &&
         !pTarget->HasAura(DRAIN_SOUL) && (shardCount < MAX_SHARD_COUNT && freeSpace > 0) && CastSpell(DRAIN_SOUL, pTarget))
     {
         m_ai->SetIgnoreUpdateTime(15);
