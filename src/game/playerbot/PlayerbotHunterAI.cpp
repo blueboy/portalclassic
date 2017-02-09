@@ -240,7 +240,7 @@ CombatManeuverReturns PlayerbotHunterAI::DoNextCombatManeuverPVE(Unit *pTarget)
             if (DETERRENCE > 0 && !m_bot->HasSpellCooldown(DETERRENCE) && !m_bot->HasAura(DETERRENCE, EFFECT_INDEX_0) && m_ai->CastSpell(DETERRENCE, *m_bot))
                 return RETURN_CONTINUE;
             // Else feign death if low on health or attacked by a worldboss
-            if (FEIGN_DEATH > 0 && (m_ai->GetHealthPercent() <= 90 || m_ai->IsElite(pTarget, true)) && !m_bot->HasSpellCooldown(FEIGN_DEATH) && !m_bot->HasAura(FEIGN_DEATH, EFFECT_INDEX_0) && m_ai->CastSpell(FEIGN_DEATH, *m_bot))
+            if (FEIGN_DEATH > 0 && (m_ai->GetHealthPercent() <= 20 || m_ai->IsElite(pTarget, true)) && !m_bot->HasSpellCooldown(FEIGN_DEATH) && !m_bot->HasAura(FEIGN_DEATH, EFFECT_INDEX_0) && m_ai->CastSpell(FEIGN_DEATH, *m_bot))
                 return RETURN_CONTINUE;
         }
     }
