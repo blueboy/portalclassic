@@ -539,6 +539,8 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_lastFallTime = 0;
     m_lastFallZ = 0;
+
+    m_cannotBeDetectedTimer = 0;
 }
 
 Player::~Player()
@@ -896,7 +898,11 @@ uint32 Player::EnvironmentalDamage(EnvironmentalDamageType type, uint32 damage)
 
     damage -= absorb + resist;
 
-    DealDamageMods(this, damage, &absorb);
+    DamageEffectType damageType = SELF_DAMAGE;
+    if (type == DAMAGE_FALL && getClass() == CLASS_ROGUE)
+        damageType = SELF_DAMAGE_ROGUE_FALL;
+
+    DealDamageMods(this, damage, &absorb, damageType);
 
     WorldPacket data(SMSG_ENVIRONMENTALDAMAGELOG, (21));
     data << GetObjectGuid();
@@ -905,10 +911,6 @@ uint32 Player::EnvironmentalDamage(EnvironmentalDamageType type, uint32 damage)
     data << uint32(absorb);
     data << uint32(resist);
     SendMessageToSet(data, true);
-
-    DamageEffectType damageType = SELF_DAMAGE;
-    if (type == DAMAGE_FALL && getClass() == CLASS_ROGUE)
-        damageType = SELF_DAMAGE_ROGUE_FALL;
 
     uint32 final_damage = DealDamage(this, damage, nullptr, damageType, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
 
@@ -1246,6 +1248,9 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         else
             m_zoneUpdateTimer -= update_diff;
     }
+
+    if (m_cannotBeDetectedTimer > 0)
+        m_cannotBeDetectedTimer -= update_diff;
 
     if (isAlive())
     {
@@ -1641,6 +1646,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         if (!(options & TELE_TO_NOT_LEAVE_COMBAT))
             CombatStop();
 
+        if (!IsWithinDist3d(x, y, z, GetMap()->GetVisibilityDistance()))
+            RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_TELEPORTED);
+
         // this will be used instead of the current location in SaveToDB
         m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
         SetFallInformation(0, z);
@@ -1673,7 +1681,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             // setup delayed teleport flag
             // if teleport spell is casted in Unit::Update() func
             // then we need to delay it until update process will be finished
-            if (SetDelayedTeleportFlagIfCan())
+            if (!GetSession()->PlayerLogout() && SetDelayedTeleportFlagIfCan())
             {
                 SetSemaphoreTeleportFar(true);
                 // lets save teleport destination for player
@@ -1685,6 +1693,8 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             SetSelectionGuid(ObjectGuid());
 
             CombatStop();
+
+            RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_TELEPORTED);
 
             ResetContestedPvP();
 
@@ -6169,7 +6179,7 @@ bool Player::AddHonorCP(float honor, uint8 type, Unit* victim)
     }
 
     m_honorCP.push_back(CP);
-    
+
     WorldPacket data(SMSG_PVP_CREDIT, 4 + 8 + 4);
     data << uint32(type == DISHONORABLE ? -honor : honor);
 
@@ -6596,7 +6606,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const* proto, uint8 slot, bool appl
 
     if (proto->ArcaneRes)
         HandleStatModifier(UNIT_MOD_RESISTANCE_ARCANE, BASE_VALUE, float(proto->ArcaneRes), apply);
-    
+
     if (proto->IsWeapon())
     {
         WeaponAttackType attType = BASE_ATTACK;
@@ -9198,9 +9208,12 @@ InventoryResult Player::CanUseItem(Item* pItem, bool direct_action) const
             if (msg != EQUIP_ERR_OK)
                 return msg;
 
-            if (pItem->GetSkill() != 0)
+            if (uint32 skill = pItem->GetSkill())
             {
-                if (GetSkillValue(pItem->GetSkill()) == 0)
+                // Fist weapons use unarmed skill calculations, but we must query fist weapon skill presence to use this item
+                if (pProto->SubClass == ITEM_SUBCLASS_WEAPON_FIST)
+                    skill = SKILL_FIST_WEAPONS;
+                if (!GetSkillValue(skill))
                     return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
             }
 
@@ -10557,7 +10570,7 @@ void Player::UpdateItemDuration(uint32 time, bool realtimeonly)
         Item* item = *itr;
         ++itr;                                              // current element can be erased in UpdateDuration
 
-        if ((realtimeonly && (item->GetProto()->ExtraFlags & ITEM_EXTRA_REAL_TIME_DURATION)) || !realtimeonly)
+        if (!(realtimeonly) || (item->GetProto()->ExtraFlags & ITEM_EXTRA_REAL_TIME_DURATION))
             item->UpdateDuration(this, time);
     }
 }
@@ -10716,6 +10729,13 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
                 case ITEM_ENCHANTMENT_TYPE_NONE:
                     break;
                 case ITEM_ENCHANTMENT_TYPE_COMBAT_SPELL:
+                    if (SpellModifier* mod = item->GetEnchantmentModifier())
+                    {
+                        if (!apply)
+                            item->SetEnchantmentModifier(nullptr);
+                        else
+                            AddSpellMod(mod, apply);
+                    }
                     // processed in Player::CastItemCombatSpell
                     break;
                 case ITEM_ENCHANTMENT_TYPE_DAMAGE:
@@ -14248,7 +14268,7 @@ void Player::LoadPet()
     if (IsInWorld())
     {
         Pet* pet = new Pet;
-        if (!pet->LoadPetFromDB(this, 0, 0, true))
+        if (!pet->LoadPetFromDB(this, 0, 0, true, 0, true))
             delete pet;
     }
 }
@@ -16783,6 +16803,18 @@ void Player::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 it
                 AddSpellCooldown(*i_scset, itemId, catrecTime);
             }
         }
+
+        ItemSpellCategoryStore::const_iterator i_iscstore = sItemSpellCategoryStore.find(cat);
+        if (i_iscstore != sItemSpellCategoryStore.end())
+        {
+            for (ItemSpellCategorySet::const_iterator i_iscset = i_iscstore->second.begin(); i_iscset != i_iscstore->second.end(); ++i_iscset)
+            {
+                if ((*i_iscset).spellId == spellInfo->Id)              // skip main spell, already handled above
+                    continue;
+
+                AddSpellCooldown((*i_iscset).spellId, (*i_iscset).itemId, catrecTime);
+            }
+        }
     }
 }
 
@@ -18706,7 +18738,7 @@ void Player::UnsummonPetIfAny()
     Pet* pet = GetPet();
     if (!pet)
         return;
- 
+
     pet->Unsummon(PET_SAVE_NOT_IN_SLOT, this);
 }
 

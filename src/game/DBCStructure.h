@@ -242,6 +242,18 @@ struct CreatureTypeEntry
     // uint32    no_expirience;                             // 10       m_flags
 };
 
+struct DungeonEncounterEntry
+{
+    uint32 Id;                                              // 0        m_ID
+    uint32 mapId;                                           // 1        m_mapID
+    uint32 Difficulty;                                      // 2        m_difficulty
+    uint32 encounterData;                                   // 3        m_orderIndex
+    uint32 encounterIndex;                                  // 4        m_Bit
+    char*  encounterName[16];                               // 5-20     m_name_lang
+    uint32 nameLangFlags;                                   // 21       m_name_lang_flags
+    uint32 spellIconID;                                     // 22       m_spellIconID
+};
+
 struct DurabilityCostsEntry
 {
     uint32    Itemlvl;                                      // 0        m_ID
@@ -458,12 +470,6 @@ struct MapEntry
     bool Instanceable() const { return map_type == MAP_INSTANCE || map_type == MAP_RAID || map_type == MAP_BATTLEGROUND; }
     bool IsRaid() const { return map_type == MAP_RAID; }
     bool IsBattleGround() const { return map_type == MAP_BATTLEGROUND; }
-
-    bool IsMountAllowed() const
-    {
-        return !IsDungeon() ||
-               MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
-    }
 
     bool IsContinent() const
     {
@@ -910,8 +916,18 @@ struct WorldSafeLocsEntry
 #pragma pack(pop)
 #endif
 
+struct ItemCategorySpellPair
+{
+    uint32 spellId;
+    uint32 itemId;
+    ItemCategorySpellPair(uint32 _spellId, uint32 _itemId) : spellId(_spellId), itemId(_itemId) {}
+    bool operator <(ItemCategorySpellPair const &pair) const { return spellId == pair.spellId ? itemId < pair.itemId : spellId < pair.spellId; }
+};
+
+typedef std::set<ItemCategorySpellPair> ItemSpellCategorySet;
+typedef std::map<uint32, ItemSpellCategorySet > ItemSpellCategoryStore;
 typedef std::set<uint32> SpellCategorySet;
-typedef std::map<uint32, SpellCategorySet > SpellCategoryStore;
+typedef std::map<uint32, SpellCategorySet> SpellCategoryStore;
 typedef std::set<uint32> PetFamilySpellsSet;
 typedef std::map<uint32, PetFamilySpellsSet > PetFamilySpellsStore;
 

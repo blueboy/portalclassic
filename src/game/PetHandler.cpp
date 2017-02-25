@@ -111,7 +111,7 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                     }
                     break;
                 }
-                case COMMAND_ABANDON:
+                case COMMAND_DISMISS:
                     _player->Uncharm();
                     break;
                 default:
@@ -181,15 +181,19 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                                 }
                             }
                             else
-                                pet->Attack(targetUnit, true);
+                                petUnit->Attack(targetUnit, true);
                         }
                     }
                     break;
                 }
-                case COMMAND_ABANDON:                       // abandon (hunter pet) or dismiss (summoned pet)
+                case COMMAND_DISMISS:                       // dismiss permanent pet, remove temporary pet, uncharm unit
                 {
-                    if (pet && pet->getPetType() == HUNTER_PET)
-                        pet->Unsummon(PET_SAVE_AS_DELETED, _player);
+                    if (pet)
+                    {
+                        // No action for Hunter pets, Hunters must use their Dismiss Pet spell
+                        if (pet->getPetType() != HUNTER_PET)
+                            petUnit->SetDeathState(CORPSE);
+                    }
                     else
                     {
                         // dismissing a summoned pet is like killing them (this prevents returning a soulshard...)
@@ -537,7 +541,7 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     Pet* pet = _player->GetMap()->GetPet(petGuid);
     // check it!
     if (!pet || pet->getPetType() != HUNTER_PET ||
-            !pet->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME) ||
+            !pet->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_RENAME) ||
             pet->GetOwnerGuid() != _player->GetObjectGuid() || !pet->GetCharmInfo())
         return;
 
@@ -559,7 +563,7 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     if (_player->GetGroup())
         _player->SetGroupUpdateFlag(GROUP_UPDATE_FLAG_PET_NAME);
 
-    pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME);
+    pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_RENAME);
 
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.escape_string(name);
@@ -582,8 +586,7 @@ void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
     // pet/charmed
     if (Unit* petUnit = _player->GetMap()->GetUnit(guid))
     {
-        if (!petUnit ||
-            petUnit->GetOwnerGuid() != _player->GetObjectGuid() || !petUnit->GetCharmInfo())
+        if (petUnit->GetOwnerGuid() != _player->GetObjectGuid() || !petUnit->GetCharmInfo())
             return;
 
         Creature* petCreature = petUnit->GetTypeId() == TYPEID_UNIT ? static_cast<Creature*>(petUnit) : nullptr;
@@ -591,10 +594,12 @@ void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
 
         if (pet)
         {
-            if (pet->GetObjectGuid() == _player->GetPetGuid())
-                pet->ModifyPower(POWER_HAPPINESS, -50000);
-
-            pet->Unsummon(PET_SAVE_AS_DELETED, _player);
+            // Permanently abandon pet
+            if (pet->getPetType() == HUNTER_PET)
+                pet->Unsummon(PET_SAVE_AS_DELETED, _player);
+            // Simply dismiss
+            else
+                petUnit->SetDeathState(CORPSE);
         }
         else if (petUnit->GetObjectGuid() == _player->GetCharmGuid())
         {

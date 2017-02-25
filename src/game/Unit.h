@@ -88,7 +88,7 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_CHANGE_MAP                  = 0x00080000,   // 19   leaving map/getting teleported
     AURA_INTERRUPT_FLAG_IMMUNE_OR_LOST_SELECTION    = 0x00100000,   // 20   removed by auras that make you invulnerable, or make other to loose selection on you
     AURA_INTERRUPT_FLAG_UNK21                       = 0x00200000,   // 21
-    AURA_INTERRUPT_FLAG_UNK22                       = 0x00400000,   // 22
+    AURA_INTERRUPT_FLAG_TELEPORTED                  = 0x00400000,   // 22
     AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT            = 0x00800000,   // 23   removed by entering pvp combat
     AURA_INTERRUPT_FLAG_DIRECT_DAMAGE               = 0x01000000    // 24   removed by any direct damage
 };
@@ -270,7 +270,7 @@ enum UnitModifierType
 {
     BASE_VALUE = 0,
     BASE_EXCLUSIVE = 1,
-    BASE_PCT = 2,    
+    BASE_PCT = 2,
     TOTAL_VALUE = 3,
     TOTAL_PCT = 4,
     MODIFIER_TYPE_END = 5
@@ -488,8 +488,8 @@ enum UnitFlags
     UNIT_FLAG_NON_ATTACKABLE        = 0x00000002,           // not attackable
     UNIT_FLAG_DISABLE_MOVE          = 0x00000004,
     UNIT_FLAG_PVP_ATTACKABLE        = 0x00000008,           // allow apply pvp rules to attackable state in addition to faction dependent state, UNIT_FLAG_UNKNOWN1 in pre-bc mangos
-    UNIT_FLAG_RENAME                = 0x00000010,           // rename creature
-    UNIT_FLAG_RESTING               = 0x00000020,
+    UNIT_FLAG_PET_RENAME            = 0x00000010,           // Old pet rename: moved to UNIT_FIELD_BYTES_2,2 in TBC+
+    UNIT_FLAG_PET_ABANDON           = 0x00000020,           // Old pet abandon: moved to UNIT_FIELD_BYTES_2,2 in TBC+
     UNIT_FLAG_UNK_6                 = 0x00000040,
     UNIT_FLAG_OOC_NOT_ATTACKABLE    = 0x00000100,           // (OOC Out Of Combat) Can not be attacked when not in combat. Removed if unit for some reason enter combat (flag probably removed for the attacked and it's party/group only)
     UNIT_FLAG_PASSIVE               = 0x00000200,           // makes you unable to attack everything. Almost identical to our "civilian"-term. Will ignore it's surroundings and not engage in combat unless "called upon" or engaged by another unit.
@@ -740,6 +740,41 @@ enum MeleeHitOutcome
     MELEE_HIT_BLOCK_CRIT = 9,
 };
 
+enum UnitCombatDieSide
+{
+    UNIT_COMBAT_DIE_MISS,
+    UNIT_COMBAT_DIE_RESIST,
+    UNIT_COMBAT_DIE_DODGE,
+    UNIT_COMBAT_DIE_PARRY,
+    UNIT_COMBAT_DIE_DEFLECT,
+    UNIT_COMBAT_DIE_BLOCK,
+    UNIT_COMBAT_DIE_GLANCE,
+    UNIT_COMBAT_DIE_CRIT,
+    UNIT_COMBAT_DIE_CRUSH,
+    UNIT_COMBAT_DIE_HIT,
+};
+
+#define NUM_UNIT_COMBAT_DIE_SIDES (UNIT_COMBAT_DIE_HIT + 1)
+
+// A little helper func for a nice attack table debug output
+inline const char* UnitCombatDieSideText(UnitCombatDieSide side)
+{
+    switch (side)
+    {
+        case UNIT_COMBAT_DIE_MISS:    return "MISS";
+        case UNIT_COMBAT_DIE_RESIST:  return "RESIST";
+        case UNIT_COMBAT_DIE_DODGE:   return "DODGE";
+        case UNIT_COMBAT_DIE_PARRY:   return "PARRY";
+        case UNIT_COMBAT_DIE_DEFLECT: return "DEFLECT";
+        case UNIT_COMBAT_DIE_BLOCK:   return "BLOCK";
+        case UNIT_COMBAT_DIE_GLANCE:  return "GLANCE";
+        case UNIT_COMBAT_DIE_CRIT:    return "CRIT";
+        case UNIT_COMBAT_DIE_CRUSH:   return "CRUSH";
+        case UNIT_COMBAT_DIE_HIT:     return "HIT";
+    }
+    return "INVALID";
+}
+
 struct CleanDamage
 {
     CleanDamage(uint32 _damage, WeaponAttackType _attackType, MeleeHitOutcome _hitOutCome) :
@@ -891,7 +926,7 @@ enum CommandStates
     COMMAND_STAY    = 0,
     COMMAND_FOLLOW  = 1,
     COMMAND_ATTACK  = 2,
-    COMMAND_ABANDON = 3
+    COMMAND_DISMISS = 3
 };
 
 #define UNIT_ACTION_BUTTON_ACTION(X) (uint32(X) & 0x00FFFFFF)
@@ -1220,6 +1255,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
          */
         bool CanReachWithMeleeAttack(Unit const* pVictim, float flat_mod = 0.0f) const;
         uint32 m_extraAttacks;
+        void DoExtraAttacks(Unit* pVictim);
 
         void _addAttacker(Unit* pAttacker)                  //< (Internal Use) must be called only from Unit::Attack(Unit*)
         {
@@ -1378,7 +1414,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void Unmount(bool from_aura = false);
 
         uint16 GetMaxSkillValueForLevel(Unit const* target = nullptr) const { return (target ? GetLevelForTarget(target) : getLevel()) * 5; }
-        void DealDamageMods(Unit* pVictim, uint32& damage, uint32* absorb);
+        void DealDamageMods(Unit* pVictim, uint32& damage, uint32* absorb, DamageEffectType damagetype, SpellEntry const* spellProto = nullptr);
         uint32 DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss);
         int32 DealHeal(Unit* pVictim, uint32 addhealth, SpellEntry const* spellProto, bool critical = false);
 
@@ -1398,11 +1434,9 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, SpellEntry const* spellInfo, WeaponAttackType attackType = BASE_ATTACK);
         void DealSpellDamage(SpellNonMeleeDamage* damageInfo, bool durabilityLoss);
 
-        float  SpellResistChance(Unit* pVictim, SpellEntry const* spell);
         SpellMissInfo MeleeSpellHitResult(Unit* pVictim, SpellEntry const* spell);
-        float  MagicSpellMissChance(Unit* pVictim, SpellEntry const* spell);
-        SpellMissInfo MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell);
-        SpellMissInfo SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool canReflect = false);
+        SpellMissInfo MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell, SpellSchoolMask schoolMask);
+        SpellMissInfo SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool reflectable = false);
 
         // Unit Combat reactions API: Dodge/Parry/Block
         bool CanDodge() const { return m_canDodge; }
@@ -1422,8 +1456,8 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool CanDodgeInCombat(const Unit* attacker) const;
         bool CanParryInCombat() const;
         bool CanParryInCombat(const Unit* attacker) const;
-        bool CanBlockInCombat() const;
-        bool CanBlockInCombat(const Unit* attacker) const;
+        bool CanBlockInCombat(SpellSchoolMask weaponSchoolMask = SPELL_SCHOOL_MASK_NORMAL) const;
+        bool CanBlockInCombat(const Unit* attacker, SpellSchoolMask weaponSchoolMask = SPELL_SCHOOL_MASK_NORMAL) const;
         bool CanCrushInCombat() const;
         bool CanCrushInCombat(const Unit* victim) const;
         bool CanGlanceInCombat() const { return CanGlance(); }
@@ -1438,36 +1472,59 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool CanBlockAbility(const Unit* attacker, const SpellEntry* ability, bool miss = false) const;
         bool CanDeflectAbility(const Unit* attacker, const SpellEntry* ability) const;
 
-        float CalculateEffectiveDodgeChance(const Unit* attacker, WeaponAttackType attType, bool weapon = true) const;
-        float CalculateEffectiveParryChance(const Unit* attacker, WeaponAttackType attType, bool weapon = true) const;
-        float CalculateEffectiveBlockChance(const Unit* attacker, WeaponAttackType attType, bool weapon = true) const;
+        float CalculateEffectiveDodgeChance(const Unit* attacker, WeaponAttackType attType, const SpellEntry* ability = nullptr) const;
+        float CalculateEffectiveParryChance(const Unit* attacker, WeaponAttackType attType, const SpellEntry* ability = nullptr) const;
+        float CalculateEffectiveBlockChance(const Unit* attacker, WeaponAttackType attType, const SpellEntry* ability = nullptr) const;
         float CalculateEffectiveCrushChance(const Unit* victim, WeaponAttackType attType) const;
         float CalculateEffectiveGlanceChance(const Unit* victim, WeaponAttackType attType) const;
         float CalculateEffectiveDazeChance(const Unit* victim, WeaponAttackType attType) const;
 
-        float CalculateAbilityDodgeChance(const Unit* attacker, const SpellEntry* ability) const;
-        float CalculateAbilityParryChance(const Unit* attacker, const SpellEntry* ability) const;
-        float CalculateAbilityBlockChance(const Unit* attacker, const SpellEntry* ability) const;
         float CalculateAbilityDeflectChance(const Unit* attacker, const SpellEntry* ability) const;
+
+        bool RollAbilityPartialBlockOutcome(const Unit* attacker, WeaponAttackType attType, const SpellEntry* ability) const;
 
         float GetDodgeChance() const;
         float GetParryChance() const;
         float GetBlockChance() const;
 
-        bool CanCrit(WeaponAttackType attType) const { return (GetCritChance(attType) >= 0.01f); }
-        bool CanCrit(SpellSchoolMask schoolMask) const { return (GetCritChance(schoolMask) >= 0.01f); }
-        bool CanCrit(const SpellEntry* entry, SpellSchoolMask schoolMask, WeaponAttackType attType) const;
+        float GetReflectChance(SpellSchoolMask schoolMask) const;
 
-        float GetCritChance(WeaponAttackType attackType) const;
-        float GetCritChance(SpellSchoolMask schoolMask) const;
+        virtual bool CanCrit(WeaponAttackType attType) const { return (GetCritChance(attType) >= 0.005f); }
+        virtual bool CanCrit(SpellSchoolMask schoolMask) const { return (GetCritChance(schoolMask) >= 0.005f); }
+        virtual bool CanCrit(const SpellEntry* entry, SpellSchoolMask schoolMask, WeaponAttackType attType) const;
 
-        float CalculateEffectiveCritChance(const Unit* victim, WeaponAttackType attType, bool weapon = true, bool ability = false) const;
-        float CalculateEffectiveMissChance(const Unit* victim, WeaponAttackType attType, bool weapon = true, bool ability = false) const;
+        virtual float GetCritChance(WeaponAttackType attackType) const;
+        virtual float GetCritChance(SpellSchoolMask schoolMask) const;
+        virtual float GetCritChance(const SpellEntry* entry, SpellSchoolMask schoolMask) const;
 
-        float CalculateAbilityCritChance(const Unit* victim, WeaponAttackType attType, const SpellEntry* ability) const;
-        float CalculateAbilityMissChance(const Unit* victim, WeaponAttackType attType, const SpellEntry* ability) const;
+        virtual float GetCritTakenChance(SpellSchoolMask dmgSchoolMask, SpellDmgClass dmgClass, bool heal = false) const;
+
+        virtual float GetCritMultiplier(SpellSchoolMask dmgSchoolMask, uint32 creatureTypeMask, const SpellEntry* spell = nullptr, bool heal = false) const;
+        virtual float GetCritTakenMultiplier(SpellSchoolMask dmgSchoolMask, SpellDmgClass dmgClass, float ignorePct = 0.0f, bool heal = false) const;
+        uint32 CalculateCritAmount(const Unit* victim, uint32 amount, const SpellEntry* entry, bool heal = false) const;
+        uint32 CalculateCritAmount(CalcDamageInfo* meleeInfo) const;
+
+        virtual float GetHitChance(WeaponAttackType attackType) const;
+        virtual float GetHitChance(SpellSchoolMask schoolMask) const;
+        virtual float GetHitChance(const SpellEntry* entry, SpellSchoolMask schoolMask) const;
+
+        virtual float GetMissChance(WeaponAttackType attackType) const;
+        virtual float GetMissChance(SpellSchoolMask schoolMask) const;
+        virtual float GetMissChance(const SpellEntry* entry, SpellSchoolMask schoolMask) const;
+
+        float CalculateEffectiveCritChance(const Unit* victim, WeaponAttackType attType, const SpellEntry *ability = nullptr) const;
+        float CalculateEffectiveMissChance(const Unit* victim, WeaponAttackType attType, const SpellEntry *ability = nullptr) const;
 
         float CalculateSpellCritChance(const Unit* victim, SpellSchoolMask schoolMask, const SpellEntry* spell) const;
+        float CalculateSpellMissChance(const Unit* victim, SpellSchoolMask schoolMask, const SpellEntry* spell) const;
+
+        bool RollSpellCritOutcome(const Unit* victim, SpellSchoolMask schoolMask, const SpellEntry* spell) const;
+
+        virtual int32 GetResistancePenetration(SpellSchools school) const;
+
+        float CalculateEffectiveMagicResistancePercent(const Unit* attacker, SpellSchoolMask schoolMask, bool binary = false) const;
+
+        float CalculateSpellResistChance(const Unit* victim, SpellSchoolMask schoolMask, const SpellEntry* spell) const;
 
         virtual uint32 GetShieldBlockValue() const = 0;
         uint32 GetUnitMeleeSkill(Unit const* target = nullptr) const { return (target ? GetLevelForTarget(target) : getLevel()) * 5; }
@@ -1550,39 +1607,39 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers powertype);
         uint32 SpellNonMeleeDamageLog(Unit* pVictim, uint32 spellID, uint32 damage);
 
-        void CastSpell(Unit* Victim, uint32 spellId, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
-        void CastSpell(Unit* Victim, SpellEntry const* spellInfo, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
-        void CastCustomSpell(Unit* Victim, uint32 spellId, int32 const* bp0, int32 const* bp1, int32 const* bp2, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
-        void CastCustomSpell(Unit* Victim, SpellEntry const* spellInfo, int32 const* bp0, int32 const* bp1, int32 const* bp2, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
-        void CastSpell(float x, float y, float z, uint32 spellId, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
-        void CastSpell(float x, float y, float z, SpellEntry const* spellInfo, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
+        SpellCastResult CastSpell(Unit* Victim, uint32 spellId, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
+        SpellCastResult CastSpell(Unit* Victim, SpellEntry const* spellInfo, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
+        SpellCastResult CastCustomSpell(Unit* Victim, uint32 spellId, int32 const* bp0, int32 const* bp1, int32 const* bp2, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
+        SpellCastResult CastCustomSpell(Unit* Victim, SpellEntry const* spellInfo, int32 const* bp0, int32 const* bp1, int32 const* bp2, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
+        SpellCastResult CastSpell(float x, float y, float z, uint32 spellId, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
+        SpellCastResult CastSpell(float x, float y, float z, SpellEntry const* spellInfo, uint32 triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr);
 
         // Single flag overload uint32
-        void CastSpell(Unit* Victim, uint32 spellId, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
+        SpellCastResult CastSpell(Unit* Victim, uint32 spellId, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
         {
-            CastSpell(Victim, spellId, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
+            return CastSpell(Victim, spellId, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
         }
-        void CastCustomSpell(Unit* Victim, uint32 spellId, int32 const* bp0, int32 const* bp1, int32 const* bp2, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
+        SpellCastResult CastCustomSpell(Unit* Victim, uint32 spellId, int32 const* bp0, int32 const* bp1, int32 const* bp2, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
         {
-            CastCustomSpell(Victim, spellId, bp0, bp1, bp2, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
+            return CastCustomSpell(Victim, spellId, bp0, bp1, bp2, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
         }
-        void CastSpell(float x, float y, float z, uint32 spellId, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
+        SpellCastResult CastSpell(float x, float y, float z, uint32 spellId, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
         {
-            CastSpell(x, y, z, spellId, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
+            return CastSpell(x, y, z, spellId, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
         }
 
         // Single flag overload SpellEntry
-        void CastSpell(Unit* Victim, SpellEntry const* spellInfo, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
+        SpellCastResult CastSpell(Unit* Victim, SpellEntry const* spellInfo, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
         {
-            CastSpell(Victim, spellInfo, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
+            return CastSpell(Victim, spellInfo, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
         }
-        void CastCustomSpell(Unit* Victim, SpellEntry const* spellInfo, int32 const* bp0, int32 const* bp1, int32 const* bp2, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
+        SpellCastResult CastCustomSpell(Unit* Victim, SpellEntry const* spellInfo, int32 const* bp0, int32 const* bp1, int32 const* bp2, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
         {
-            CastCustomSpell(Victim, spellInfo, bp0, bp1, bp2, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
+            return CastCustomSpell(Victim, spellInfo, bp0, bp1, bp2, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
         }
-        void CastSpell(float x, float y, float z, SpellEntry const* spellInfo, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
+        SpellCastResult CastSpell(float x, float y, float z, SpellEntry const* spellInfo, TriggerCastFlags triggeredFlags, Item* castItem = nullptr, Aura* triggeredByAura = nullptr, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = nullptr)
         {
-            CastSpell(x, y, z, spellInfo, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
+            return CastSpell(x, y, z, spellInfo, uint32(triggeredFlags), castItem, triggeredByAura, originalCaster, triggeredBy);
         }
 
         void DeMorph();
@@ -1616,9 +1673,9 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void SetFacingTo(float ori);
         void SetFacingToObject(WorldObject* pObject);
 
-        bool isAlive() const { return (m_deathState == ALIVE); };
-        bool isDead() const { return (m_deathState == DEAD || m_deathState == CORPSE); };
-        DeathState getDeathState() const { return m_deathState; };
+        bool isAlive() const { return (m_deathState == ALIVE); }
+        bool isDead() const { return (m_deathState == DEAD || m_deathState == CORPSE); }
+        DeathState getDeathState() const { return m_deathState; }
         virtual void SetDeathState(DeathState s);           // overwritten in Creature/Player/Pet
 
         bool IsTargetUnderControl(Unit const& target) const;
@@ -1848,7 +1905,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void AddThreat(Unit* pVictim, float threat = 0.0f, bool crit = false, SpellSchoolMask schoolMask = SPELL_SCHOOL_MASK_NONE, SpellEntry const* threatSpell = nullptr);
         float ApplyTotalThreatModifier(float threat, SpellSchoolMask schoolMask = SPELL_SCHOOL_MASK_NORMAL);
         void DeleteThreatList();
-        bool IsSecondChoiceTarget(Unit* pTarget, bool checkThreatArea);
+        bool IsSecondChoiceTarget(Unit* pTarget, bool taunt, bool checkThreatArea);
         bool SelectHostileTarget();
         void TauntApply(Unit* pVictim);
         void TauntFadeOut(Unit* taunter);
@@ -1933,11 +1990,6 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 MeleeDamageBonusDone(Unit* pVictim, uint32 damage, WeaponAttackType attType, SpellEntry const* spellProto = nullptr, DamageEffectType damagetype = DIRECT_DAMAGE, uint32 stack = 1, bool flat = true);
         uint32 MeleeDamageBonusTaken(Unit* pCaster, uint32 pdamage, WeaponAttackType attType, SpellEntry const* spellProto = nullptr, DamageEffectType damagetype = DIRECT_DAMAGE, uint32 stack = 1, bool flat = true);
 
-        bool   IsSpellCrit(Unit* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType = BASE_ATTACK);
-        uint32 SpellCriticalDamageBonus(SpellEntry const* spellProto, uint32 amount, Unit* pVictim) const;
-        uint32 SpellCriticalHealingBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim) const;
-        uint32 MeleeCriticalDamageBonus(WeaponAttackType attackType, SpellSchoolMask schoolMask, uint32* cleanDamage, uint32 amount, Unit* pVictim);
-
         bool IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, SpellEntry const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, SpellProcEventEntry const*& spellProcEvent);
         // Aura proc handlers
         SpellAuraProcResult HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura* triggeredByAura, SpellEntry const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
@@ -1977,8 +2029,6 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         virtual bool IsImmuneToDamage(SpellSchoolMask meleeSchoolMask);
         virtual bool IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const;
 
-        uint32 CalculateEffectiveMagicResistance(Unit* attacker, SpellSchoolMask schoolMask) const;
-        float CalculateMagicResistanceMitigation(Unit* attacker, uint32 resistance, SpellSchoolMask schoolMask, bool binary) const;
         uint32 CalcArmorReducedDamage(Unit* pVictim, const uint32 damage);
         void CalculateDamageAbsorbAndResist(Unit* pCaster, SpellSchoolMask schoolMask, DamageEffectType damagetype, const uint32 damage, uint32* absorb, uint32* resist, bool canReflect = false, bool ignoreResists = false, bool binary = false);
         void CalculateAbsorbResistBlock(Unit* pCaster, SpellNonMeleeDamage* damageInfo, SpellEntry const* spellProto, WeaponAttackType attType = BASE_ATTACK);
@@ -2067,6 +2117,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         virtual bool CanSwim() const = 0;
         virtual bool CanFly() const = 0;
         virtual bool CanWalk() const = 0;
+        virtual bool CanBeDetected() const { return true; }
 
         void ForceHealthAndPowerUpdate();   // force server to send new value for hp and power (including max)
 
@@ -2267,6 +2318,32 @@ bool Unit::CheckAllControlledUnits(Func const& func, uint32 controlledMask) cons
 
     return false;
 }
+
+// Helper for targets nearest to the spell target
+// The spell target is always first unless there is a target at _completely_ the same position (unbelievable case)
+struct TargetDistanceOrderNear : public std::binary_function<Unit const, Unit const, bool>
+{
+    Unit const* m_mainTarget;
+    TargetDistanceOrderNear(Unit const* target) : m_mainTarget(target) {}
+    // functor for operator ">"
+    bool operator()(Unit const* _Left, Unit const* _Right) const
+    {
+        return m_mainTarget->GetDistanceOrder(_Left, _Right);
+    }
+};
+
+// Helper for targets furthest away to the spell target
+// The spell target is always first unless there is a target at _completely_ the same position (unbelievable case)
+struct TargetDistanceOrderFarAway : public std::binary_function<Unit const, Unit const, bool>
+{
+    Unit const* m_mainTarget;
+    TargetDistanceOrderFarAway(Unit const* target) : m_mainTarget(target) {}
+    // functor for operator "<"
+    bool operator()(Unit const* _Left, Unit const* _Right) const
+    {
+        return !m_mainTarget->GetDistanceOrder(_Left, _Right);
+    }
+};
 
 /** @} */
 
