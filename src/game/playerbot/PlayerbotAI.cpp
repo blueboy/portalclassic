@@ -1321,6 +1321,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             LootItemList lootList;
             loot->GetLootItemsListFor(m_bot, lootList);
 
+            bool lootableItemsPresent = false;
             for (LootItemList::const_iterator lootItr = lootList.begin(); lootItr != lootList.end(); ++lootItr)
             {
                 LootItem* lootItem = *lootItr;
@@ -1328,6 +1329,8 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                 // Skip non lootable items
                 if (lootItem->GetSlotTypeForSharedLoot(m_bot, loot) != LOOT_SLOT_NORMAL)
                     continue;
+
+                lootableItemsPresent = true;
 
                 // If bot is skinning or has collect all orders: autostore all items
                 // else bot has order to only loot quest or useful items
@@ -1352,7 +1355,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 
                     ObjectGuid const& lguid = loot->GetLootGuid();
 
-                    // Check that bot has either equiped or received the item
+                    // Check that bot has either equipped or received the item
                     // then change item's loot state
                     if (result == EQUIP_ERR_OK && lguid.IsItem())
                     {
@@ -1360,6 +1363,16 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                             item->SetLootState(ITEM_LOOT_CHANGED);
                     }
                 }
+            }
+
+            if (!lootableItemsPresent)
+            {
+            // if previous is current, clear
+                if (m_lootPrev == m_lootCurrent)
+                    m_lootPrev = ObjectGuid();
+
+                // clear current target
+                m_lootCurrent = ObjectGuid();
             }
 
             // release loot
@@ -2666,7 +2679,7 @@ void PlayerbotAI::DoLoot()
                 *packet << m_lootCurrent;
                 m_bot->GetSession()->QueuePacket(std::move(packet));
                 return; // no further processing is needed
-                // m_lootCurrent is reset in SMSG_LOOT_RELEASE_RESPONSE after checking for skinloot
+                // m_lootCurrent is reset in SMSG_LOOT_RESPONSE/SMSG_LOOT_RELEASE_RESPONSE
             }
             else if (c->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
                 // not all creature skins are leather, some are ore or herb
