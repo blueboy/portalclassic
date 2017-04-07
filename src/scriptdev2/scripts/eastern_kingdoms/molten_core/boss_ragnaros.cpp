@@ -16,18 +16,13 @@
 
 /* ScriptData
 SDName: Boss_Ragnaros
-SD%Complete: 70
-SDComment: Melee/ Range Combat behavior is not correct(any enemy in melee range, not only getVictim), Some abilities are missing
+SD%Complete: 99
+SDComment: Submerge emote is not played
 SDCategory: Molten Core
 EndScriptData */
 
 #include "precompiled.h"
 #include "molten_core.h"
-
-/* There have been quite some bugs about his spells, keep this as reference untill all finished
- * Missing features (based on wowwiki)
- *   Lava Burst - this spell is handled by Go 178088 which is summoned by spells 21886, 21900 - 21907
- */
 
 enum
 {
@@ -40,14 +35,17 @@ enum
     SAY_MAGMABURST              = -1409018,
 
     SPELL_WRATH_OF_RAGNAROS     = 20566,
-    SPELL_ELEMENTAL_FIRE        = 20564,
+    SPELL_ELEMENTAL_FIRE        = 20563,                    // Aura, proc spell 20564 when doing melee damage
     SPELL_MAGMA_BLAST           = 20565,                    // Ranged attack if nobody is in melee range
     SPELL_MELT_WEAPON           = 21387,
     SPELL_RAGNA_SUBMERGE        = 21107,                    // Stealth aura
     SPELL_RAGNA_EMERGE          = 20568,                    // Emerge from lava
+    SPELL_SUBMERGE_EFFECT       = 21859,                    // Make Ragnaros immune and passive while submerged
     SPELL_ELEMENTAL_FIRE_KILL   = 19773,
     SPELL_MIGHT_OF_RAGNAROS     = 21154,
     SPELL_INTENSE_HEAT          = 21155,
+    SPELL_LAVA_BURST            = 21908,                    // Randomly trigger one of spells 21886, 21900 - 21907 which summons Go 178088
+    SPELL_SUMMON_SONS_FLAME     = 21108,                    // Trigger the eight spells summoning the Son of Flame adds
 
     MAX_ADDS_IN_SUBMERGE        = 8,
     NPC_SON_OF_FLAME            = 12143,
@@ -70,8 +68,8 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
     uint32 m_uiWrathOfRagnarosTimer;
     uint32 m_uiHammerTimer;
     uint32 m_uiMagmaBlastTimer;
-    uint32 m_uiElementalFireTimer;
     uint32 m_uiSubmergeTimer;
+    uint32 m_uiLavaBurstTimer;
     uint32 m_uiAttackTimer;
     uint32 m_uiAddCount;
 
@@ -82,10 +80,10 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
 
     void Reset() override
     {
-        m_uiWrathOfRagnarosTimer = 30000;                   // TODO Research more, according to wowwiki 25s, but timers up to 34s confirmed
-        m_uiHammerTimer = 11000;                            // TODO wowwiki states 20-30s timer, but ~11s confirmed
+        m_uiWrathOfRagnarosTimer = 30000;
+        m_uiHammerTimer = 11000;
         m_uiMagmaBlastTimer = 2000;
-        m_uiElementalFireTimer = 3000;
+        m_uiLavaBurstTimer = 20 * IN_MILLISECONDS;
         m_uiSubmergeTimer = 3 * MINUTE * IN_MILLISECONDS;
         m_uiAttackTimer = 90 * IN_MILLISECONDS;
         m_uiAddCount = 0;
@@ -118,6 +116,7 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
             return;
 
         DoCastSpellIfCan(m_creature, SPELL_MELT_WEAPON);
+        DoCastSpellIfCan(m_creature, SPELL_ELEMENTAL_FIRE);
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_RAGNAROS, IN_PROGRESS);
@@ -128,7 +127,9 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
         if (m_pInstance)
             m_pInstance->SetData(TYPE_RAGNAROS, FAIL);
 
-        // Reset flag if had been submerged
+        // Reset flag if Ragnaros had been submerged
+        if (m_bIsSubmerged)
+            DoCastSpellIfCan(m_creature, SPELL_RAGNA_EMERGE);
         if (m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))
             m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
 
@@ -154,8 +155,6 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
         {
             if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 pSummoned->AI()->AttackStart(pTarget);
-
-            ++m_uiAddCount;
         }
         else if (pSummoned->GetEntry() == NPC_FLAME_OF_RAGNAROS)
             pSummoned->CastSpell(pSummoned, SPELL_INTENSE_HEAT, TRIGGERED_OLD_TRIGGERED, nullptr, nullptr, m_creature->GetObjectGuid());
@@ -166,6 +165,30 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
         // As Majordomo is now killed, the last timer (until attacking) must be handled with ragnaros script
         if (pSpell->Id == SPELL_ELEMENTAL_FIRE_KILL && pTarget->GetTypeId() == TYPEID_UNIT && pTarget->GetEntry() == NPC_MAJORDOMO)
             m_uiEnterCombatTimer = 10000;
+    }
+
+    // Custom threat management for targets in melee range
+    bool CanMeleeTargetInRange()
+    {
+        // If a target is found in melee range (descending threat), attack it
+        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 0, uint32(0), SELECT_FLAG_IN_MELEE_RANGE))
+        {
+            // Target is not current victim, force select and attack it
+            if (pTarget != m_creature->getVictim())
+            {
+                AttackStart(pTarget);
+                m_creature->SetInFront(pTarget);
+            }
+            // Make sure our attack is ready
+            if (m_creature->isAttackReady())
+            {
+                m_creature->AttackerStateUpdate(pTarget);
+                m_creature->resetAttackTimer();
+                m_bHasYelledMagmaBurst = false;
+            }
+            return true;
+        }
+        return false;
     }
 
     void UpdateAI(const uint32 uiDiff) override
@@ -208,6 +231,8 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
             if (m_uiAttackTimer < uiDiff)
             {
                 // Become emerged again
+                m_creature->RemoveAurasDueToSpell(SPELL_RAGNA_SUBMERGE);
+                m_creature->RemoveAurasDueToSpell(SPELL_SUBMERGE_EFFECT);
                 DoCastSpellIfCan(m_creature, SPELL_RAGNA_EMERGE);
                 m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 m_uiSubmergeTimer = 3 * MINUTE * IN_MILLISECONDS;
@@ -227,20 +252,20 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
             if (DoCastSpellIfCan(m_creature, SPELL_WRATH_OF_RAGNAROS) == CAST_OK)
             {
                 DoScriptText(SAY_WRATH, m_creature);
-                m_uiWrathOfRagnarosTimer = 30000;
+                m_uiWrathOfRagnarosTimer = 25000;
             }
         }
         else
             m_uiWrathOfRagnarosTimer -= uiDiff;
 
-        // Elemental Fire Timer
-        if (m_uiElementalFireTimer < uiDiff)
+        // Lava Burst Timer
+        if (m_uiLavaBurstTimer < uiDiff)
         {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_ELEMENTAL_FIRE) == CAST_OK)
-                m_uiElementalFireTimer = urand(10000, 14000);
+            if (DoCastSpellIfCan(m_creature, SPELL_LAVA_BURST) == CAST_OK)
+                m_uiLavaBurstTimer = urand(5000, 25000);                   // Upper value is guess work based on videos. It could be up to 45 secs
         }
         else
-            m_uiElementalFireTimer -= uiDiff;
+            m_uiLavaBurstTimer -= uiDiff;
 
         // Hammer of Ragnaros
         if (m_uiHammerTimer < uiDiff)
@@ -250,11 +275,11 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
                 if (DoCastSpellIfCan(pTarget, SPELL_MIGHT_OF_RAGNAROS) == CAST_OK)
                 {
                     DoScriptText(SAY_HAMMER, m_creature);
-                    m_uiHammerTimer = 11000;
+                    m_uiHammerTimer = urand(11000, 30000);
                 }
             }
             else
-                m_uiHammerTimer = 11000;
+                m_uiHammerTimer = urand(11000, 30000);
         }
         else
             m_uiHammerTimer -= uiDiff;
@@ -263,47 +288,32 @@ struct boss_ragnarosAI : public Scripted_NoMovementAI
         if (m_uiSubmergeTimer < uiDiff)
         {
             // Submerge and attack again after 90 secs
-            DoCastSpellIfCan(m_creature, SPELL_RAGNA_SUBMERGE, CAST_INTERRUPT_PREVIOUS);
             m_creature->HandleEmote(EMOTE_ONESHOT_SUBMERGE);
+            DoCastSpellIfCan(m_creature, SPELL_RAGNA_SUBMERGE, CAST_INTERRUPT_PREVIOUS);
             m_bIsSubmerged = true;
             m_uiAttackTimer = 90 * IN_MILLISECONDS;
-
+            DoCastSpellIfCan(m_creature, SPELL_SUBMERGE_EFFECT, CAST_INTERRUPT_PREVIOUS);
             m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
 
             // Say dependend if first time or not
             DoScriptText(!m_bHasSubmergedOnce ? SAY_REINFORCEMENTS_1 : SAY_REINFORCEMENTS_2, m_creature);
             m_bHasSubmergedOnce = true;
 
-            // Summon 8 elementals at random points around the boss
-            float fX, fY, fZ;
-            for (uint8 i = 0; i < MAX_ADDS_IN_SUBMERGE; ++i)
-            {
-                m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 30.0f, fX, fY, fZ);
-                m_creature->SummonCreature(NPC_SON_OF_FLAME, fX, fY, fZ, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 1000);
-            }
+            // Summon 8 elementals around the boss
+            if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_SONS_FLAME) == CAST_OK)
+                m_uiAddCount = 8;
 
             return;
         }
         else
             m_uiSubmergeTimer -= uiDiff;
 
-        // TODO this actually should select _any_ enemy in melee range, not only the tank
-        // Range check for melee target, if nobody is found in range, then cast magma blast on random
-        // If we are within range melee the target
+        // Range check for melee target, if nobody is found in range, then cast magma blast on random target
+        // If we are within range melee the target (done in CanMeleeTargetInRange())
         if (m_creature->IsNonMeleeSpellCasted(false) || !m_creature->getVictim())
             return;
 
-        if (m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
-        {
-            // Make sure our attack is ready
-            if (m_creature->isAttackReady())
-            {
-                m_creature->AttackerStateUpdate(m_creature->getVictim());
-                m_creature->resetAttackTimer();
-                m_bHasYelledMagmaBurst = false;
-            }
-        }
-        else
+        if (!CanMeleeTargetInRange())
         {
             // Magma Burst Timer
             if (m_uiMagmaBlastTimer < uiDiff)

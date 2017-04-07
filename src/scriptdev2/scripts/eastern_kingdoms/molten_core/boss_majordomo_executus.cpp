@@ -16,8 +16,8 @@
 
 /* ScriptData
 SDName: Boss_Majordomo_Executus
-SD%Complete: 95
-SDComment: Minor weaknesses
+SD%Complete: 100
+SDComment:
 SDCategory: Molten Core
 EndScriptData */
 
@@ -27,40 +27,44 @@ EndScriptData */
 
 enum
 {
-    SAY_AGGRO               = -1409003,
-    SAY_SLAY                = -1409005,
-    SAY_SPECIAL             = -1409006,                     // Use unknown
-    SAY_LAST_ADD            = -1409019,                     // When only one add remaining
-    SAY_DEFEAT_1            = -1409007,
-    SAY_DEFEAT_2            = -1409020,
-    SAY_DEFEAT_3            = -1409021,
+    // Majordomo Executus Encounter
+    SAY_AGGRO                = -1409003,
+    SAY_SLAY_1               = -1409005,
+    SAY_SLAY_2               = -1409006,
+    SAY_LAST_ADD             = -1409019,                    // When only one add remaining
+    SAY_DEFEAT_1             = -1409007,
+    SAY_DEFEAT_2             = -1409020,
+    SAY_DEFEAT_3             = -1409021,
 
-    SAY_SUMMON_0            = -1409023,
-    SAY_SUMMON_1            = -1409024,
-    SAY_SUMMON_MAJ          = -1409008,
-    SAY_ARRIVAL1_RAG        = -1409009,
-    SAY_ARRIVAL2_MAJ        = -1409010,
-    SAY_ARRIVAL3_RAG        = -1409011,
-    SAY_ARRIVAL4_MAJ        = -1409022,
+    SPELL_MAGIC_REFLECTION   = 20619,
+    SPELL_DAMAGE_REFLECTION  = 21075,
+    SPELL_AEGIS              = 20620,
+    SPELL_TELEPORT_RANDOM    = 20618,                       // Teleport random target
+    SPELL_TELEPORT_TARGET    = 20534,                       // Teleport Victim
+    SPELL_IMMUNE_POLY        = 21087,                       // Cast onto Flamewaker Healers when half the adds are dead
+    SPELL_SEPARATION_ANXIETY = 21094,                       // Aura cast on himself by Majordomo Executus, if adds move out of range, they will cast spell 21095 on themselves
 
-    GOSSIP_ITEM_SUMMON_1    = -3409000,
-    GOSSIP_ITEM_SUMMON_2    = -3409001,
-    GOSSIP_ITEM_SUMMON_3    = -3409002,
+    // Ragnaros summoning event
+    GOSSIP_ITEM_SUMMON_1     = -3409000,
+    GOSSIP_ITEM_SUMMON_2     = -3409001,
+    GOSSIP_ITEM_SUMMON_3     = -3409002,
 
-    TEXT_ID_SUMMON_1        = 4995,
-    TEXT_ID_SUMMON_2        = 5011,
-    TEXT_ID_SUMMON_3        = 5012,
+    SAY_SUMMON_0             = -1409023,
+    SAY_SUMMON_1             = -1409024,
+    SAY_SUMMON_MAJ           = -1409008,
+    SAY_ARRIVAL1_RAG         = -1409009,
+    SAY_ARRIVAL2_MAJ         = -1409010,
+    SAY_ARRIVAL3_RAG         = -1409011,
+    SAY_ARRIVAL4_MAJ         = -1409022,
 
-    SPELL_MAGIC_REFLECTION  = 20619,
-    SPELL_DAMAGE_REFLECTION = 21075,
-    SPELL_BLASTWAVE         = 20229,
-    SPELL_AEGIS             = 20620,
-    SPELL_TELEPORT          = 20618,
+    TEXT_ID_SUMMON_1         = 4995,
+    TEXT_ID_SUMMON_2         = 5011,
+    TEXT_ID_SUMMON_3         = 5012,
 
-    SPELL_TELEPORT_SELF     = 19484,
-    SPELL_SUMMON_RAGNAROS   = 19774,
-    SPELL_ELEMENTAL_FIRE    = 19773,
-    SPELL_RAGNA_EMERGE      = 20568,
+    SPELL_TELEPORT_SELF      = 19484,
+    SPELL_SUMMON_RAGNAROS    = 19774,
+    SPELL_ELEMENTAL_FIRE     = 19773,
+    SPELL_RAGNA_EMERGE       = 20568,
 };
 
 struct boss_majordomoAI : public ScriptedAI
@@ -74,10 +78,9 @@ struct boss_majordomoAI : public ScriptedAI
 
     instance_molten_core* m_pInstance;
 
-    uint32 m_uiMagicReflectionTimer;
-    uint32 m_uiDamageReflectionTimer;
-    uint32 m_uiBlastwaveTimer;
-    uint32 m_uiTeleportTimer;
+    uint32 m_uiReflectionShieldTimer;
+    uint32 m_uiTeleportRandomTimer;
+    uint32 m_uiTeleportTargetTimer;
     uint32 m_uiAegisTimer;
     uint32 m_uiSpeechTimer;
 
@@ -89,10 +92,9 @@ struct boss_majordomoAI : public ScriptedAI
 
     void Reset() override
     {
-        m_uiMagicReflectionTimer  = 30000;                  // Damage reflection first so we alternate
-        m_uiDamageReflectionTimer = 15000;
-        m_uiBlastwaveTimer = 10000;
-        m_uiTeleportTimer = 20000;
+        m_uiReflectionShieldTimer = 15000;
+        m_uiTeleportRandomTimer = 15000;
+        m_uiTeleportTargetTimer = 30000;
         m_uiAegisTimer = 5000;
         m_uiSpeechTimer = 1000;
 
@@ -105,7 +107,7 @@ struct boss_majordomoAI : public ScriptedAI
         if (urand(0, 4))
             return;
 
-        DoScriptText(SAY_SLAY, m_creature);
+        DoScriptText((urand(0, 1) ? SAY_SLAY_1 : SAY_SLAY_2), m_creature);
     }
 
     void Aggro(Unit* pWho) override
@@ -114,6 +116,8 @@ struct boss_majordomoAI : public ScriptedAI
             return;
 
         DoScriptText(SAY_AGGRO, m_creature);
+        // Majordomo Executus has a 100 yard aura to keep track of the distance of each of his adds, the Flamewaker Healers will enrage if moved out of it
+        DoCastSpellIfCan(m_creature, SPELL_SEPARATION_ANXIETY, CAST_TRIGGERED | CAST_AURA_NOT_PRESENT);
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_MAJORDOMO, IN_PROGRESS);
@@ -192,12 +196,6 @@ struct boss_majordomoAI : public ScriptedAI
         }
     }
 
-    void JustDied(Unit* pKiller) override
-    {
-        if (pKiller->GetTypeId() == TYPEID_UNIT && pKiller->GetEntry() == NPC_RAGNAROS)
-            DoScriptText(SAY_ARRIVAL4_MAJ, m_creature);
-    }
-
     void CorpseRemoved(uint32& uiRespawnDelay) override
     {
         uiRespawnDelay = urand(2 * HOUR, 3 * HOUR);
@@ -215,6 +213,10 @@ struct boss_majordomoAI : public ScriptedAI
         if (pSummoned->GetEntry() == NPC_FLAMEWAKER_HEALER || pSummoned->GetEntry() == NPC_FLAMEWAKER_ELITE)
         {
             m_uiAddsKilled += 1;
+
+            // If 4 adds (half of them) are dead, make all remaining healers immune to polymorph via aura
+            if (m_uiAddsKilled >= MAX_MAJORDOMO_ADDS / 2)
+                DoCastSpellIfCan(m_creature, SPELL_IMMUNE_POLY);
 
             // Yell if only one Add alive
             if (m_uiAddsKilled == m_luiMajordomoAddsGUIDs.size() - 1)
@@ -300,46 +302,45 @@ struct boss_majordomoAI : public ScriptedAI
                         // TODO - Move along, this expects to be handled with mmaps
                         m_creature->GetMotionMaster()->MovePoint(1, 831.079590f, -816.023193f, -229.023270f);
                         ++m_uiSpeech;
-                        m_uiSpeechTimer = 7000;
+                        m_uiSpeechTimer = 11500;
                         break;
                     case 12:
                         // Reset orientation
                         if (GameObject* pLavaSteam = m_pInstance->GetSingleGameObjectFromStorage(GO_LAVA_STEAM))
                             m_creature->SetFacingToObject(pLavaSteam);
-                        m_uiSpeechTimer = 4500;
-                        ++m_uiSpeech;
-                        break;
-                    case 13:
                         DoScriptText(SAY_SUMMON_MAJ, m_creature);
                         ++m_uiSpeech;
                         m_uiSpeechTimer = 8000;
                         break;
-                    case 14:
-                        // Summon Ragnaros
+                    case 13:
+                        // Summon Ragnaros and make sure it faces Majordomo Executus
                         if (m_pInstance)
                             if (GameObject* pGo = m_pInstance->GetSingleGameObjectFromStorage(GO_LAVA_STEAM))
                                 m_creature->SummonCreature(NPC_RAGNAROS, pGo->GetPositionX(), pGo->GetPositionY(), pGo->GetPositionZ(), fmod(m_creature->GetOrientation() + M_PI, 2 * M_PI), TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 2 * HOUR * IN_MILLISECONDS);
                         ++m_uiSpeech;
                         m_uiSpeechTimer = 8700;
                         break;
-                    case 15:
+                    case 14:
                         if (Creature* pRagnaros = m_creature->GetMap()->GetCreature(m_ragnarosGuid))
+                        {
+                            pRagnaros->HandleEmote(EMOTE_ONESHOT_ROAR);
                             DoScriptText(SAY_ARRIVAL1_RAG, pRagnaros);
+                        }
                         ++m_uiSpeech;
                         m_uiSpeechTimer = 11700;
                         break;
-                    case 16:
+                    case 15:
                         DoScriptText(SAY_ARRIVAL2_MAJ, m_creature);
                         ++m_uiSpeech;
                         m_uiSpeechTimer = 8700;
                         break;
-                    case 17:
+                    case 16:
                         if (Creature* pRagnaros = m_creature->GetMap()->GetCreature(m_ragnarosGuid))
                             DoScriptText(SAY_ARRIVAL3_RAG, pRagnaros);
                         ++m_uiSpeech;
                         m_uiSpeechTimer = 16500;
                         break;
-                    case 18:
+                    case 17:
                         if (Creature* pRagnaros = m_creature->GetMap()->GetCreature(m_ragnarosGuid))
                             pRagnaros->CastSpell(m_creature, SPELL_ELEMENTAL_FIRE, TRIGGERED_NONE);
                         // Rest of summoning speech is handled by Ragnaros, as Majordomo will be dead
@@ -370,44 +371,35 @@ struct boss_majordomoAI : public ScriptedAI
             m_uiAegisTimer = 10000;
         }
 
-        // Magic Reflection Timer
-        if (m_uiMagicReflectionTimer < uiDiff)
+        // Damage/Magic Reflection Timer
+        if (m_uiReflectionShieldTimer < uiDiff)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_MAGIC_REFLECTION) == CAST_OK)
-                m_uiMagicReflectionTimer = 30000;
+            if (DoCastSpellIfCan(m_creature, (urand(0 , 1) ? SPELL_DAMAGE_REFLECTION : SPELL_MAGIC_REFLECTION)) == CAST_OK)
+                m_uiReflectionShieldTimer = 30000;
         }
         else
-            m_uiMagicReflectionTimer -= uiDiff;
+            m_uiReflectionShieldTimer -= uiDiff;
 
-        // Damage Reflection Timer
-        if (m_uiDamageReflectionTimer < uiDiff)
+        // Teleports the main target to the heated rock in the center of the area
+        if (m_uiTeleportTargetTimer < uiDiff)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_DAMAGE_REFLECTION) == CAST_OK)
-                m_uiDamageReflectionTimer = 30000;
+            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TELEPORT_TARGET) == CAST_OK)
+                m_uiTeleportTargetTimer = urand (25000, 30000);
         }
         else
-            m_uiDamageReflectionTimer -= uiDiff;
+            m_uiTeleportTargetTimer -= uiDiff;
 
-        // Teleports the target to the heated rock in the center of the area
-        if (m_uiTeleportTimer < uiDiff)
+        // Teleports a random target to the heated rock in the center of the area
+        if (m_uiTeleportRandomTimer < uiDiff)
         {
             if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_TELEPORT) == CAST_OK)
-                    m_uiTeleportTimer = 20000;
+                if (DoCastSpellIfCan(pTarget, SPELL_TELEPORT_RANDOM) == CAST_OK)
+                    m_uiTeleportRandomTimer = urand (25000, 30000);
             }
         }
         else
-            m_uiTeleportTimer -= uiDiff;
-
-        // Blastwave Timer
-        if (m_uiBlastwaveTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_BLASTWAVE) == CAST_OK)
-                m_uiBlastwaveTimer = 10000;
-        }
-        else
-            m_uiBlastwaveTimer -= uiDiff;
+            m_uiTeleportRandomTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
