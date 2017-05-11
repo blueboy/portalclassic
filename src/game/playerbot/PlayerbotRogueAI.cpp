@@ -270,8 +270,8 @@ CombatManeuverReturns PlayerbotRogueAI::DoNextCombatManeuverPVE(Unit *pTarget)
         if (SLICE_DICE > 0 && m_ai->IsElite(pTarget) && !m_bot->HasAura(SLICE_DICE, EFFECT_INDEX_1) && m_ai->CastSpell(SLICE_DICE, *pTarget)) // 25 energy (checked above)
             return RETURN_CONTINUE;
 
-        // If target is a warrior or paladin type (high armor): expose its armor
-        if (EXPOSE_ARMOR > 0 && pCreature && pCreature->GetCreatureInfo()->UnitClass != 8 && !pTarget->HasAura(EXPOSE_ARMOR, EFFECT_INDEX_0) && m_ai->CastSpell(EXPOSE_ARMOR, *pTarget)) // 25 energy (checked above)
+        // If target is a warrior or paladin type (high armor): expose its armor if not a worldboss
+        if (EXPOSE_ARMOR > 0 && !m_ai->IsElite(pTarget, true) && pCreature && pCreature->GetCreatureInfo()->UnitClass != 8 && !pTarget->HasAura(EXPOSE_ARMOR, EFFECT_INDEX_0) && m_ai->CastSpell(EXPOSE_ARMOR, *pTarget)) // 25 energy (checked above)
             return RETURN_CONTINUE;
 
         if (RUPTURE > 0 && !pTarget->HasAura(RUPTURE, EFFECT_INDEX_0) && m_ai->CastSpell(RUPTURE, *pTarget)) // 25 energy (checked above)
