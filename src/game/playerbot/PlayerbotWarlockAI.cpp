@@ -231,11 +231,17 @@ CombatManeuverReturns PlayerbotWarlockAI::DoNextCombatManeuverPVE(Unit *pTarget)
     // Create soul shard (only on non-worldboss)
     uint8 freeSpace = m_ai->GetFreeBagSpace();
     uint8 HPThreshold = (m_ai->IsElite(pTarget) ? 10 : 25);
-    if (DRAIN_SOUL && !m_ai->IsElite(pTarget, true) && pTarget->GetHealthPercent() < HPThreshold && m_ai->In_Reach(pTarget, DRAIN_SOUL) &&
-        !pTarget->HasAura(DRAIN_SOUL) && (shardCount < MAX_SHARD_COUNT && freeSpace > 0) && CastSpell(DRAIN_SOUL, pTarget))
+    if (!m_ai->IsElite(pTarget, true) && pTarget->GetHealthPercent() < HPThreshold && (shardCount < MAX_SHARD_COUNT && freeSpace > 0))
     {
-        m_ai->SetIgnoreUpdateTime(15);
-        return RETURN_CONTINUE;
+        if (SHADOWBURN && m_ai->In_Reach(pTarget, SHADOWBURN) && !pTarget->HasAura(SHADOWBURN) && !m_bot->HasSpellCooldown(SHADOWBURN) && CastSpell(SHADOWBURN, pTarget))
+            return RETURN_CONTINUE;
+
+        // Do not cast Drain Soul if Shadowburn is active on target
+        if (DRAIN_SOUL && m_ai->In_Reach(pTarget, DRAIN_SOUL) && !pTarget->HasAura(DRAIN_SOUL) && !pTarget->HasAura(SHADOWBURN) && CastSpell(DRAIN_SOUL, pTarget))
+        {
+            m_ai->SetIgnoreUpdateTime(15);
+            return RETURN_CONTINUE;
+        }
     }
 
     if (pet && DARK_PACT && (100 * pet->GetPower(POWER_MANA) / pet->GetMaxPower(POWER_MANA)) > 10 && m_ai->GetManaPercent() <= 20)
