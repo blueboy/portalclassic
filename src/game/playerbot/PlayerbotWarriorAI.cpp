@@ -298,7 +298,7 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
     Creature * pCreature = (Creature*) pTarget;
 
     // Prevent low health humanoid from fleeing with Hamstring
-    if (pCreature && (m_bot->HasAura(BATTLE_STANCE, EFFECT_INDEX_0) || m_bot->HasAura(BERSERKER_STANCE, EFFECT_INDEX_0)) && pCreature->GetCreatureInfo()->CreatureType == CREATURE_TYPE_HUMANOID && pTarget->GetHealthPercent() < 20 && !pCreature->IsWorldBoss())
+    if ((m_bot->HasAura(BATTLE_STANCE, EFFECT_INDEX_0) || m_bot->HasAura(BERSERKER_STANCE, EFFECT_INDEX_0)) && pTarget->GetHealthPercent() < 20 && !m_ai->IsElite(pTarget, true))
     {
         if (HAMSTRING > 0 && !pTarget->HasAura(HAMSTRING, EFFECT_INDEX_0) && m_ai->CastSpell(HAMSTRING, *pTarget))
             return RETURN_CONTINUE;
@@ -393,23 +393,13 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
             }
         }
 
-        // Try to interrupt spell if target is casting one
-        if (pTarget->IsNonMeleeSpellCasted(true))
+        // Try to interrupt spell if target is casting one and target is not a worldboss (they are almost all immune to interrupt)
+        if (pTarget->IsNonMeleeSpellCasted(true) && !m_ai->IsElite(pTarget, true))
         {
             if (SHIELD_BASH > 0 && m_ai->CastSpell(SHIELD_BASH, *pTarget))
                 return RETURN_CONTINUE;
         }
 
-        if (REVENGE > 0 && !m_bot->HasSpellCooldown(REVENGE))
-        {
-            uint8 base = pTarget->RollMeleeOutcomeAgainst(m_bot, BASE_ATTACK, SPELL_SCHOOL_MASK_NORMAL);
-            uint8 off = pTarget->RollMeleeOutcomeAgainst(m_bot, OFF_ATTACK, SPELL_SCHOOL_MASK_NORMAL);
-            if (base == MELEE_HIT_PARRY || base == MELEE_HIT_DODGE || base == MELEE_HIT_BLOCK || off == MELEE_HIT_PARRY || off == MELEE_HIT_DODGE || off == MELEE_HIT_BLOCK)
-                if (m_ai->CastSpell(REVENGE, *pTarget))
-                    return RETURN_CONTINUE;
-        }
-        if (REND > 0 && !pTarget->HasAura(REND, EFFECT_INDEX_0) && m_ai->CastSpell(REND, *pTarget))
-            return RETURN_CONTINUE;
         //Do not waste rage applying Sunder Armor if it is already stacked 5 times
         if (SUNDER_ARMOR > 0)
         {
@@ -422,13 +412,25 @@ CombatManeuverReturns PlayerbotWarriorAI::DoNextCombatManeuverPVE(Unit *pTarget)
                     return RETURN_CONTINUE;
             }
         }
-        if (DEMORALIZING_SHOUT > 0 && !pTarget->HasAura(DEMORALIZING_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(DEMORALIZING_SHOUT, *pTarget))
+
+        if (REVENGE > 0 && !m_bot->HasSpellCooldown(REVENGE))
+        {
+            uint8 base = pTarget->RollMeleeOutcomeAgainst(m_bot, BASE_ATTACK, SPELL_SCHOOL_MASK_NORMAL);
+            uint8 off = pTarget->RollMeleeOutcomeAgainst(m_bot, OFF_ATTACK, SPELL_SCHOOL_MASK_NORMAL);
+            if (base == MELEE_HIT_PARRY || base == MELEE_HIT_DODGE || base == MELEE_HIT_BLOCK || off == MELEE_HIT_PARRY || off == MELEE_HIT_DODGE || off == MELEE_HIT_BLOCK)
+                if (m_ai->CastSpell(REVENGE, *pTarget))
+                    return RETURN_CONTINUE;
+        }
+        if (REND > 0 && !pTarget->HasAura(REND, EFFECT_INDEX_0) && m_ai->CastSpell(REND, *pTarget))
             return RETURN_CONTINUE;
-        // TODO: only cast disarm if target has equipment?
-        if (DISARM > 0 && !pTarget->HasAura(DISARM, EFFECT_INDEX_0) && m_ai->CastSpell(DISARM, *pTarget))
+
+        if (DEMORALIZING_SHOUT > 0 && !pTarget->HasAura(DEMORALIZING_SHOUT, EFFECT_INDEX_0) && m_ai->CastSpell(DEMORALIZING_SHOUT, *pTarget))
             return RETURN_CONTINUE;
         // check that target is dangerous (elite) before casting shield block: preserve bot cooldowns
         if (SHIELD_BLOCK > 0 && m_ai->IsElite(pTarget) && !m_bot->HasAura(SHIELD_BLOCK, EFFECT_INDEX_0) && m_ai->CastSpell(SHIELD_BLOCK, *m_bot))
+            return RETURN_CONTINUE;
+        // TODO: only cast disarm if target has equipment?
+        if (DISARM > 0 && !pTarget->HasAura(DISARM, EFFECT_INDEX_0) && m_ai->CastSpell(DISARM, *pTarget))
             return RETURN_CONTINUE;
         if (CONCUSSION_BLOW > 0 && !m_bot->HasSpellCooldown(CONCUSSION_BLOW) && m_ai->CastSpell(CONCUSSION_BLOW, *pTarget))
             return RETURN_CONTINUE;
