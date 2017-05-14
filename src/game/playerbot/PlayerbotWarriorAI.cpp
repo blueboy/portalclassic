@@ -6,7 +6,7 @@
  */
 #include "PlayerbotWarriorAI.h"
 #include "PlayerbotMgr.h"
-#include "../SpellAuras.h"
+#include "../Spells/SpellAuras.h"
 
 class PlayerbotAI;
 PlayerbotWarriorAI::PlayerbotWarriorAI(Player* const master, Player* const bot, PlayerbotAI* const ai) : PlayerbotClassAI(master, bot, ai)
