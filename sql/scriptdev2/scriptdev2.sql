@@ -247,6 +247,7 @@ UPDATE creature_template SET ScriptName='npc_dalinda_malem' WHERE entry=5644;
 UPDATE creature_template SET ScriptName='npc_melizza_brimbuzzle' WHERE entry=12277;
 UPDATE creature_template SET ScriptName='npc_cork_gizelton' WHERE entry=11625;
 UPDATE creature_template SET ScriptName='npc_rigger_gizelton' WHERE entry=11626;
+UPDATE creature_template SET ScriptName='npc_magrami_spectre' WHERE entry=11560;
 
 /* DIRE MAUL */
 UPDATE instance_template SET ScriptName='instance_dire_maul' WHERE map=429;
@@ -1642,7 +1643,10 @@ INSERT INTO script_texts (entry,content_default,sound,type,language,emote,commen
 (-1001194,'Blast those stupid centaurs! Sigh - well, it seems you kept your bargain. Up the road you shall find Smeed Scrabblescrew, he has your money.',0,0,0,1,'SAY_CORK_END'),
 (-1001195,'Eeck! Demons hungry for the kodos!',0,0,0,0,'SAY_RIGGER_AMBUSH1'),
 (-1001196,'What am I paying you for? The kodos are nearly dead!',0,0,0,0,'SAY_RIGGER_AMBUSH2'),
-(-1001197,'Wow! We did it... not sure why we thought we needed the likes of you. Nevertheless, speak with Smeed Srablescrew; he will give you your earnings!',0,0,0,0,'SAY_RIGGER_END');
+(-1001197,'Wow! We did it... not sure why we thought we needed the likes of you. Nevertheless, speak with Smeed Srablescrew; he will give you your earnings!',0,0,0,0,'SAY_RIGGER_END'),
+-- REUSE_ME -1001198 to -1001225
+(-1001226,'%s is drawn to the ghost magnet...',0,2,0,0,'Magrami Spectre on spawn 1'),
+(-1001227,'%s is angered!',0,2,0,0,'Magrami Spectre on spawn 2');
 
 -- -1 033 000 SHADOWFANG KEEP
 INSERT INTO script_texts (entry,content_default,sound,type,language,emote,comment) VALUES
@@ -2066,7 +2070,8 @@ INSERT INTO script_texts (entry,content_default,sound,type,language,emote,commen
 (-1409021,'I go now to summon the lord whose house this is. Should you seek an audience with him, your paltry lives will surely be forfeit! Nevertheless, seek out his lair, if you dare!',0,1,0,0,'majordomo SAY_DEFEAT_3'),
 (-1409022,'My flame! Please don\'t take away my flame... ',8042,1,0,0,'ragnaros SAY_ARRIVAL4_MAJ'),
 (-1409023,'Very well, $n.',0,0,0,0,'majordomo SAY_SUMMON_0'),
-(-1409024,'Impudent whelps! You\'ve rushed headlong to your own deaths! See now, the master stirs!',0,1,0,0,'majordomo SAY_SUMMON_1');
+(-1409024,'Impudent whelps! You\'ve rushed headlong to your own deaths! See now, the master stirs!',0,1,0,0,'majordomo SAY_SUMMON_1'),
+(-1409025,'%s forces one of his Firesworn minions to erupt!',0,2,0,0,'Garr EMOTE_MASSIVE_ERUPTION');
 
 -- -1 429 000 DIRE MAUL
 INSERT INTO script_texts (entry,content_default,sound,type,language,emote,comment) VALUES

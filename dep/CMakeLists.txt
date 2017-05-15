@@ -16,10 +16,15 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 # disable warnings for dependencies
-add_compile_options(-w)
-
+DisableWarnings()
 add_subdirectory(recastnavigation)
 add_subdirectory(src)
-if (BUILD_VMAP_EXTRACTOR)
+if (BUILD_EXTRACTORS)
   add_subdirectory(libmpq)
+endif()
+
+if(MSVC)
+  add_subdirectory(zlib)
+  set_target_properties(${ZLIB_LIBRARIES} PROPERTIES PROJECT_LABEL "zlib")
+  set_target_properties(${ZLIB_LIBRARIES} PROPERTIES FOLDER "Dependencies")
 endif()
